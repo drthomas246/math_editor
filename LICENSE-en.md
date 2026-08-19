@@ -130,7 +130,9 @@ exported, printed, captured, copied, converted, or otherwise obtained from
 the output or content functionality of:
 
 (a) the Software, when lawfully used by the User under this License;
-(b) a Hosted Application; or
+(b) a Hosted Application that the User lawfully accesses and uses in
+    accordance with the access conditions, authorization, and intended
+    functionality established by the Copyright Holder; or
 (c) a Modified Version that the User has lawfully created and is lawfully
     using in compliance with this License.
 
@@ -156,17 +158,17 @@ rendering, conversion, or similar means.
 
 User Output does not include:
 
-(c) the Software or any Modified Version itself;
-(d) source code, object code, compiled code, build artifacts, scripts,
+(d) the Software or any Modified Version itself;
+(e) source code, object code, compiled code, build artifacts, scripts,
     configuration files, or separately extractable portions of the Software
     or any Modified Version;
-(e) any screenshot, recording, capture, or reproduction to the extent that
+(f) any screenshot, recording, capture, or reproduction to the extent that
     its primary subject is the Software's user interface, source code, program
     structure, or other Software material rather than content produced by the
     user;
-(f) any Third-Party Component except to the extent that its own license
+(g) any Third-Party Component except to the extent that its own license
     permits its inclusion and use in the User Output; or
-(g) any pre-existing asset or material owned by the Copyright Holder that is
+(h) any pre-existing asset or material owned by the Copyright Holder that is
     not intended by the Copyright Holder to form part of ordinary User Output.
 
 1.14 "Non-Commercial Output Purpose" means use of a User Output that is not
@@ -353,13 +355,17 @@ privately, the person distributing it must, where reasonably practicable
 for the relevant file format or distribution method, provide a reasonably
 visible notice stating substantially:
 
-    "Non-commercial use only under the Personal Non-Commercial Software
-    License, Version 1.0."
+    "To the extent portions of this User Output are licensed under the
+    Personal Non-Commercial Software License, Version 1.0, those portions
+    are for non-commercial use only. Third-party materials remain subject
+    to their own applicable licenses and rights."
 
 The notice may be placed in the file, file metadata, an accompanying text
 file, a download page, or another reasonably visible location. A copy of or
 reference to this License should also be provided where reasonably
-practicable.
+practicable. This notice does not relicense or alter the legal status of any
+Third-Party Component, third-party material, Pre-Existing User Content, or
+other material governed by rights independent of this License.
 
 A Lawful Recipient that exercises the permissions granted by Sections 2.7 or
 2.8 to copy, modify, redistribute, publicly display, or transmit a User Output
