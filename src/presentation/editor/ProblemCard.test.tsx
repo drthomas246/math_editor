@@ -1,0 +1,201 @@
+import { fireEvent, render, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import { createAnswerAreaBlock, createSubQuestionGroup, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
+import "../../styles.css";
+import { ProblemCard } from "./ProblemCard";
+
+describe("ProblemCard", () => {
+  it("カード見出しで問題から例題へ変更する", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const onCommit = vi.fn();
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={onCommit}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(view.getByRole("combobox", { name: "問題の種類" }), { target: { value: "example" } });
+
+    expect(onCommit).toHaveBeenCalledWith(
+      "問題の種類を変更",
+      expect.objectContaining({ problems: [expect.objectContaining({ kind: "example" })] }),
+    );
+  });
+
+  it("内容の追加から画像と表を除き、大問と小問のツールバーには残す", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const group = createSubQuestionGroup();
+    group.items = [group.items[0]!];
+    group.items[0]!.answerArea = null;
+    problem.contents.push(group);
+
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={vi.fn()}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(view.getByRole("button", { name: "内容を追加" }));
+
+    const addContentMenu = view.container.querySelector<HTMLElement>(".add-content-popover");
+    expect(addContentMenu).not.toBeNull();
+    expect(within(addContentMenu!).queryByRole("button", { name: "画像" })).not.toBeInTheDocument();
+    expect(within(addContentMenu!).queryByRole("button", { name: "表" })).not.toBeInTheDocument();
+    expect(within(addContentMenu!).getByRole("button", { name: "めあて" })).toBeInTheDocument();
+    expect(view.getAllByRole("button", { name: "画像" })).toHaveLength(2);
+    expect(view.getAllByRole("button", { name: "表" })).toHaveLength(2);
+  });
+
+  it("問題メニューと内容追加メニューを外側の操作で閉じる", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={vi.fn()}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(view.getByRole("button", { name: "問題設定" }));
+    expect(view.getByRole("button", { name: "問題を複製" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(view.queryByRole("button", { name: "問題を複製" })).not.toBeInTheDocument();
+
+    fireEvent.click(view.getByRole("button", { name: "内容を追加" }));
+    expect(view.container.querySelector(".add-content-popover")).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(view.container.querySelector(".add-content-popover")).not.toBeInTheDocument();
+  });
+
+  it("生徒用解答欄の1つの文章欄で問題色・解答色を選んで数式と表を入力できる", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const answerArea = createAnswerAreaBlock();
+    problem.contents = [answerArea];
+    const onCommit = vi.fn();
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={answerArea.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={onCommit}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    const areaEditor = view.container.querySelector<HTMLElement>(".answer-area-editor");
+    expect(areaEditor).not.toBeNull();
+    const colorSelector = within(areaEditor!).getByRole("combobox", { name: "入力色" });
+    expect(colorSelector).toHaveValue("problem");
+    fireEvent.change(colorSelector, { target: { value: "answer" } });
+    expect(colorSelector).toHaveValue("answer");
+
+    fireEvent.click(within(areaEditor!).getByRole("button", { name: "数式" }));
+    expect(view.getByRole("dialog", { name: "数式を入力" })).toBeInTheDocument();
+    fireEvent.click(view.getByRole("button", { name: "キャンセル" }));
+
+    fireEvent.click(within(areaEditor!).getByRole("button", { name: "表" }));
+    const tableDialog = view.getByRole("dialog", { name: "表を挿入" });
+    fireEvent.click(within(tableDialog).getByRole("button", { name: "挿入" }));
+
+    const insertedWorksheet = onCommit.mock.calls.find(([label]) => label === "表を挿入")?.[1];
+    const insertedArea = insertedWorksheet?.problems[0]?.contents[0];
+    expect(insertedArea?.type === "answerArea" ? insertedArea.answerArea.document.content.at(-1) : null).toMatchObject({
+      type: "richTable",
+      attrs: { answerColor: true },
+    });
+  });
+
+  it("教師用の解説に数式、画像、表の挿入操作を表示する", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const onCommit = vi.fn();
+
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={onCommit}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(view.getByRole("button", { name: /教師用の解説/u }));
+
+    const solutionEditor = view.container.querySelector<HTMLElement>(".solution-editor");
+    expect(solutionEditor).not.toBeNull();
+    expect(within(solutionEditor!).getByRole("button", { name: "数式" })).toBeInTheDocument();
+    expect(within(solutionEditor!).getByRole("button", { name: "画像" })).toBeInTheDocument();
+    expect(within(solutionEditor!).getByRole("button", { name: "表" })).toBeInTheDocument();
+
+    fireEvent.click(within(solutionEditor!).getByRole("button", { name: "数式" }));
+    expect(view.getByRole("dialog", { name: "数式を入力" })).toBeInTheDocument();
+    fireEvent.click(view.getByRole("button", { name: "キャンセル" }));
+
+    fireEvent.click(within(solutionEditor!).getByRole("button", { name: "画像" }));
+    expect(view.getByRole("dialog", { name: "画像を挿入" })).toBeInTheDocument();
+    fireEvent.click(view.getByRole("button", { name: "キャンセル" }));
+
+    fireEvent.click(within(solutionEditor!).getByRole("button", { name: "表" }));
+    const tableDialog = view.getByRole("dialog", { name: "表を挿入" });
+    fireEvent.click(within(tableDialog).getByRole("button", { name: "挿入" }));
+
+    const insertedWorksheet = onCommit.mock.calls.find(([label]) => label === "表を挿入")?.[1];
+    expect(insertedWorksheet?.problems[0]?.solution?.content.at(-1)?.type).toBe("richTable");
+  });
+});
