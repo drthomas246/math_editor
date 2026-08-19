@@ -23,8 +23,15 @@ uses, modifies, or otherwise exercises rights in the Software. If a person
 acts for or on behalf of an organization, institution, employer, business,
 governmental body, school, educational institution, nonprofit entity, or
 other legal or organizational entity, that use is treated as use by or for
-that organization and is not licensed under Section 2 unless separately
-authorized in writing by the Copyright Holder.
+that organization and is not licensed under Section 2.1 with respect to the
+Software or any Modified Version unless separately authorized in writing by
+the Copyright Holder.
+
+For clarity, this organizational restriction does not prevent an organization
+or other entity from qualifying as a Lawful Recipient or exercising rights in
+a User Output under Sections 2.5 through 2.14, provided that all conditions
+applicable to that User Output, including the Non-Commercial Output Purpose
+restriction, are satisfied.
 
 1.3 "Software" means the Original Code (as defined in Section 1.10) made
 available by the Copyright Holder, including without limitation its source
@@ -251,12 +258,20 @@ license, terminable only in accordance with Section 10, to:
 
 solely for your own Non-Commercial Purposes.
 
-2.2 No license is granted under this License to an organization, institution,
-business, governmental body, school, university, nonprofit entity, employer,
-or other legal or organizational entity, or to a person acting for or on
-behalf of such an entity. Such use requires separate Written Consent or a
-separate commercial or organizational license agreement from the Copyright
-Holder.
+2.2 No license under Section 2.1 to use the Software or any Modified Version
+is granted to an organization, institution, business, governmental body,
+school, university, nonprofit entity, employer, or other legal or
+organizational entity, or to a person acting for or on behalf of such an
+entity. Such use of the Software or any Modified Version requires separate
+Written Consent or a separate commercial or organizational license agreement
+from the Copyright Holder.
+
+This Section 2.2 does not restrict the rights expressly granted with respect
+to User Outputs under Sections 2.5 through 2.14. An organization or other
+entity may therefore receive, use, modify, publish, distribute, redistribute,
+publicly display, or transmit a User Output to the extent expressly permitted
+by Sections 2.5 through 2.14 and subject to all applicable conditions,
+including the Non-Commercial Output Purpose restriction.
 
 2.3 No rights are granted except those expressly stated in this License. All
 rights not expressly granted are reserved by the Copyright Holder.
