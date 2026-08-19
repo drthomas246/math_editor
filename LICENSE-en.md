@@ -88,13 +88,25 @@ not primarily intended for or directed toward commercial advantage, business
 benefit, organizational benefit, professional activity, or monetary
 compensation.
 
+Non-Commercial Purpose also includes use by You in your personal capacity to
+create a User Output that You intend, from the outset, to publish, share, or
+distribute free of charge for a Non-Commercial Output Purpose under Sections 2.5 through 2.15, even though third parties may benefit from that User Output.
+
+The preceding paragraph does not apply where the Software or a Modified
+Version is used at the request of, under commission from, for the assigned
+work of, or on behalf of a specific third party, client, customer, employer,
+school, organization, institution, or other entity, or as part of employment,
+professional duties, institutional duties, classroom or school operations,
+organizational activities, or services provided to others.
+
 For clarity, use in connection with your employment, professional duties,
 institutional duties, classroom or school operations, organizational
 activities, services provided to others, or activities performed for or on
 behalf of any organization is not a Non-Commercial Purpose under this
 License, even if no fee is charged and even if the organization is a school,
 university, nonprofit organization, public body, or other non-commercial
-entity.
+entity, except for the self-directed free-publication activity expressly
+permitted by the second paragraph of this Section 1.5.
 
 1.6 "Commercial Purpose" means any purpose other than a Non-Commercial
 Purpose. For this License, organizational, institutional, professional, and
@@ -117,6 +129,11 @@ limitation, any use:
     deployment, training, or evaluation; or
 (g) for providing hosted, managed, network-accessible, classroom-accessible,
     or service-based functionality to third parties.
+
+For clarity, the self-directed creation of a User Output for free publication,
+sharing, or distribution that qualifies under the second paragraph of
+Section 1.5 is not a Commercial Purpose solely because the resulting User
+Output benefits or is made available to third parties.
 
 1.7 "Redistribute" or "Redistribution" means to copy, publish, provide, make
 available, transmit, disclose, sublicense, assign, sell, rent, lease, lend,
@@ -161,7 +178,7 @@ that is used, imported, depended upon, bundled with, or otherwise incorporated
 by the Software.
 
 1.12 "Hosted Application" means a web application built from the Software
-and either:
+or a Modified Version and either:
 
 (a) hosted or operated by the Copyright Holder; or
 (b) hosted or operated by a third party under a separate written commercial,
@@ -368,14 +385,25 @@ worldwide, royalty-free, non-exclusive license, solely for a Non-Commercial
 Output Purpose, to view, use, copy, reproduce, modify, publish, distribute,
 redistribute, publicly display, and transmit those portions of the User
 Output in which the creator owns copyright or has authority to grant such
-permission.
+permission, solely:
+
+(a) as incorporated in that User Output or in a permitted non-commercial
+    modification of that User Output; and
+(b) to the extent reasonably necessary to exercise the permissions granted
+    by this Section 2.8 with respect to that User Output.
 
 A Lawful Recipient that lawfully publishes, distributes, redistributes,
 publicly displays, transmits, or otherwise makes a User Output or a permitted
 non-commercial modification of it available to a subsequent third party
 grants the same non-commercial permissions to subsequent Lawful Recipients
 with respect to any copyrightable contributions owned by that Lawful
-Recipient.
+Recipient, subject to the same incorporation limitation stated above.
+
+Except to the extent separately and expressly authorized by the applicable
+rights holder, this Section 2.8 does not grant any right to extract
+Pre-Existing User Content or other creator-owned material from a User Output
+and use, copy, modify, publish, distribute, or otherwise exploit that extracted
+material independently of the User Output.
 
 Nothing in this Section purports to grant rights in third-party material that
 the creator or redistributing recipient does not own or lack authority to
@@ -405,13 +433,19 @@ User Output, or contains a separately extractable portion of the Software or
 a Modified Version, those portions remain subject to Sections 3 and 4.
 
 2.11 Commercial use of a User Output is not permitted under this License.
-Without a separate prior written commercial license agreement with the
-Copyright Holder, neither the creator nor any person relying on permissions
-granted under Sections 2.5 through 2.10 may sell, monetize, commercially
-license, commercially sublicense, or use a User Output in a paid product,
-paid service, advertising-supported activity, sponsorship-supported activity,
-donation- or patronage-supported activity described in Section 1.14, client
-work, or other commercial activity.
+Without a separate prior written commercial license agreement entered into
+directly with the Copyright Holder, neither the creator nor any person or
+entity relying on permissions granted under Sections 2.5 through 2.10 may
+sell, monetize, commercially license, commercially sublicense, or use a User
+Output in a paid product, paid service, advertising-supported activity,
+sponsorship-supported activity, donation- or patronage-supported activity
+described in Section 1.14, client work, or other commercial activity.
+
+Permission, access rights, service terms, or a commercial agreement provided
+by a Hosted Application operator or other third party do not, by themselves,
+grant commercial rights in a User Output under this License. Commercial use
+of a User Output requires a separate written commercial license agreement to
+which the Copyright Holder is a party.
 
 This Section does not prevent the owner of Pre-Existing User Content from
 using that Pre-Existing User Content independently of the User Output,
@@ -481,10 +515,17 @@ If a Lawful Recipient materially breaches those conditions, that recipient
 may not rely on or exercise the affected permissions while the material
 breach continues. If the breach is capable of cure and is cured within
 fourteen (14) calendar days after the recipient receives written notice from
-the Copyright Holder or another person entitled to enforce the affected
-rights, the affected permissions are reinstated. If the material breach is
-not cured within that period, the affected permissions may be terminated to
-the extent permitted by applicable law.
+the person or entity that granted the affected permission, or from a person
+or entity legally authorized to enforce that permission, the affected
+permission is reinstated.
+
+If the material breach is not cured within that period, the person or entity
+that granted the affected permission, or a person or entity legally authorized
+to enforce that permission, may terminate the affected permission by written
+notice to the breaching recipient, to the extent permitted by applicable law.
+For a permission under Section 2.7, the grantor is the Copyright Holder. For a
+permission under Section 2.8, the grantor is the creator or other rights holder
+that granted the relevant permission for the affected material.
 
 A later breach by a creator or upstream recipient does not revoke or impair
 permissions already lawfully acquired by a downstream Lawful Recipient before
@@ -641,9 +682,11 @@ rights are granted by implication, estoppel, or otherwise.
 
 7. Compliance with Laws
 
-You are solely responsible for ensuring that your use of the Software
-complies with all applicable laws, regulations, third-party rights, and
-license obligations.
+Any person or entity that uses the Software or a Modified Version, accesses
+or uses a Hosted Application, or creates, receives, publishes, distributes,
+modifies, or otherwise exercises rights in a User Output under this License
+is solely responsible for ensuring that the relevant activity complies with
+all applicable laws, regulations, third-party rights, and license obligations.
 
 8. Disclaimer of Warranty
 
@@ -765,8 +808,10 @@ under this License shall operate as a waiver of that right.
 person or entity and the Copyright Holder concerning the Software, any Hosted
 Application to the extent governed by this License, and User Outputs to the
 extent governed by this License, and supersedes all prior or contemporaneous
-understandings concerning those subjects, except for any separate written
-agreement entered into by the Copyright Holder.
+understandings concerning those subjects, except to the extent modified by
+Written Consent validly given under Section 1.9, a Redistribution permission
+validly granted under Section 3, or a separate written agreement entered into
+by the Copyright Holder.
 
 12.4 Any permission, consent, authorization, or notice required from the
 Copyright Holder under this License must satisfy the definition of Written
@@ -855,12 +900,12 @@ applicable to those components are determined by their applicable third-party
 terms and not by this License. Their inclusion does not bring them within the
 scope of the "Software" as defined in this License.
 
-13.4 Notices. The Copyright Holder will make reasonable efforts to preserve
-and include required copyright notices, license texts, and attribution for
-Third-Party Components, for example in a THIRD-PARTY-NOTICES file, as
-required by their respective licenses. Removal or absence of such a notice
-does not expand the scope of this License to cover the relevant Third-Party
-Component.
+13.4 Notices. To the extent required by the applicable terms of a
+Third-Party Component, the Copyright Holder will preserve and include the
+copyright notices, license texts, attribution notices, and other notices
+required by those terms, for example in a THIRD-PARTY-NOTICES file or another
+appropriate location. Removal or absence of such a notice does not expand the
+scope of this License to cover the relevant Third-Party Component.
 
 13.5 User Responsibility. You are solely responsible for reviewing and
 complying with the license terms of any Third-Party Component You install,
