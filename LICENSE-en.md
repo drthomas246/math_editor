@@ -37,6 +37,17 @@ a User Output under Sections 2.5 through 2.15, provided that all conditions
 applicable to that User Output, including the Non-Commercial Output Purpose
 restriction, are satisfied.
 
+This organizational restriction also does not, by itself, prohibit an
+organization, school, institution, business, governmental body, nonprofit
+entity, or a person acting on its behalf from accessing or using a Hosted
+Application. Such Hosted Application use is permitted only to the extent
+authorized by the access conditions, permissions, intended functionality, and
+other applicable terms established by the Copyright Holder or, within the
+scope authorized by the Copyright Holder, by the operator of that Hosted
+Application. This paragraph does not grant any right to install, operate,
+host, copy, modify, or otherwise use the Software or a Modified Version on
+behalf of the organization.
+
 1.3 "Software" means the Original Code (as defined in Section 1.10) made
 available by the Copyright Holder, including without limitation its source
 code, object code, compiled code, build artifacts, user interface code,
@@ -55,10 +66,20 @@ imported, or linked by the Software, whether or not distributed alongside it.
 For clarity, a User Output as defined in Section 1.13 is not a Modified
 Version merely because it was created, rendered, exported, printed, captured,
 copied, converted, or otherwise obtained using the Software or a Modified
-Version. A User Output is treated as containing a Modified Version only to
-the extent that the User Output itself contains the Software, a Modified
-Version, protected Software code or expression, or a separately extractable
-portion of any of them.
+Version.
+
+Copyright Holder Output Material as defined in Section 1.17, when automatically
+or ordinarily incorporated into a User Output in the manner contemplated by
+Section 2.7, is governed by Section 2.7 and is not treated as the Software or
+a Modified Version solely because that copyrightable material appears in the
+User Output.
+
+Except for Copyright Holder Output Material governed by Section 2.7, a User
+Output is treated as containing the Software or a Modified Version only to the
+extent that the User Output itself contains protected Software code or other
+protected Software expression that is not intended to form part of ordinary
+User Output, or contains a separately extractable portion of the Software or
+a Modified Version.
 
 1.5 "Non-Commercial Purpose" means use by You solely in your personal
 capacity for private, personal educational, personal academic, personal
@@ -155,8 +176,10 @@ the output or content functionality of:
 
 (a) the Software, when lawfully used by the User under this License;
 (b) a Hosted Application that the User lawfully accesses and uses in
-    accordance with the access conditions, authorization, and intended
-    functionality established by the Copyright Holder; or
+    accordance with the access conditions, authorization, intended
+    functionality, and other applicable terms established by the Copyright
+    Holder or, within the scope authorized by the Copyright Holder, by the
+    operator of that Hosted Application; or
 (c) a Modified Version that the User has lawfully created and is lawfully
     using in compliance with this License.
 
@@ -296,9 +319,17 @@ including the Non-Commercial Output Purpose restriction.
 2.3 No rights are granted except those expressly stated in this License. All
 rights not expressly granted are reserved by the Copyright Holder.
 
-2.4 This License governs only the Original Code. Your rights to use, modify,
-and redistribute any Third-Party Component are governed exclusively by that
-component's own license, as set out in Section 13.
+2.4 With respect to the Software and any Modified Version, the copyright
+permissions, restrictions, and reservations in this License apply only to
+Original Code and other portions in which the Copyright Holder owns or
+controls the relevant rights. They do not override or replace the license
+terms applicable to any Third-Party Component.
+
+Sections 2.5 through 2.15 separately govern User Outputs to the extent stated
+in those Sections. Nothing in this Section 2.4 causes Third-Party Components
+or third-party materials contained in or used with a User Output to become
+subject to this License; such materials remain governed by their own
+applicable terms and rights as described in Section 13.
 
 2.5 Subject to Sections 2.6 through 2.15, the creator of a User Output may,
 solely for a Non-Commercial Output Purpose, use, copy, modify, reproduce,
@@ -363,9 +394,15 @@ or a Modified Version. This includes User Output created by executing a
 lawfully created and used Modified Version in a private environment described
 in Section 1.13.
 
-If a purported User Output actually contains the Software, a Modified Version,
-or separately extractable portions of either, those portions remain subject
-to Sections 3 and 4.
+The presence of Copyright Holder Output Material in a User Output in the
+manner contemplated by Sections 1.17 and 2.7 does not, by itself, cause the
+User Output or that material to be treated as the Software or a Modified
+Version for purposes of Sections 3 or 4.
+
+If a purported User Output actually contains protected Software code or other
+protected Software expression that is not intended to form part of ordinary
+User Output, or contains a separately extractable portion of the Software or
+a Modified Version, those portions remain subject to Sections 3 and 4.
 
 2.11 Commercial use of a User Output is not permitted under this License.
 Without a separate prior written commercial license agreement with the
@@ -412,7 +449,7 @@ Third-Party Component, third-party material, Pre-Existing User Content, or
 other material governed by rights independent of this License.
 
 A Lawful Recipient that exercises any permission granted by Section 2.7 or
-2.8 accepts the conditions applicable to that permission, including the
+Section 2.8 accepts the conditions applicable to that permission, including the
 Non-Commercial Output Purpose restriction, notice requirements, and
 applicable third-party rights.
 
@@ -553,9 +590,13 @@ writing expressly constitutes or forms part of such a separate license
 agreement. Requests should be sent to the License Contact address identified
 at the beginning of this License.
 
-4.5 This Section 4 applies solely to the Software (i.e., the Original Code)
-and does not restrict your use of any Third-Party Component for Commercial
-Purposes to the extent permitted by that component's own license.
+4.5 This Section 4 applies to the Software and to Modified Versions to the
+extent that they contain Original Code or other protected material in which
+the Copyright Holder owns or controls the relevant rights. This Section 4
+does not restrict the use of any Third-Party Component beyond the restrictions
+imposed by that component's own applicable license or other terms.
+
+Commercial use of User Outputs is governed separately by Section 2.11.
 
 5. Ownership and Reservation of Rights
 
@@ -629,13 +670,16 @@ LIMITATION IS PROHIBITED BY APPLICABLE MANDATORY LAW.
 SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
 CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA,
 GOODWILL, BUSINESS OPPORTUNITY, OR SERVICE INTERRUPTION, ARISING OUT OF OR
-RELATING TO THIS LICENSE OR THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGES.
+RELATING TO THIS LICENSE, THE SOFTWARE, ANY HOSTED APPLICATION, OR THE
+CREATION, STORAGE, RENDERING, EXPORT, TRANSMISSION, LOSS, CORRUPTION, OR USE
+OF ANY USER OUTPUT, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 9.2 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, AND EXCEPT AS PROVIDED
 IN SECTION 9.3, THE TOTAL AGGREGATE LIABILITY OF THE COPYRIGHT HOLDER ARISING
-OUT OF OR RELATING TO THIS LICENSE OR THE SOFTWARE SHALL NOT EXCEED TEN
-THOUSAND JAPANESE YEN (JPY 10,000).
+OUT OF OR RELATING TO THIS LICENSE, THE SOFTWARE, ANY HOSTED APPLICATION, OR
+THE CREATION, STORAGE, RENDERING, EXPORT, TRANSMISSION, LOSS, CORRUPTION, OR
+USE OF ANY USER OUTPUT SHALL NOT EXCEED TEN THOUSAND JAPANESE YEN
+(JPY 10,000).
 
 9.3 Sections 9.1 and 9.2 do not exclude or limit liability to the extent that
 such exclusion or limitation is invalid or prohibited under applicable
@@ -651,9 +695,9 @@ or limited.
 Section.
 
 10.2 If You materially breach this License, the Copyright Holder may provide
-You with Written Consent or other written notice describing the breach. You
-will have fourteen (14) calendar days after receipt of that notice to cure the
-breach, to the extent the breach is capable of cure.
+You with written notice describing the breach. You will have fourteen (14)
+calendar days after receipt of that notice to cure the breach, to the extent
+the breach is capable of cure.
 
 10.3 If the breach involves unauthorized Redistribution, network access, or
 Commercial Purpose use, You must cease that activity promptly upon receiving
@@ -700,7 +744,9 @@ laws of Japan, excluding its conflict-of-laws rules.
 
 11.2 To the extent permitted by applicable mandatory law, the Osaka District
 Court shall have exclusive agreed jurisdiction as the court of first instance
-over any dispute arising out of or relating to this License or the Software.
+over any dispute arising out of or relating to this License, the Software, any
+Hosted Application, or any User Output to the extent governed by this
+License.
 
 11.3 Nothing in Section 11.2 deprives a consumer or other party of any venue,
 jurisdiction, or procedural protection that cannot lawfully be waived under
@@ -744,18 +790,27 @@ or expressly identified as applying to that later release. Nothing in this
 Section prevents the Copyright Holder and a User from separately agreeing in
 writing to different terms.
 
-12.8 Use of a Hosted Application is governed, prospectively, by the version
-of this License that is reasonably displayed, linked, or otherwise clearly
-identified as applying to that Hosted Application at the time of the relevant
-access or use. A later version applies only to access, use, and User Outputs
-created after that later version is made applicable to the Hosted Application,
-unless the affected person or entity expressly agrees otherwise.
+12.8 The version of this License applicable to a Hosted Application will be
+reasonably displayed, linked, or otherwise clearly identified in connection
+with that Hosted Application.
+
+If the Copyright Holder changes the license terms applicable to future use of
+a Hosted Application, the Copyright Holder will specify the revised terms and
+their effective date and will provide notice in a manner reasonably
+appropriate to the Hosted Application before the effective date to the extent
+required by applicable law.
+
+Any such change applies only prospectively and only to the extent the change
+is valid and effective under applicable law. Where applicable law requires
+the affected person or entity to consent to the change, the revised terms
+apply to that person or entity only after valid consent is obtained. Where
+applicable law permits a change without individual consent, the change is
+effective only in accordance with the requirements of that law.
 
 A change to the license version applicable to a Hosted Application does not
 retroactively alter permissions already granted with respect to a User Output
-that was lawfully created before the change. The Copyright Holder will make
-the applicable license version reasonably accessible before or at the time of
-the relevant use.
+that was lawfully created before the effective date of the change, unless the
+affected rights holder expressly agrees otherwise.
 
 12.9 The Japanese-language version of this License is the controlling
 version. The English-language version is provided as a corresponding
@@ -764,10 +819,18 @@ Japanese-language version prevails.
 
 13. Third-Party Components
 
-13.1 Scope Limitation. This License applies exclusively to the Original Code
-authored by the Copyright Holder. It does not apply to, restrict, modify, or
-otherwise affect any rights or obligations relating to any Third-Party
+13.1 Scope Limitation. This Section 13 clarifies the treatment of
+Third-Party Components. The copyright permissions, restrictions, and
+reservations in this License that relate to the Software or Modified Versions
+apply only to Original Code and other portions in which the Copyright Holder
+owns or controls the relevant rights. They do not override, replace, expand,
+or restrict the license terms or other rights applicable to any Third-Party
 Component.
+
+The User Output provisions in Sections 2.5 through 2.15 remain applicable to
+User Outputs to the extent stated in those Sections. Third-Party Components
+and third-party materials contained in or used with a User Output remain
+subject to their own applicable terms and rights.
 
 13.2 Independent Licensing. Each Third-Party Component remains subject to
 the license terms, notices, restrictions, and other conditions imposed by its
@@ -818,8 +881,17 @@ licenses, or other permissions under this License must be sent to:
 
     yoshihiro@yamahara.email
 
-14.2 A request is not approved unless and until the Copyright Holder provides
-express Written Consent identifying the permission granted.
+14.2 A request for Redistribution permission or another permission that this
+License expressly permits the Copyright Holder to grant through Written
+Consent is not approved unless and until the Copyright Holder provides
+Written Consent identifying the permission granted in accordance with
+Section 1.9.
+
+A request for Commercial Purpose or organizational use of the Software or any
+Modified Version is not approved merely by Written Consent under Section 1.9.
+Such use is permitted only when a separate written commercial or
+organizational license agreement satisfying Section 4.4 has been entered into
+and has become effective.
 
 14.3 The Copyright Holder may approve or reject any request in its discretion
 and may impose conditions, fees, attribution requirements, scope limitations,
