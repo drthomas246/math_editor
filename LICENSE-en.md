@@ -121,8 +121,12 @@ that is used, imported, depended upon, bundled with, or otherwise incorporated
 by the Software.
 
 1.12 "Hosted Application" means a web application built from the Software
-and hosted, operated, or expressly authorized for public or private use by the
-Copyright Holder.
+and either:
+
+(a) hosted or operated by the Copyright Holder; or
+(b) hosted or operated by a third party whose provision of that web
+    application has been expressly authorized in advance by the Copyright
+    Holder through Written Consent as defined in Section 1.9.
 
 1.13 "User Output" means any document, file, data, image, PDF, worksheet,
 text, printout, captured content, or other content produced, rendered,
@@ -350,10 +354,11 @@ For clarity, the owner may continue to use the underlying Pre-Existing User
 Content separately in another file, application, or work, including for
 commercial purposes, if the owner otherwise has the legal right to do so.
 
-2.13 When a User Output is distributed or redistributed, whether publicly or
-privately, the person distributing it must, where reasonably practicable
-for the relevant file format or distribution method, provide a reasonably
-visible notice stating substantially:
+2.13 When a User Output is published, distributed, redistributed, publicly
+displayed, or transmitted, whether publicly or privately, the person carrying
+out that activity must, where reasonably practicable for the relevant file
+format, medium, or method of use, provide a reasonably visible notice stating
+substantially:
 
     "To the extent portions of this User Output are licensed under the
     Personal Non-Commercial Software License, Version 1.0, those portions
@@ -584,14 +589,19 @@ termination.
 
 10.9 Termination of the Software license does not revoke the permissions in
 Sections 2.5 through 2.14 with respect to a User Output that was lawfully
-created while the creator was in compliance with this License. Lawful
-Recipients may continue to exercise those permissions after termination,
-subject to all applicable Non-Commercial Output Purpose and downstream notice
-conditions.
+created before termination, except where that User Output was created as part
+of, through, or by means of a material breach of this License. An unrelated
+minor or curable breach does not, by itself, invalidate permissions relating
+to a User Output that was otherwise lawfully created.
 
-This Section does not validate a User Output created as part of, or through,
-a material breach of this License, and does not preserve any right to continue
-using the Software or a Modified Version after termination.
+Lawful Recipients may continue to exercise the permissions in Sections 2.5
+through 2.14 after termination, subject to all applicable Non-Commercial
+Output Purpose restrictions, notice requirements, third-party rights, and
+other conditions applicable to the User Output.
+
+This Section does not validate a User Output created as part of, through, or
+by means of a material breach of this License, and does not preserve any right
+to continue using the Software or a Modified Version after termination.
 
 11. Governing Law and Jurisdiction
 
