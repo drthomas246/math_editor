@@ -129,16 +129,25 @@ text, printout, captured content, or other content produced, rendered,
 exported, printed, captured, copied, converted, or otherwise obtained from
 the output or content functionality of:
 
-(a) a Hosted Application; or
-(b) a Modified Version that the user has lawfully created and is lawfully
+(a) the Software, when lawfully used by the User under this License;
+(b) a Hosted Application; or
+(c) a Modified Version that the User has lawfully created and is lawfully
     using in compliance with this License.
 
-For purposes of paragraph (b), the execution environment is not limited to a
-particular physical device. A personal computer, privately controlled home
-server, private virtual machine, or similar environment may be used, provided
-that the environment is used solely by the User for the User's permitted
-Non-Commercial Purposes and is not made available for access, execution, or
-use by any third party.
+For purposes of paragraphs (a) and (c), the execution environment is not
+limited to a particular physical device. A personal computer, privately
+controlled home server, private virtual machine, cloud virtual machine, or
+similar environment may be used, provided that the Software or Modified
+Version is used solely by the User for the User's permitted Non-Commercial
+Purposes and is not made available so that any third party can access or use
+the functionality of the Software or Modified Version.
+
+For clarity, routine infrastructure administration, hosting, backup,
+maintenance, security, or technical support performed by a cloud provider,
+internet service provider, data-center operator, or similar service provider
+does not by itself constitute prohibited third-party use, provided that such
+provider does not use the Software or Modified Version for its own purposes
+and does not make its functionality available to any other third party.
 
 User Output includes content obtained by ordinary output methods and by
 functionally equivalent methods, including export, download, printing,
@@ -339,10 +348,10 @@ For clarity, the owner may continue to use the underlying Pre-Existing User
 Content separately in another file, application, or work, including for
 commercial purposes, if the owner otherwise has the legal right to do so.
 
-2.13 When a User Output is publicly distributed or redistributed, the person
-distributing it must, where reasonably practicable for the relevant file
-format or distribution method, provide a reasonably visible notice stating
-substantially:
+2.13 When a User Output is distributed or redistributed, whether publicly or
+privately, the person distributing it must, where reasonably practicable
+for the relevant file format or distribution method, provide a reasonably
+visible notice stating substantially:
 
     "Non-commercial use only under the Personal Non-Commercial Software
     License, Version 1.0."
@@ -614,7 +623,20 @@ authorization, or other separate written agreement may modify the terms of
 this License only for the persons, uses, copies, and activities expressly
 covered by that separate agreement.
 
-12.6 The Japanese-language version of this License is the controlling
+12.6 Each copy or release of the Software is governed by the version of this
+License that accompanies, is included with, or is expressly identified as
+applying to that copy or release at the time the Copyright Holder makes that
+copy or release available.
+
+12.7 A later amendment or replacement of this License does not retroactively
+change the license terms applicable to an earlier copy or release of the
+Software. If You obtain, install, access, or use a later release of the
+Software, that later release is governed by the license version accompanying
+or expressly identified as applying to that later release. Nothing in this
+Section prevents the Copyright Holder and a User from separately agreeing in
+writing to different terms.
+
+12.8 The Japanese-language version of this License is the controlling
 version. The English-language version is provided as a corresponding
 translation. If the two versions differ in meaning or interpretation, the
 Japanese-language version prevails.
