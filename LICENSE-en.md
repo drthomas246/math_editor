@@ -6,8 +6,11 @@ Version 1.0
 License Contact: yoshihiro@yamahara.email
 
 PLEASE READ THIS LICENSE CAREFULLY. BY COPYING, INSTALLING, ACCESSING,
-USING, MODIFYING, OR OTHERWISE EXERCISING ANY RIGHTS IN THE SOFTWARE,
-YOU AGREE TO BE BOUND BY THE TERMS OF THIS LICENSE.
+USING, OR MODIFYING THE SOFTWARE; ACCESSING OR USING A HOSTED APPLICATION;
+CREATING, OBTAINING, ACCESSING, OR USING A USER OUTPUT; OR OTHERWISE
+EXERCISING ANY RIGHT OR PERMISSION GRANTED UNDER THIS LICENSE, THE PERSON OR
+ENTITY DOING SO AGREES TO BE BOUND BY THE TERMS AND CONDITIONS APPLICABLE TO
+THAT ACTIVITY UNDER THIS LICENSE.
 
 The Japanese-language version of this License is the controlling version.
 If there is any inconsistency between the Japanese and English versions,
@@ -24,12 +27,13 @@ acts for or on behalf of an organization, institution, employer, business,
 governmental body, school, educational institution, nonprofit entity, or
 other legal or organizational entity, that use is treated as use by or for
 that organization and is not licensed under Section 2.1 with respect to the
-Software or any Modified Version unless separately authorized in writing by
-the Copyright Holder.
+Software or any Modified Version unless permitted under a separate written
+commercial or organizational license agreement with the Copyright Holder as
+described in Section 4.4.
 
 For clarity, this organizational restriction does not prevent an organization
 or other entity from qualifying as a Lawful Recipient or exercising rights in
-a User Output under Sections 2.5 through 2.14, provided that all conditions
+a User Output under Sections 2.5 through 2.15, provided that all conditions
 applicable to that User Output, including the Non-Commercial Output Purpose
 restriction, are satisfied.
 
@@ -44,9 +48,17 @@ respective licenses as described in Section 13.
 
 1.4 "Modified Version" means any modified, adapted, translated, enhanced,
 derived, or other version of the Software, in whole or in part, and any work
-based upon the Software. A Modified Version does not include Third-Party
-Components used, referenced, imported, or linked by the Software, whether or
-not distributed alongside it.
+based upon the protected code or other protected expression of the Software.
+A Modified Version does not include Third-Party Components used, referenced,
+imported, or linked by the Software, whether or not distributed alongside it.
+
+For clarity, a User Output as defined in Section 1.13 is not a Modified
+Version merely because it was created, rendered, exported, printed, captured,
+copied, converted, or otherwise obtained using the Software or a Modified
+Version. A User Output is treated as containing a Modified Version only to
+the extent that the User Output itself contains the Software, a Modified
+Version, protected Software code or expression, or a separately extractable
+portion of any of them.
 
 1.5 "Non-Commercial Purpose" means use by You solely in your personal
 capacity for private, personal educational, personal academic, personal
@@ -131,9 +143,10 @@ by the Software.
 and either:
 
 (a) hosted or operated by the Copyright Holder; or
-(b) hosted or operated by a third party whose provision of that web
-    application has been expressly authorized in advance by the Copyright
-    Holder through Written Consent as defined in Section 1.9.
+(b) hosted or operated by a third party under a separate written commercial,
+    organizational, hosting, or other license agreement with the Copyright
+    Holder that expressly authorizes that third party to provide the web
+    application to its permitted users.
 
 1.13 "User Output" means any document, file, data, image, PDF, worksheet,
 text, printout, captured content, or other content produced, rendered,
@@ -233,10 +246,17 @@ or was independently authorized to use before importing, opening, copying,
 pasting, rendering, converting, or otherwise processing that material with
 the Software, a Hosted Application, or a Modified Version.
 
-1.16 "Lawful Recipient" means a person or entity that receives a User Output
-from its creator or from another Lawful Recipient in accordance with Sections
-2.5 through 2.14 and that complies with the conditions applicable to that User
-Output.
+1.16 "Lawful Recipient" means a person or entity that receives, accesses,
+or is otherwise provided with a User Output from its creator or from a person
+or entity that was a Lawful Recipient at the time of that transfer or making
+available, in accordance with Sections 2.5 through 2.15, and that complies
+with the conditions applicable to that User Output while exercising rights
+under this License.
+
+A later breach by an upstream creator or recipient does not, by itself,
+retroactively deprive a downstream recipient of Lawful Recipient status if
+the downstream recipient lawfully obtained the User Output before that breach
+and continues to comply with the conditions applicable to the User Output.
 
 1.17 "Copyright Holder Output Material" means any copyrightable template,
 layout, style, graphical element, decorative element, or other material owned
@@ -262,15 +282,15 @@ solely for your own Non-Commercial Purposes.
 is granted to an organization, institution, business, governmental body,
 school, university, nonprofit entity, employer, or other legal or
 organizational entity, or to a person acting for or on behalf of such an
-entity. Such use of the Software or any Modified Version requires separate
-Written Consent or a separate commercial or organizational license agreement
-from the Copyright Holder.
+entity. Such use of the Software or any Modified Version requires a
+separate written commercial or organizational license agreement with the
+Copyright Holder as described in Section 4.4.
 
 This Section 2.2 does not restrict the rights expressly granted with respect
-to User Outputs under Sections 2.5 through 2.14. An organization or other
+to User Outputs under Sections 2.5 through 2.15. An organization or other
 entity may therefore receive, use, modify, publish, distribute, redistribute,
 publicly display, or transmit a User Output to the extent expressly permitted
-by Sections 2.5 through 2.14 and subject to all applicable conditions,
+by Sections 2.5 through 2.15 and subject to all applicable conditions,
 including the Non-Commercial Output Purpose restriction.
 
 2.3 No rights are granted except those expressly stated in this License. All
@@ -280,7 +300,7 @@ rights not expressly granted are reserved by the Copyright Holder.
 and redistribute any Third-Party Component are governed exclusively by that
 component's own license, as set out in Section 13.
 
-2.5 Subject to Sections 2.6 through 2.14, the creator of a User Output may,
+2.5 Subject to Sections 2.6 through 2.15, the creator of a User Output may,
 solely for a Non-Commercial Output Purpose, use, copy, modify, reproduce,
 publish, distribute, publicly display, transmit, and otherwise use that User
 Output without separate permission from or payment to the Copyright Holder.
@@ -310,17 +330,21 @@ This Section does not grant any right to extract, distribute, sell, license,
 or otherwise exploit Copyright Holder Output Material separately from the
 User Output or for any commercial purpose.
 
-2.8 By publishing or distributing a User Output under this License, the
-creator grants each Lawful Recipient a perpetual, worldwide, royalty-free,
-non-exclusive license, solely for a Non-Commercial Output Purpose, to view,
-use, copy, reproduce, modify, publish, redistribute, publicly display, and
-transmit those portions of the User Output in which the creator owns copyright
-or has authority to grant such permission.
+2.8 By publishing, distributing, redistributing, publicly displaying,
+transmitting, or otherwise making a User Output available to a third party
+under this License, the creator grants each Lawful Recipient a perpetual,
+worldwide, royalty-free, non-exclusive license, solely for a Non-Commercial
+Output Purpose, to view, use, copy, reproduce, modify, publish, distribute,
+redistribute, publicly display, and transmit those portions of the User
+Output in which the creator owns copyright or has authority to grant such
+permission.
 
-A Lawful Recipient that lawfully redistributes a User Output or a permitted
-non-commercial modification of it grants the same non-commercial permissions
-to subsequent Lawful Recipients with respect to any copyrightable
-contributions owned by that redistributing recipient.
+A Lawful Recipient that lawfully publishes, distributes, redistributes,
+publicly displays, transmits, or otherwise makes a User Output or a permitted
+non-commercial modification of it available to a subsequent third party
+grants the same non-commercial permissions to subsequent Lawful Recipients
+with respect to any copyrightable contributions owned by that Lawful
+Recipient.
 
 Nothing in this Section purports to grant rights in third-party material that
 the creator or redistributing recipient does not own or lack authority to
@@ -334,7 +358,7 @@ remain subject to their own licenses and other applicable rights.
 
 2.10 Non-commercial publication, distribution, redistribution, public
 display, transmission, or other use of a User Output in accordance with
-Sections 2.5 through 2.14 does not constitute Redistribution of the Software
+Sections 2.5 through 2.15 does not constitute Redistribution of the Software
 or a Modified Version. This includes User Output created by executing a
 lawfully created and used Modified Version in a private environment described
 in Section 1.13.
@@ -363,7 +387,7 @@ content and does not make the original Pre-Existing User Content itself
 subject to this License. However, a new file, rendering, image, PDF,
 printout, capture, or other representation produced as User Output through
 the Software, a Hosted Application, or a Modified Version is subject to the
-User Output conditions in Sections 2.5 through 2.14.
+User Output conditions in Sections 2.5 through 2.15.
 
 For clarity, the owner may continue to use the underlying Pre-Existing User
 Content separately in another file, application, or work, including for
@@ -387,17 +411,50 @@ practicable. This notice does not relicense or alter the legal status of any
 Third-Party Component, third-party material, Pre-Existing User Content, or
 other material governed by rights independent of this License.
 
-A Lawful Recipient that exercises the permissions granted by Sections 2.7 or
-2.8 to copy, modify, redistribute, publicly display, or transmit a User Output
-accepts the conditions applicable to those permissions, including the
-Non-Commercial Output Purpose restriction.
+A Lawful Recipient that exercises any permission granted by Section 2.7 or
+2.8 accepts the conditions applicable to that permission, including the
+Non-Commercial Output Purpose restriction, notice requirements, and
+applicable third-party rights.
 
-2.14 Nothing in Sections 2.5 through 2.13 restricts rights that a person has
-independently of this License. In particular, this License does not claim
-exclusive rights over facts, ideas, mathematical facts or formulas, methods,
-procedures, systems, concepts, or other material that is not protected by
-applicable copyright law, nor does it restrict independently owned material
-merely because similar material appears in a User Output.
+2.14 Nothing in Sections 2.5 through 2.13 transfers to the Copyright Holder
+or extinguishes rights that a person or entity holds independently of this
+License in Pre-Existing User Content or other independently owned material.
+Such independent rights remain fully available when the underlying material
+is used independently of the User Output and without relying on permissions
+granted under Sections 2.5 through 2.13.
+
+For clarity, this Section 2.14 does not authorize commercial use of a User
+Output that is prohibited by Section 2.11 merely because the creator or a
+recipient owns copyright or other independent rights in some or all of the
+underlying content contained in that User Output. The particular file,
+rendering, image, PDF, printout, capture, or other representation that
+constitutes the User Output remains subject to Sections 2.5 through 2.13 to
+the extent those Sections apply.
+
+This License does not claim exclusive rights over facts, ideas, mathematical
+facts or formulas, methods, procedures, systems, concepts, or other material
+that is not protected by applicable copyright law, and does not restrict the
+independent use of such material.
+
+2.15 Permissions granted to a Lawful Recipient under Sections 2.7 and 2.8
+are conditional on that recipient's continuing compliance with the conditions
+applicable to the relevant User Output.
+
+If a Lawful Recipient materially breaches those conditions, that recipient
+may not rely on or exercise the affected permissions while the material
+breach continues. If the breach is capable of cure and is cured within
+fourteen (14) calendar days after the recipient receives written notice from
+the Copyright Holder or another person entitled to enforce the affected
+rights, the affected permissions are reinstated. If the material breach is
+not cured within that period, the affected permissions may be terminated to
+the extent permitted by applicable law.
+
+A later breach by a creator or upstream recipient does not revoke or impair
+permissions already lawfully acquired by a downstream Lawful Recipient before
+that later breach, provided that the downstream Lawful Recipient continues to
+comply with the conditions applicable to the User Output. This paragraph does
+not protect a downstream transfer that was itself unauthorized or made as
+part of a material breach.
 
 3. Redistribution Restrictions
 
@@ -490,8 +547,11 @@ a Non-Commercial Purpose under this License.
 
 4.4 Commercial or organizational use is permitted only under a separate
 written commercial or organizational license agreement with the Copyright
-Holder. Requests should be sent to the License Contact address identified at
-the beginning of this License.
+Holder. Written Consent as defined in Section 1.9, including an email, does
+not by itself authorize Commercial Purpose or organizational use unless that
+writing expressly constitutes or forms part of such a separate license
+agreement. Requests should be sent to the License Contact address identified
+at the beginning of this License.
 
 4.5 This Section 4 applies solely to the Software (i.e., the Original Code)
 and does not restrict your use of any Third-Party Component for Commercial
@@ -524,10 +584,19 @@ copyright holders.
 6.1 No trademark, service mark, trade name, trade dress, logo, domain name,
 or branding rights are granted under this License.
 
-6.2 No patent license is granted under this License, whether expressly, by
-implication, estoppel, or otherwise, except only to the limited extent, if
-any, necessary for You to exercise the rights expressly granted under
-Section 2 and solely for Non-Commercial Purposes.
+6.2 To the extent that the Copyright Holder owns or controls a patent claim
+that would necessarily be infringed solely by exercising the rights expressly
+granted under Section 2.1 in compliance with this License, the Copyright
+Holder grants the User a limited, worldwide, non-exclusive, non-transferable,
+non-sublicensable, royalty-free patent license under that claim solely to
+exercise those Section 2.1 rights for the User's permitted Non-Commercial
+Purposes.
+
+No patent license is granted for any Commercial Purpose, organizational use,
+Redistribution, hosted service, use outside Section 2.1, or patent claim that
+is not necessarily infringed by the permitted exercise of Section 2.1.
+Except for the limited license expressly stated in this Section 6.2, no patent
+rights are granted by implication, estoppel, or otherwise.
 
 7. Compliance with Laws
 
@@ -537,12 +606,18 @@ license obligations.
 
 8. Disclaimer of Warranty
 
-8.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS
-PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS, AND WITHOUT WARRANTY OF
-ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING WITHOUT
-LIMITATION ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, QUIET ENJOYMENT, OR
-THAT THE SOFTWARE WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.
+8.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE AND,
+TO THE EXTENT OF ANY WARRANTY OR RESPONSIBILITY ATTRIBUTABLE TO THE COPYRIGHT
+HOLDER, ANY HOSTED APPLICATION ARE PROVIDED "AS IS" AND "AS AVAILABLE", WITH
+ALL FAULTS, AND WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED,
+STATUTORY, OR OTHERWISE, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+NON-INFRINGEMENT, ACCURACY, QUIET ENJOYMENT, OR THAT THE SOFTWARE OR HOSTED
+APPLICATION WILL BE UNINTERRUPTED, ERROR-FREE, AVAILABLE, OR SECURE.
+
+NO WARRANTY IS GIVEN THAT USER OUTPUT WILL BE GENERATED, RENDERED, SAVED,
+PRESERVED, EXPORTED, TRANSMITTED, RECOVERABLE, ACCURATE, COMPLETE, OR
+COMPATIBLE WITH ANY PARTICULAR SYSTEM OR FORMAT.
 
 8.2 NOTHING IN THIS SECTION EXCLUDES, DISCLAIMS, OR LIMITS ANY WARRANTY,
 REMEDY, OR LIABILITY TO THE EXTENT THAT SUCH EXCLUSION, DISCLAIMER, OR
@@ -599,18 +674,18 @@ except to the extent retention is required by applicable law.
 10.7 Termination does not affect any rights or remedies that accrued before
 termination.
 
-10.8 Sections 1, 2.5 through 2.14, 3, 4, 5, 6, 7, 8, 9, 10.6, 10.7,
+10.8 Sections 1, 2.5 through 2.15, 3, 4, 5, 6, 7, 8, 9, 10.6, 10.7,
 10.8, 10.9, 11, 12, 13, and 14 survive termination to the extent applicable.
 
 10.9 Termination of the Software license does not revoke the permissions in
-Sections 2.5 through 2.14 with respect to a User Output that was lawfully
+Sections 2.5 through 2.15 with respect to a User Output that was lawfully
 created before termination, except where that User Output was created as part
 of, through, or by means of a material breach of this License. An unrelated
 minor or curable breach does not, by itself, invalidate permissions relating
 to a User Output that was otherwise lawfully created.
 
 Lawful Recipients may continue to exercise the permissions in Sections 2.5
-through 2.14 after termination, subject to all applicable Non-Commercial
+through 2.15 after termination, subject to all applicable Non-Commercial
 Output Purpose restrictions, notice requirements, third-party rights, and
 other conditions applicable to the User Output.
 
@@ -640,10 +715,12 @@ remaining provisions shall remain in full force and effect.
 12.2 No failure or delay by the Copyright Holder in exercising any right
 under this License shall operate as a waiver of that right.
 
-12.3 This License constitutes the entire agreement between You and the
-Copyright Holder concerning the Software and supersedes all prior or
-contemporaneous understandings relating to the Software, except for any
-separate written agreement entered into by the Copyright Holder.
+12.3 This License constitutes the entire agreement between the relevant
+person or entity and the Copyright Holder concerning the Software, any Hosted
+Application to the extent governed by this License, and User Outputs to the
+extent governed by this License, and supersedes all prior or contemporaneous
+understandings concerning those subjects, except for any separate written
+agreement entered into by the Copyright Holder.
 
 12.4 Any permission, consent, authorization, or notice required from the
 Copyright Holder under this License must satisfy the definition of Written
@@ -667,7 +744,20 @@ or expressly identified as applying to that later release. Nothing in this
 Section prevents the Copyright Holder and a User from separately agreeing in
 writing to different terms.
 
-12.8 The Japanese-language version of this License is the controlling
+12.8 Use of a Hosted Application is governed, prospectively, by the version
+of this License that is reasonably displayed, linked, or otherwise clearly
+identified as applying to that Hosted Application at the time of the relevant
+access or use. A later version applies only to access, use, and User Outputs
+created after that later version is made applicable to the Hosted Application,
+unless the affected person or entity expressly agrees otherwise.
+
+A change to the license version applicable to a Hosted Application does not
+retroactively alter permissions already granted with respect to a User Output
+that was lawfully created before the change. The Copyright Holder will make
+the applicable license version reasonably accessible before or at the time of
+the relevant use.
+
+12.9 The Japanese-language version of this License is the controlling
 version. The English-language version is provided as a corresponding
 translation. If the two versions differ in meaning or interpretation, the
 Japanese-language version prevails.
@@ -679,20 +769,28 @@ authored by the Copyright Holder. It does not apply to, restrict, modify, or
 otherwise affect any rights or obligations relating to any Third-Party
 Component.
 
-13.2 Independent Licensing. Each Third-Party Component is licensed to You
-directly by its respective copyright holder(s) under that component's own
-license terms, including, where applicable, open-source licenses such as MIT,
-Apache License 2.0, ISC, BSD, or Mozilla Public License 2.0. Your rights to
-install, use, run, modify, and/or redistribute any Third-Party Component are
-governed solely by that component's own license, and nothing in this License
-grants, limits, waives, or supersedes those rights.
+13.2 Independent Licensing. Each Third-Party Component remains subject to
+the license terms, notices, restrictions, and other conditions imposed by its
+respective rights holder(s). Depending on those terms, rights may be granted
+directly to the User, passed through under redistribution rights held by the
+Copyright Holder, provided under runtime or end-user terms, or made available
+under another licensing structure. Open-source examples may include MIT,
+Apache License 2.0, ISC, BSD, or Mozilla Public License 2.0.
 
-13.3 No Sublicense of Third-Party Components. The Copyright Holder does not
-grant, and this License does not purport to grant, any license or sublicense
-to any Third-Party Component. Where the Software is distributed together with
-Third-Party Components, such inclusion is for convenience only and does not
-bring those components within the scope of the "Software" as defined in this
-License.
+Your rights to install, use, run, modify, redistribute, or otherwise exercise
+rights in a Third-Party Component are governed solely by the applicable terms
+for that component. Nothing in this License expands, restricts, waives, or
+supersedes those third-party terms.
+
+13.3 Third-Party Rights Not Created by This License. The Copyright Holder
+grants no license or sublicense to a Third-Party Component except to the
+extent, if any, that the applicable third-party terms expressly authorize the
+Copyright Holder to pass through, distribute, sublicense, or otherwise make
+such rights available to Users or recipients. Where the Software is
+distributed together with Third-Party Components, the rights and obligations
+applicable to those components are determined by their applicable third-party
+terms and not by this License. Their inclusion does not bring them within the
+scope of the "Software" as defined in this License.
 
 13.4 Notices. The Copyright Holder will make reasonable efforts to preserve
 and include required copyright notices, license texts, and attribution for
