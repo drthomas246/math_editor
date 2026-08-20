@@ -192,8 +192,8 @@ exported, printed, captured, copied, converted, or otherwise obtained from
 the output or content functionality of:
 
 (a) the Software, when lawfully used by the User under this License;
-(b) a Hosted Application that the User lawfully accesses and uses in
-    accordance with the access conditions, authorization, intended
+(b) a Hosted Application that a person or entity lawfully accesses and uses
+    in accordance with the access conditions, authorization, intended
     functionality, and other applicable terms established by the Copyright
     Holder or, within the scope authorized by the Copyright Holder, by the
     operator of that Hosted Application; or
@@ -513,16 +513,24 @@ applicable to the relevant User Output.
 
 If a Lawful Recipient materially breaches those conditions, that recipient
 may not rely on or exercise the affected permissions while the material
-breach continues. If the breach is capable of cure and is cured within
-fourteen (14) calendar days after the recipient receives written notice from
-the person or entity that granted the affected permission, or from a person
-or entity legally authorized to enforce that permission, the affected
-permission is reinstated.
+breach continues.
 
-If the material breach is not cured within that period, the person or entity
-that granted the affected permission, or a person or entity legally authorized
-to enforce that permission, may terminate the affected permission by written
-notice to the breaching recipient, to the extent permitted by applicable law.
+If the material breach is by its nature incapable of cure, the person or
+entity that granted the affected permission, or a person or entity legally
+authorized to enforce that permission, may terminate the affected permission
+with immediate effect by written notice to the breaching recipient, to the
+extent permitted by applicable law.
+
+If the material breach is capable of cure and is cured within fourteen (14)
+calendar days after the recipient receives written notice from the person or
+entity that granted the affected permission, or from a person or entity
+legally authorized to enforce that permission, the affected permission is
+reinstated. If a curable material breach is not cured within that period, the
+person or entity that granted the affected permission, or a person or entity
+legally authorized to enforce that permission, may terminate the affected
+permission by written notice to the breaching recipient, to the extent
+permitted by applicable law.
+
 For a permission under Section 2.7, the grantor is the Copyright Holder. For a
 permission under Section 2.8, the grantor is the creator or other rights holder
 that granted the relevant permission for the affected material.
@@ -591,6 +599,14 @@ that is developed without copying protected expression from the Software or a
 Modified Version and without incorporating Copyright Holder-owned Software
 material. Nothing in this Section grants any trademark, patent, confidential
 information, or other right not expressly granted elsewhere in this License.
+
+3.9 Notwithstanding Sections 1.3 and 3.1 through 3.5, the unmodified text of
+this License may be copied, stored, displayed, transmitted, referenced, and
+distributed solely for the purpose of identifying, communicating, explaining,
+or complying with the license terms applicable to the Software, a Modified
+Version, a Hosted Application, or a User Output. This permission does not
+authorize Redistribution of any other part of the Software or any Modified
+Version.
 
 4. Commercial and Organizational Use Prohibited
 
@@ -748,8 +764,9 @@ notice and must take reasonable steps within the fourteen (14)-day cure period
 to remove unauthorized copies or access and otherwise cure the breach.
 
 10.4 If You fail to cure a material breach within the applicable fourteen
-(14)-day cure period, this License and all rights granted to You under it
-terminate automatically at the end of that period.
+(14)-day cure period, this License and all rights granted to You under it,
+except for rights and permissions that expressly survive under Sections 10.8
+and 10.9, terminate automatically at the end of that period.
 
 10.5 If a material breach is incapable of cure, the Copyright Holder may
 terminate this License by written notice with immediate effect.
@@ -776,9 +793,17 @@ through 2.15 after termination, subject to all applicable Non-Commercial
 Output Purpose restrictions, notice requirements, third-party rights, and
 other conditions applicable to the User Output.
 
+The discontinuation of a Hosted Application, termination or expiration of a
+user's access to a Hosted Application, or termination or expiration of a
+hosting, commercial, organizational, or other agreement authorizing operation
+of a Hosted Application does not, by itself, revoke permissions already
+lawfully granted under Sections 2.5 through 2.15 with respect to a User Output
+lawfully created before that discontinuation, termination, or expiration.
+
 This Section does not validate a User Output created as part of, through, or
 by means of a material breach of this License, and does not preserve any right
-to continue using the Software or a Modified Version after termination.
+to continue using the Software, a Modified Version, or a Hosted Application
+after the applicable right of access or use has ended.
 
 11. Governing Law and Jurisdiction
 
@@ -854,8 +879,11 @@ effective only in accordance with the requirements of that law.
 
 A change to the license version applicable to a Hosted Application does not
 retroactively alter permissions already granted with respect to a User Output
-that was lawfully created before the effective date of the change, unless the
-affected rights holder expressly agrees otherwise.
+that was lawfully created before the effective date of the change. Such an
+already-granted permission may be altered by the change only to the extent
+that each person or entity whose existing permission would be modified has
+separately and expressly agreed to that modification, or to the extent
+otherwise permitted by applicable mandatory law.
 
 12.9 The Japanese-language version of this License is the controlling
 version. The English-language version is provided as a corresponding
