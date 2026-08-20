@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
+import { createProblem, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { setWorksheetTitle } from "../../domain/worksheet/worksheet.commands";
 import { createSaveRequest, useEditorStore } from "./editor-store";
 
 describe("editor store", () => {
   beforeEach(() => useEditorStore.getState().clear());
+  afterEach(() => vi.useRealTimers());
 
   it("CommandをUndo/Redoしrevisionを更新する", () => {
     const source = createWorksheet();
@@ -69,5 +70,88 @@ describe("editor store", () => {
     expect(useEditorStore.getState().saveStatus).toBe("saving");
     useEditorStore.getState().markSaved(request!);
     expect(useEditorStore.getState()).toMatchObject({ saveStatus: "saved", savedRevision: 1 });
+  });
+
+  it("部分更新では対象Problemだけをコピーして他のProblemを共有する", () => {
+    const worksheet = createWorksheet();
+    worksheet.problems = Array.from({ length: 100 }, createProblem);
+    const targetId = worksheet.problems[50]!.id;
+    useEditorStore.getState().initialize(worksheet);
+
+    useEditorStore.getState().mutate("本文を編集", (draft) => {
+      const problem = draft.problems.find((item) => item.id === targetId);
+      const content = problem?.contents[0];
+      if (content?.type !== "richText") return;
+      content.document.content = [{ type: "paragraph", attrs: { textAlign: "left" }, content: [{ type: "text", text: "更新" }] }];
+    }, { historyGroup: `richText:${targetId}` });
+
+    const updated = useEditorStore.getState().worksheet!;
+    expect(updated).not.toBe(worksheet);
+    expect(updated.problems[0]).toBe(worksheet.problems[0]);
+    expect(updated.problems[50]).not.toBe(worksheet.problems[50]);
+    expect(updated.problems[99]).toBe(worksheet.problems[99]);
+    expect(useEditorStore.getState().undoStack[0]?.patches.some((patch) => patch.path[0] === "problems" && patch.path[1] === 50)).toBe(true);
+  });
+
+  it("同じRichTextへの連続入力を1件のUndo履歴へまとめる", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-21T00:00:00.000Z"));
+    const worksheet = createWorksheet();
+    const problemId = worksheet.problems[0]!.id;
+    const contentId = worksheet.problems[0]!.contents[0]!.id;
+    useEditorStore.getState().initialize(worksheet);
+    const typeText = (text: string) => useEditorStore.getState().mutate("本文を編集", (draft) => {
+      const problem = draft.problems.find((item) => item.id === problemId);
+      const content = problem?.contents.find((item) => item.id === contentId);
+      if (content?.type !== "richText") return;
+      content.document.content = [{ type: "paragraph", attrs: { textAlign: "left" }, content: [{ type: "text", text }] }];
+    }, { historyGroup: `richText:${problemId}:${contentId}` });
+
+    typeText("a");
+    vi.advanceTimersByTime(400);
+    typeText("ab");
+    vi.advanceTimersByTime(400);
+    typeText("abc");
+
+    expect(useEditorStore.getState()).toMatchObject({ revision: 3, undoStack: [{ label: "本文を編集" }] });
+    expect(useEditorStore.getState().undoStack).toHaveLength(1);
+    useEditorStore.getState().undo();
+    const undone = useEditorStore.getState().worksheet!.problems[0]!.contents[0];
+    const undoneBlock = undone?.type === "richText" ? undone.document.content[0] : null;
+    expect(undoneBlock?.type === "paragraph" ? undoneBlock.content : null).toEqual([]);
+    useEditorStore.getState().redo();
+    const redone = useEditorStore.getState().worksheet!.problems[0]!.contents[0];
+    const redoneBlock = redone?.type === "richText" ? redone.document.content[0] : null;
+    expect(redoneBlock?.type === "paragraph" ? redoneBlock.content[0] : null).toMatchObject({ text: "abc" });
+  });
+
+  it("入力間隔または編集対象が変わると別のUndo履歴にする", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-21T00:00:00.000Z"));
+    const worksheet = createWorksheet();
+    useEditorStore.getState().initialize(worksheet);
+    const mutateTitle = (value: string, historyGroup: string) => useEditorStore.getState().mutate("題名を変更", (draft) => {
+      draft.title = value;
+      draft.header.title = value;
+    }, { historyGroup });
+
+    mutateTitle("A", "title:a");
+    mutateTitle("B", "title:b");
+    vi.advanceTimersByTime(1_001);
+    mutateTitle("C", "title:b");
+
+    expect(useEditorStore.getState().undoStack).toHaveLength(3);
+  });
+
+  it("実データが変わらない部分更新では履歴とrevisionを増やさない", () => {
+    const worksheet = createWorksheet();
+    const sourceContent = worksheet.problems[0]?.contents[0];
+    const sameDocument = sourceContent?.type === "richText" ? structuredClone(sourceContent.document) : null;
+    useEditorStore.getState().initialize(worksheet);
+    useEditorStore.getState().mutate("同じ文書を設定", (draft) => {
+      const content = draft.problems[0]?.contents[0];
+      if (content?.type === "richText" && sameDocument) content.document = sameDocument;
+    }, { historyGroup: "noop" });
+    expect(useEditorStore.getState()).toMatchObject({ worksheet, revision: 0, undoStack: [] });
   });
 });

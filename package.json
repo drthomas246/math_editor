@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "benchmark:editor": "tsx scripts/benchmark-editor-input.ts",
     "schema:generate": "tsx scripts/generate-math-worksheet-schema.ts",
     "schema:check": "tsx scripts/generate-math-worksheet-schema.ts --check",
     "schema:test": "tsx scripts/verify-schema-behavior.ts",

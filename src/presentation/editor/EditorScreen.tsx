@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
-import { addContent, addProblem, applyWorksheetSettings, setWorksheetTitle, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
+import { addContent, addProblem, applyWorksheetSettings, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
 import { getProblemNumbers } from "../../domain/worksheet/worksheet.numbering";
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
@@ -48,6 +48,7 @@ export function EditorScreen() {
   const redoStack = useEditorStore((state) => state.redoStack);
   const initialize = useEditorStore((state) => state.initialize);
   const commit = useEditorStore((state) => state.commit);
+  const mutate = useEditorStore((state) => state.mutate);
   const selectProblem = useEditorStore((state) => state.selectProblem);
   const selectContent = useEditorStore((state) => state.selectContent);
   const undo = useEditorStore((state) => state.undo);
@@ -199,6 +200,11 @@ export function EditorScreen() {
     setPreferences(next); saveUiPreferences(next);
   };
   const numericZoom = typeof preferences.zoom === "number" ? preferences.zoom : fittedZoom;
+  const updateTitle = (value: string) => mutate("題名を変更", (draft) => {
+    const title = (value.trim() || "無題のプリント").slice(0, 100);
+    draft.title = title;
+    draft.header.title = title;
+  }, { historyGroup: `text:${worksheet?.id ?? "unknown"}:title` });
 
   const addImage = async (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
     if (!worksheet) return;
@@ -248,7 +254,7 @@ export function EditorScreen() {
   return <div className="editor-app">
     <header className="editor-header">
       <button className="secondary-button" onClick={backToList}><ArrowLeft size={17} />一覧</button>
-      <input className="title-input" aria-label="プリント題名" value={worksheet.title} maxLength={100} onChange={(event) => commit("題名を変更", setWorksheetTitle(worksheet, event.target.value))} onBlur={(event) => { if (!event.target.value.trim()) commit("題名を補正", setWorksheetTitle(worksheet, "無題のプリント")); }} />
+      <input className="title-input" aria-label="プリント題名" value={worksheet.title} maxLength={100} onChange={(event) => updateTitle(event.target.value)} onBlur={(event) => { if (!event.target.value.trim()) updateTitle("無題のプリント"); }} />
       <SaveIndicator status={saveStatus} onRetry={() => void flushSave()} />
       <span className="header-spacer" />
       <button className="icon-text-button" title="元に戻す (Ctrl+Z)" disabled={undoStack.length === 0} onClick={undo}><Undo2 size={17} /><span>元に戻す</span></button>
@@ -262,7 +268,7 @@ export function EditorScreen() {
       <section className="editing-pane" style={{ width: `${preferences.paneRatio * 100}%` }}>
         <div className="pane-heading"><div><p className="eyebrow">WORKSHEET</p><h1>編集</h1></div><span>{worksheet.problems.filter((problem) => problem.kind === "problem").length}問・{worksheet.problems.filter((problem) => problem.kind === "example").length}例題</span></div>
         <div className="problem-list">
-          {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
+          {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onMutate={mutate} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
         </div>
         <button className="add-problem-button" disabled={worksheet.problems.length >= 200} onClick={() => { const result = addProblem(worksheet, selectedProblemId); if (result.ok) { commit("問題を追加", result.worksheet); const selectedIndex = result.worksheet.problems.findIndex((problem) => problem.id === selectedProblemId); selectProblem(result.worksheet.problems[selectedIndex + 1]?.id ?? result.worksheet.problems.at(-1)?.id ?? null); } }}><Plus size={17} />問題・例題を追加</button>
       </section>

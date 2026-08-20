@@ -1,4 +1,4 @@
-import { applyPatches, enablePatches, produceWithPatches, type Patch } from "immer";
+import { applyPatches, enablePatches, produceWithPatches, type Draft, type Patch } from "immer";
 import { create } from "zustand";
 
 import type { Worksheet } from "../../domain/worksheet/worksheet";
@@ -10,6 +10,14 @@ export type HistoryEntry = {
   patches: Patch[];
   inversePatches: Patch[];
   createdAt: number;
+  historyGroup?: string;
+};
+
+export type WorksheetMutation = (worksheet: Draft<Worksheet>) => void;
+
+export type MutationOptions = {
+  historyGroup?: string;
+  coalesceWindowMs?: number;
 };
 
 export type SaveRequest = {
@@ -30,6 +38,7 @@ type EditorState = {
   redoStack: HistoryEntry[];
   initialize: (worksheet: Worksheet) => void;
   commit: (label: string, worksheet: Worksheet) => void;
+  mutate: (label: string, change: WorksheetMutation, options?: MutationOptions) => void;
   selectProblem: (id: string | null) => void;
   selectContent: (id: string | null) => void;
   undo: () => void;
@@ -41,6 +50,69 @@ type EditorState = {
 };
 
 const MAX_HISTORY = 100;
+export const DEFAULT_HISTORY_COALESCE_MS = 1_000;
+
+function isUpdatedAtPatch(patch: Patch): boolean {
+  return patch.path.length === 1 && patch.path[0] === "updatedAt";
+}
+
+function readPatchValue(value: unknown, path: readonly (string | number)[]): unknown {
+  let current = value;
+  for (const segment of path) {
+    if (current === null || typeof current !== "object") return undefined;
+    current = (current as Record<string | number, unknown>)[segment];
+  }
+  return current;
+}
+
+function areValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left)
+      && Array.isArray(right)
+      && left.length === right.length
+      && left.every((item, index) => areValuesEqual(item, right[index]));
+  }
+  if (left === null || right === null || typeof left !== "object" || typeof right !== "object") return false;
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord);
+  const rightKeys = Object.keys(rightRecord);
+  return leftKeys.length === rightKeys.length
+    && leftKeys.every((key) => Object.hasOwn(rightRecord, key) && areValuesEqual(leftRecord[key], rightRecord[key]));
+}
+
+function hasMeaningfulMutation(current: Worksheet, next: Worksheet, patches: readonly Patch[]): boolean {
+  return patches.some((patch) => (
+    !isUpdatedAtPatch(patch)
+    && !areValuesEqual(readPatchValue(current, patch.path), readPatchValue(next, patch.path))
+  ));
+}
+
+function appendHistoryEntry(
+  stack: readonly HistoryEntry[],
+  entry: HistoryEntry,
+  canCoalesce: boolean,
+): HistoryEntry[] {
+  const previous = stack.at(-1);
+  if (
+    canCoalesce
+    && entry.historyGroup
+    && previous?.historyGroup === entry.historyGroup
+  ) {
+    return [
+      ...stack.slice(0, -1),
+      {
+        label: entry.label,
+        historyGroup: entry.historyGroup,
+        patches: [...previous.patches, ...entry.patches],
+        inversePatches: [...entry.inversePatches, ...previous.inversePatches],
+        createdAt: entry.createdAt,
+      },
+    ];
+  }
+  return [...stack, entry].slice(-MAX_HISTORY);
+}
 
 function isCurrentSession(
   state: Pick<EditorState, "worksheet" | "sessionId">,
@@ -85,18 +157,53 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   commit: (label, nextWorksheet) => {
     const current = get().worksheet;
-    if (!current || JSON.stringify(current) === JSON.stringify(nextWorksheet)) return;
+    if (!current || current === nextWorksheet) return;
     const [, patches, inversePatches] = produceWithPatches(current, (draft) => {
       Object.assign(draft, nextWorksheet);
     });
+    if (patches.length === 0) return;
     const entry: HistoryEntry = { label, patches, inversePatches, createdAt: Date.now() };
     set((state) => ({
       worksheet: nextWorksheet,
       revision: state.revision + 1,
       saveStatus: "dirty",
-      undoStack: [...state.undoStack, entry].slice(-MAX_HISTORY),
+      undoStack: appendHistoryEntry(state.undoStack, entry, false),
       redoStack: [],
     }));
+  },
+
+  mutate: (label, change, options = {}) => {
+    const current = get().worksheet;
+    if (!current) return;
+    const createdAt = Date.now();
+    const [nextWorksheet, patches, inversePatches] = produceWithPatches(current, (draft) => {
+      change(draft);
+      draft.updatedAt = new Date(createdAt).toISOString();
+    });
+    if (!hasMeaningfulMutation(current, nextWorksheet, patches)) return;
+    const entry: HistoryEntry = {
+      label,
+      patches,
+      inversePatches,
+      createdAt,
+      ...(options.historyGroup ? { historyGroup: options.historyGroup } : {}),
+    };
+    const coalesceWindowMs = options.coalesceWindowMs ?? DEFAULT_HISTORY_COALESCE_MS;
+    set((state) => {
+      const previous = state.undoStack.at(-1);
+      const canCoalesce = state.redoStack.length === 0
+        && Boolean(entry.historyGroup)
+        && previous !== undefined
+        && previous?.historyGroup === entry.historyGroup
+        && entry.createdAt - previous.createdAt <= coalesceWindowMs;
+      return {
+        worksheet: nextWorksheet,
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+        undoStack: appendHistoryEntry(state.undoStack, entry, canCoalesce),
+        redoStack: [],
+      };
+    });
   },
 
   selectProblem: (id) => set({ selectedProblemId: id }),
