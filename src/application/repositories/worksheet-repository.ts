@@ -10,11 +10,15 @@ export type WorksheetListResult = {
   invalidCount: number;
 };
 
+export type SaveWorksheetOptions = {
+  pruneUnreferencedAssets?: boolean;
+};
+
 export interface WorksheetRepository {
   list(): Promise<WorksheetListResult>;
   get(id: string): Promise<WorksheetWithAssets | null>;
   create(data: WorksheetWithAssets): Promise<void>;
-  save(worksheet: Worksheet): Promise<void>;
+  save(worksheet: Worksheet, options?: SaveWorksheetOptions): Promise<void>;
   trash(id: string): Promise<Worksheet>;
   restore(id: string): Promise<Worksheet>;
   deletePermanently(id: string): Promise<void>;

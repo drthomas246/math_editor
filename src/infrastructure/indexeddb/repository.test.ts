@@ -37,6 +37,18 @@ describe("DexieWorksheetRepository", () => {
     expect(await db.assets.count()).toBe(0);
   });
 
+  it("編集終了時の保存で参照されていないAssetだけを削除する", async () => {
+    const worksheet = createWorksheet();
+    const referencedAsset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([new Uint8Array([1])], { type: "image/png" }), width: 1, height: 1, createdAt: new Date().toISOString() };
+    const unreferencedAsset: AssetRecord = { ...referencedAsset, id: crypto.randomUUID(), blob: new Blob([new Uint8Array([2])], { type: "image/png" }) };
+    worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: referencedAsset.id, alt: "", placement: "block", widthPercent: 50 });
+    await repository.create({ worksheet, assets: [referencedAsset, unreferencedAsset] });
+
+    await repository.save(worksheet, { pruneUnreferencedAssets: true });
+
+    expect((await db.assets.toArray()).map((asset) => asset.id)).toEqual([referencedAsset.id]);
+  });
+
   it("単一JSONを別IDとして復元し画像バイト列を維持する", async () => {
     const worksheet = createWorksheet();
     const asset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }), width: 2, height: 3, createdAt: new Date().toISOString() };

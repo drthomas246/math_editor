@@ -21,7 +21,7 @@ import {
   type RichTextDocumentTarget,
   type WorksheetCommandResult,
 } from "../../domain/worksheet/worksheet.commands";
-import { createContentBlock, createId, emptyDocument, emptySolutionDocument } from "../../domain/worksheet/worksheet.defaults";
+import { createContentBlock, emptyDocument, emptySolutionDocument } from "../../domain/worksheet/worksheet.defaults";
 import { getSubQuestionNumbers } from "../../domain/worksheet/worksheet.numbering";
 import { MathFormula } from "../components/MathFormula";
 import { RichTextEditor } from "../components/RichTextEditor";

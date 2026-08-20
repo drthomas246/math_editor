@@ -7,6 +7,7 @@ import {
   type Worksheet,
 } from "../../domain/worksheet/worksheet";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
+import { collectReferencedAssetIds } from "../../domain/worksheet/worksheet.assets";
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
   let binary = "";
@@ -21,28 +22,6 @@ const base64ToBytes = (value: string): Uint8Array => {
   const binary = atob(value);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 };
-
-export function collectReferencedAssetIds(worksheets: readonly Worksheet[]): Set<string> {
-  const referencedIds = new Set<string>();
-
-  const visit = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      value.forEach(visit);
-      return;
-    }
-    if (typeof value !== "object" || value === null) return;
-
-    Object.entries(value).forEach(([key, child]) => {
-      if (key === "assetId" && typeof child === "string") {
-        referencedIds.add(child);
-      }
-      visit(child);
-    });
-  };
-
-  worksheets.forEach(visit);
-  return referencedIds;
-}
 
 function selectReferencedAssets(
   worksheets: readonly Worksheet[],
@@ -107,14 +86,12 @@ export function hydrateBackup(file: MathWorksheetFile): Array<{ worksheet: Works
   return worksheets.map((sourceWorksheet) => {
     const worksheet = structuredClone(sourceWorksheet);
     const worksheetId = createId();
-    const idMap = new Map<string, string>();
     const remap = (value: unknown): void => {
       if (Array.isArray(value)) value.forEach(remap);
       else if (value && typeof value === "object") {
         const record = value as Record<string, unknown>;
         if (typeof record.id === "string") {
           const next = record.id === sourceWorksheet.id ? worksheetId : createId();
-          idMap.set(record.id, next);
           record.id = next;
         }
         Object.values(record).forEach(remap);

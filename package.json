@@ -17,14 +17,10 @@
     "verify": "npm run typecheck && npm run schema:check && npm run schema:test && npm run manual:check && npm run test"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
     "@react-pdf/renderer": "^4.6.0",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
     "dexie": "^4.4.4",
-    "dompurify": "^3.4.13",
     "html-to-image": "^1.11.13",
     "immer": "^11.1.16",
     "lucide-react": "^1.31.0",

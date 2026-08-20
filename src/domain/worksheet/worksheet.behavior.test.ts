@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { STRUCTURE_LIMITS } from "./structure-limits";
 import { WorksheetSchema } from "./worksheet.schema";
-import { addContent, addProblem, cloneWorksheetWithNewIds, deleteProblem, duplicateProblem, setWorksheetTitle, updateImageReference, updateRichTextDocument } from "./worksheet.commands";
+import { addContent, addProblem, cloneWorksheetWithNewIds, deleteContent, deleteProblem, deleteSubQuestion, duplicateProblem, moveContent, setWorksheetTitle, updateContent, updateImageReference, updateRichTextDocument } from "./worksheet.commands";
 import { createAnswerAreaBlock, createGoalBlock, createId, createProblem, createSubQuestionGroup, createWorksheet } from "./worksheet.defaults";
 import { formatProblemHeading, formatProblemNumber, getProblemNumbers, getSubQuestionNumbers } from "./worksheet.numbering";
 import { normalizeSearchKey } from "./worksheet.search";
@@ -164,6 +164,44 @@ describe("worksheet commands", () => {
     worksheet.problems[0]!.contents = Array.from({ length: STRUCTURE_LIMITS.contentBlocksPerProblem }, createAnswerAreaBlock);
     const result = addContent(worksheet, worksheet.problems[0]!.id, createAnswerAreaBlock());
     expect(result).toMatchObject({ ok: false, code: "STRUCTURE_LIMIT_EXCEEDED" });
+  });
+
+  it.each([
+    ["更新", (worksheet: ReturnType<typeof createWorksheet>, problemId: string) => updateContent(worksheet, problemId, "missing-content", () => undefined)],
+    ["削除", (worksheet: ReturnType<typeof createWorksheet>, problemId: string) => deleteContent(worksheet, problemId, "missing-content")],
+    ["移動", (worksheet: ReturnType<typeof createWorksheet>, problemId: string) => moveContent(worksheet, problemId, "missing-content", 1)],
+  ])("存在しないContentの%sはNOT_FOUNDを返して元データを変更しない", (_label, command) => {
+    const worksheet = createWorksheet();
+    const before = structuredClone(worksheet);
+
+    const result = command(worksheet, worksheet.problems[0]!.id);
+
+    expect(result).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    expect(result.worksheet).toBe(worksheet);
+    expect(worksheet).toEqual(before);
+  });
+
+  it("存在しないProblemは最後の1件でもNOT_FOUNDを返す", () => {
+    const worksheet = createWorksheet();
+    const result = deleteProblem(worksheet, "missing-problem");
+    expect(result).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    expect(result.worksheet).toBe(worksheet);
+  });
+
+  it("存在しない小問は最後の1件でもNOT_FOUNDを返す", () => {
+    const worksheet = createWorksheet();
+    const group = createSubQuestionGroup();
+    worksheet.problems[0]!.contents = [group];
+
+    const result = deleteSubQuestion(
+      worksheet,
+      worksheet.problems[0]!.id,
+      group.id,
+      "missing-sub-question",
+    );
+
+    expect(result).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    expect(result.worksheet).toBe(worksheet);
   });
 
   it("プリント複製で全Entity IDを再生成し画像参照IDは維持する", () => {

@@ -12,8 +12,15 @@ export type HistoryEntry = {
   createdAt: number;
 };
 
+export type SaveRequest = {
+  worksheetId: string;
+  sessionId: number;
+  revision: number;
+};
+
 type EditorState = {
   worksheet: Worksheet | null;
+  sessionId: number;
   revision: number;
   savedRevision: number;
   saveStatus: "saved" | "dirty" | "saving" | "failed";
@@ -27,16 +34,35 @@ type EditorState = {
   selectContent: (id: string | null) => void;
   undo: () => void;
   redo: () => void;
-  markSaving: () => void;
-  markSaved: (revision: number) => void;
-  markFailed: () => void;
+  markSaving: (request: SaveRequest) => void;
+  markSaved: (request: SaveRequest) => void;
+  markFailed: (request: SaveRequest) => void;
   clear: () => void;
 };
 
 const MAX_HISTORY = 100;
 
+function isCurrentSession(
+  state: Pick<EditorState, "worksheet" | "sessionId">,
+  request: SaveRequest,
+): boolean {
+  return state.worksheet?.id === request.worksheetId && state.sessionId === request.sessionId;
+}
+
+export function createSaveRequest(
+  state: Pick<EditorState, "worksheet" | "sessionId" | "revision">,
+): SaveRequest | null {
+  if (!state.worksheet) return null;
+  return {
+    worksheetId: state.worksheet.id,
+    sessionId: state.sessionId,
+    revision: state.revision,
+  };
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   worksheet: null,
+  sessionId: 0,
   revision: 0,
   savedRevision: 0,
   saveStatus: "saved",
@@ -45,8 +71,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   undoStack: [],
   redoStack: [],
 
-  initialize: (worksheet) => set({
+  initialize: (worksheet) => set((state) => ({
     worksheet,
+    sessionId: state.sessionId + 1,
     revision: 0,
     savedRevision: 0,
     saveStatus: "saved",
@@ -54,7 +81,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     selectedContentId: null,
     undoStack: [],
     redoStack: [],
-  }),
+  })),
 
   commit: (label, nextWorksheet) => {
     const current = get().worksheet;
@@ -101,11 +128,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
-  markSaving: () => set({ saveStatus: "saving" }),
-  markSaved: (revision) => set((state) => ({
-    savedRevision: Math.max(state.savedRevision, revision),
-    saveStatus: Math.max(state.savedRevision, revision) === state.revision ? "saved" : "dirty",
+  markSaving: (request) => set((state) => {
+    if (!isCurrentSession(state, request) || request.revision !== state.revision) return state;
+    return { saveStatus: "saving" };
+  }),
+  markSaved: (request) => set((state) => {
+    if (!isCurrentSession(state, request)) return state;
+    const savedRevision = Math.max(state.savedRevision, request.revision);
+    return {
+      savedRevision,
+      saveStatus: savedRevision === state.revision ? "saved" : "dirty",
+    };
+  }),
+  markFailed: (request) => set((state) => {
+    if (!isCurrentSession(state, request) || request.revision !== state.revision) return state;
+    return { saveStatus: "failed" };
+  }),
+  clear: () => set((state) => ({
+    worksheet: null,
+    sessionId: state.sessionId + 1,
+    revision: 0,
+    savedRevision: 0,
+    saveStatus: "saved",
+    selectedProblemId: null,
+    selectedContentId: null,
+    undoStack: [],
+    redoStack: [],
   })),
-  markFailed: () => set({ saveStatus: "failed" }),
-  clear: () => set({ worksheet: null, undoStack: [], redoStack: [] }),
 }));

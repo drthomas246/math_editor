@@ -4,6 +4,7 @@ import type {
   WorksheetListResult,
   WorksheetRepository,
   WorksheetWithAssets,
+  SaveWorksheetOptions,
 } from "../../application/repositories/worksheet-repository";
 import { STRUCTURE_LIMITS } from "../../domain/worksheet/structure-limits";
 import {
@@ -14,6 +15,7 @@ import {
 } from "../../domain/worksheet/worksheet";
 import { cloneWorksheetWithNewIds, setWorksheetTitle } from "../../domain/worksheet/worksheet.commands";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
+import { collectReferencedAssetIds } from "../../domain/worksheet/worksheet.assets";
 import { database, type MathWorksheetDatabase } from "./database";
 
 export class WorksheetLimitError extends Error {
@@ -73,9 +75,22 @@ export class DexieWorksheetRepository implements WorksheetRepository {
     });
   }
 
-  async save(value: Worksheet): Promise<void> {
+  async save(value: Worksheet, options: SaveWorksheetOptions = {}): Promise<void> {
     const worksheet = WorksheetSchema.parse(value);
-    await this.db.worksheets.put(worksheet);
+    if (!options.pruneUnreferencedAssets) {
+      await this.db.worksheets.put(worksheet);
+      return;
+    }
+
+    const referencedAssetIds = collectReferencedAssetIds(worksheet);
+    await this.db.transaction("rw", this.db.worksheets, this.db.assets, async () => {
+      await this.db.worksheets.put(worksheet);
+      const assets = await this.db.assets.where("worksheetId").equals(worksheet.id).toArray();
+      const unreferencedIds = assets
+        .filter((asset) => !referencedAssetIds.has(asset.id))
+        .map((asset) => asset.id);
+      if (unreferencedIds.length) await this.db.assets.bulkDelete(unreferencedIds);
+    });
   }
 
   async trash(id: string): Promise<Worksheet> {
@@ -144,6 +159,7 @@ export class DexieWorksheetRepository implements WorksheetRepository {
   async putAsset(assetValue: AssetRecord, worksheetValue: Worksheet): Promise<void> {
     const asset = AssetRecordSchema.parse(assetValue);
     const worksheet = WorksheetSchema.parse(worksheetValue);
+    if (asset.worksheetId !== worksheet.id) throw new Error("Assetの所属プリントが一致しません");
     await this.db.transaction("rw", this.db.assets, this.db.worksheets, async () => {
       await this.db.assets.put(asset);
       await this.db.worksheets.put(worksheet);

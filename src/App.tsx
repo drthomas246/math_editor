@@ -27,5 +27,8 @@ function RequiredApiGate() {
 
 function supportsRequiredApis(): boolean {
   if (import.meta.env.MODE === "test") return true;
-  return typeof indexedDB !== "undefined" && typeof Blob !== "undefined" && typeof URL?.createObjectURL === "function" && typeof BroadcastChannel !== "undefined";
+  return typeof indexedDB !== "undefined"
+    && typeof Blob !== "undefined"
+    && typeof URL?.createObjectURL === "function"
+    && typeof createImageBitmap === "function";
 }

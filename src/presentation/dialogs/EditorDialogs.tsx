@@ -1,4 +1,4 @@
-import { FileImage, Sigma, Table2, Upload } from "lucide-react";
+import { Sigma, Table2, Upload } from "lucide-react";
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PreviewMode } from "../../application/pdf/generate-pdf";

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
-import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode, Worksheet } from "../../domain/worksheet/worksheet";
+import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
 import { addContent, addProblem, applyWorksheetSettings, setWorksheetTitle, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
 import { getProblemNumbers } from "../../domain/worksheet/worksheet.numbering";
@@ -15,7 +15,8 @@ import { PdfDialog, WorksheetSettingsDialog } from "../dialogs/EditorDialogs";
 import { calculateFittedPreviewZoom, getNextPreviewZoom, MAX_PREVIEW_ZOOM, MIN_PREVIEW_ZOOM } from "../preview/preview-zoom";
 import { WorksheetPreview } from "../preview/WorksheetPreview";
 import { loadUiPreferences, saveUiPreferences } from "../app/ui-preferences";
-import { useEditorStore } from "./editor-store";
+import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
+import { createSaveRequest, useEditorStore } from "./editor-store";
 import { ProblemCard } from "./ProblemCard";
 
 const SAVE_DEBOUNCE_MS = 750;
@@ -38,6 +39,7 @@ export function EditorScreen() {
   const [previewUpdating, setPreviewUpdating] = useState(false);
 
   const worksheet = useEditorStore((state) => state.worksheet);
+  const sessionId = useEditorStore((state) => state.sessionId);
   const revision = useEditorStore((state) => state.revision);
   const saveStatus = useEditorStore((state) => state.saveStatus);
   const selectedProblemId = useEditorStore((state) => state.selectedProblemId);
@@ -62,26 +64,55 @@ export function EditorScreen() {
       if (!active) return;
       if (!data || data.worksheet.deletedAt !== null) { setNotFound(true); setLoading(false); return; }
       initialize(data.worksheet);
-      const urls = new Map(data.assets.map((asset) => [asset.id, URL.createObjectURL(asset.blob)]));
+      const referencedAssetIds = collectRetainedAssetIds(data.worksheet, []);
+      const urls = new Map(data.assets
+        .filter((asset) => referencedAssetIds.has(asset.id))
+        .map((asset) => [asset.id, URL.createObjectURL(asset.blob)]));
       setAssetUrls(urls);
       setLoading(false);
     }).catch(() => { if (active) { setNotFound(true); setLoading(false); } });
-    return () => { active = false; clear(); };
+    return () => {
+      active = false;
+      const state = useEditorStore.getState();
+      if (state.worksheet?.id === worksheetId) {
+        void worksheetRepository.save(state.worksheet, { pruneUnreferencedAssets: true }).catch(() => undefined);
+      }
+      clear();
+    };
   }, [worksheetId, initialize, clear]);
 
   useEffect(() => { assetUrlsRef.current = assetUrls; }, [assetUrls]);
   useEffect(() => () => { assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
 
+  const retainedAssetIds = useMemo(
+    () => worksheet ? collectRetainedAssetIds(worksheet, [...undoStack, ...redoStack]) : new Set<string>(),
+    [worksheet, undoStack, redoStack],
+  );
+
+  useEffect(() => {
+    setAssetUrls((current) => pruneAssetUrls(current, retainedAssetIds));
+  }, [retainedAssetIds]);
+
   useEffect(() => {
     if (!worksheet || saveStatus !== "dirty") return;
-    const currentRevision = revision;
+    const request = { worksheetId: worksheet.id, sessionId, revision };
     const timer = window.setTimeout(async () => {
-      markSaving();
-      try { await worksheetRepository.save(worksheet); markSaved(currentRevision); }
-      catch { markFailed(); }
+      markSaving(request);
+      try { await worksheetRepository.save(worksheet); markSaved(request); }
+      catch { markFailed(request); }
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [worksheet, revision, saveStatus, markSaving, markSaved, markFailed]);
+  }, [worksheet, sessionId, revision, saveStatus, markSaving, markSaved, markFailed]);
+
+  useEffect(() => {
+    if (saveStatus === "saved") return;
+    const warnAboutUnsavedChanges = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnAboutUnsavedChanges);
+    return () => window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
+  }, [saveStatus]);
 
   useEffect(() => {
     if (!worksheet) return;
@@ -143,15 +174,24 @@ export function EditorScreen() {
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
   }, [dragging]);
 
-  const flushSave = useCallback(async () => {
+  const flushSave = useCallback(async (pruneUnreferencedAssets = false) => {
     const state = useEditorStore.getState();
-    if (!state.worksheet || state.saveStatus === "saved") return true;
-    state.markSaving();
-    try { await worksheetRepository.save(state.worksheet); state.markSaved(state.revision); return true; }
-    catch { state.markFailed(); setToast("保存できませんでした。ブラウザの空き容量を確認してください。"); return false; }
+    if (!state.worksheet || (state.saveStatus === "saved" && !pruneUnreferencedAssets)) return true;
+    const request = createSaveRequest(state);
+    if (!request) return true;
+    state.markSaving(request);
+    try {
+      await worksheetRepository.save(state.worksheet, { pruneUnreferencedAssets });
+      state.markSaved(request);
+      return true;
+    } catch {
+      state.markFailed(request);
+      setToast("保存できませんでした。ブラウザの空き容量を確認してください。");
+      return false;
+    }
   }, []);
 
-  const backToList = async () => { if (await flushSave()) navigate("/"); };
+  const backToList = async () => { if (await flushSave(true)) navigate("/"); };
   const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
 
   const updatePreferences = (change: Partial<typeof preferences>) => {
