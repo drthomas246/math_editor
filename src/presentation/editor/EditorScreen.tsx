@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
+import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
 import { addContent, addProblem, applyWorksheetSettings, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
@@ -21,7 +22,7 @@ import { ProblemCard } from "./ProblemCard";
 
 const SAVE_DEBOUNCE_MS = 750;
 
-export function EditorScreen() {
+export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
   const { worksheetId } = useParams();
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
@@ -61,7 +62,7 @@ export function EditorScreen() {
   useEffect(() => {
     if (!worksheetId) return;
     let active = true;
-    void worksheetRepository.get(worksheetId).then((data) => {
+    void repository.get(worksheetId).then((data) => {
       if (!active) return;
       if (!data || data.worksheet.deletedAt !== null) { setNotFound(true); setLoading(false); return; }
       initialize(data.worksheet);
@@ -76,11 +77,11 @@ export function EditorScreen() {
       active = false;
       const state = useEditorStore.getState();
       if (state.worksheet?.id === worksheetId) {
-        void worksheetRepository.save(state.worksheet, { pruneUnreferencedAssets: true }).catch(() => undefined);
+        void repository.save(state.worksheet, { pruneUnreferencedAssets: true }).catch(() => undefined);
       }
       clear();
     };
-  }, [worksheetId, initialize, clear]);
+  }, [worksheetId, initialize, clear, repository]);
 
   useEffect(() => { assetUrlsRef.current = assetUrls; }, [assetUrls]);
   useEffect(() => () => { assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
@@ -99,11 +100,11 @@ export function EditorScreen() {
     const request = { worksheetId: worksheet.id, sessionId, revision };
     const timer = window.setTimeout(async () => {
       markSaving(request);
-      try { await worksheetRepository.save(worksheet); markSaved(request); }
+      try { await repository.save(worksheet); markSaved(request); }
       catch { markFailed(request); }
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [worksheet, sessionId, revision, saveStatus, markSaving, markSaved, markFailed]);
+  }, [worksheet, sessionId, revision, saveStatus, markSaving, markSaved, markFailed, repository]);
 
   useEffect(() => {
     if (saveStatus === "saved") return;
@@ -182,7 +183,7 @@ export function EditorScreen() {
     if (!request) return true;
     state.markSaving(request);
     try {
-      await worksheetRepository.save(state.worksheet, { pruneUnreferencedAssets });
+      await repository.save(state.worksheet, { pruneUnreferencedAssets });
       state.markSaved(request);
       return true;
     } catch {
@@ -190,7 +191,7 @@ export function EditorScreen() {
       setToast("保存できませんでした。ブラウザの空き容量を確認してください。");
       return false;
     }
-  }, []);
+  }, [repository]);
 
   const backToList = async () => { if (await flushSave(true)) navigate("/"); };
   const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
@@ -223,7 +224,7 @@ export function EditorScreen() {
       : addContent(worksheet, problemId, image, selectedContentId);
     if (!result.ok) { setToast("画像を追加できませんでした"); return; }
     try {
-      await worksheetRepository.putAsset(asset, result.worksheet);
+      await repository.putAsset(asset, result.worksheet);
       commit("画像を挿入", result.worksheet);
       selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
@@ -241,7 +242,7 @@ export function EditorScreen() {
     if (!result.ok) { setToast("画像を更新できませんでした"); return; }
     try {
       if (asset) {
-        await worksheetRepository.putAsset(asset, result.worksheet);
+        await repository.putAsset(asset, result.worksheet);
         setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
       }
       commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);

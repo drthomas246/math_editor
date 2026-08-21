@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "benchmark:editor": "tsx scripts/benchmark-editor-input.ts",
     "schema:generate": "tsx scripts/generate-math-worksheet-schema.ts",
     "schema:check": "tsx scripts/generate-math-worksheet-schema.ts --check",
@@ -35,6 +36,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",

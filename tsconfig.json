@@ -17,5 +17,5 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node", "vite/client", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts", "e2e/**/*.ts", "vite.config.ts", "playwright.config.ts"]
 }

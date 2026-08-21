@@ -97,6 +97,7 @@ src/
 ├─ application/        Repository契約、バックアップ、PDF生成
 ├─ infrastructure/     Dexie / IndexedDB、ファイルダウンロード
 └─ presentation/       一覧、編集、プレビュー、ゴミ箱、ダイアログ
+e2e/                    Playwrightによる離脱・保存の実ブラウザテスト
 schemas/                生成済みJSON Schema
 scripts/                Schema生成・検証スクリプト
 ```
@@ -115,8 +116,13 @@ npm run test
 # 型、Schema生成差分、Schema振る舞い、全テスト
 npm run verify
 
+# Chromeによる離脱・保存E2Eテスト
+npm run test:e2e
+
 # 本番ビルド
 npm run build
 ```
+
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。
