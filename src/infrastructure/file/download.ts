@@ -6,7 +6,7 @@ export function localTimestamp(date = new Date()): string {
 export function sanitizeFileNamePart(value: string): string {
   const normalized = value
     .trim()
-    .replace(/[\u0000-\u001f<>:"/\\|?*]/gu, "_")
+    .replace(/[\p{Cc}<>:"/\\|?*]/gu, "_")
     .replace(/_+/gu, "_")
     .replace(/[ .]+$/gu, "")
     .slice(0, 80);

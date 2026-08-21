@@ -87,7 +87,7 @@ export function WorksheetListScreen() {
     const worksheet = createWorksheet();
     try {
       await worksheetRepository.create({ worksheet, assets: [] });
-      navigate(`/worksheets/${worksheet.id}`);
+      await navigate(`/worksheets/${worksheet.id}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "プリントを作成できませんでした");
     }

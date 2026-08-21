@@ -113,7 +113,10 @@ npm run dev
 # 単体・UI・IndexedDBテスト
 npm run test
 
-# 型、Schema生成差分、Schema振る舞い、全テスト
+# Oxlint（TypeScript type-aware・React Hooksを含む）
+npm run lint
+
+# 型、Lint、Schema生成差分、Schema振る舞い、全テスト
 npm run verify
 
 # Chromeによる離脱・保存E2Eテスト

@@ -22,7 +22,7 @@ export function collectRetainedAssetIds(
 export function pruneAssetUrls(
   current: Map<string, string>,
   retainedIds: ReadonlySet<string>,
-  revokeObjectUrl: (url: string) => void = URL.revokeObjectURL,
+  revokeObjectUrl: (url: string) => void = (url) => URL.revokeObjectURL(url),
 ): Map<string, string> {
   let next: Map<string, string> | null = null;
   current.forEach((url, assetId) => {

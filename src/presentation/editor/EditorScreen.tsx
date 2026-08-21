@@ -162,7 +162,11 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       if (target.closest("input,textarea,[contenteditable='true']")) return;
-      if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+      if (event.ctrlKey && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
       if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); redo(); }
     };
     window.addEventListener("keydown", onKey);
@@ -207,7 +211,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     }
   }, [repository]);
 
-  const backToList = async () => { if (await flushSave(true)) navigate("/"); };
+  const backToList = async () => { if (await flushSave(true)) await navigate("/"); };
   const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
 
   const updatePreferences = (change: Partial<typeof preferences>) => {

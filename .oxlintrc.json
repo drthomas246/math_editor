@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react"],
+  "options": {
+    "typeAware": true,
+    "denyWarnings": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "off",
+    "react/refs": "off",
+    "react/set-state-in-effect": "off"
+  }
+}
