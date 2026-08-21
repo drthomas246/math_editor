@@ -24,6 +24,7 @@ export function ManualArticle({ chapter, previous, next, headingRef }: ManualArt
         <dl className="manual-version">
           <div><dt>マニュアル版</dt><dd>{MANUAL_METADATA.manualVersion}</dd></div>
           <div><dt>対象アプリ版</dt><dd>{MANUAL_METADATA.targetAppVersion}</dd></div>
+          <div><dt>ライセンス</dt><dd>{MANUAL_METADATA.licenseName} {MANUAL_METADATA.licenseVersion}</dd></div>
           <div><dt>最終更新</dt><dd><time dateTime={chapter.updatedAt}>{chapter.updatedAt}</time></dd></div>
         </dl>
         <nav className="manual-chapter-nav" aria-label="前後の章">
