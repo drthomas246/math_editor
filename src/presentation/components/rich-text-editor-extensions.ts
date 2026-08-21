@@ -61,12 +61,16 @@ function isMathTextSize(value: unknown): value is MathTextSize {
   return value === "small" || value === "normal" || value === "large" || value === "xLarge";
 }
 
+function readStringAttribute(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
   return ({ node, editor, getPos }: { node: { type: { name: string }; attrs: Record<string, unknown> }; editor: Editor; getPos: () => number | undefined }) => {
     const dom = document.createElement(block ? "div" : "span");
 
     const render = (attrs: Record<string, unknown>) => {
-      const latex = String(attrs.latex ?? "");
+      const latex = readStringAttribute(attrs.latex);
       const textSize = isMathTextSize(attrs.textSize) ? attrs.textSize : "normal";
       dom.className = `math-node ${block ? "math-node-block" : "math-node-inline"} math-size-${textSize}${attrs.answerColor === true ? " answer-color" : ""}`;
       dom.dataset.mathNode = block ? "block" : "inline";
@@ -226,8 +230,8 @@ export const ImageRef = Node.create<ImageRefOptions>({
       const dom = document.createElement("div");
 
       const render = (attrs: Record<string, unknown>) => {
-        const id = String(attrs.id ?? "");
-        const assetId = String(attrs.assetId ?? "");
+        const id = readStringAttribute(attrs.id);
+        const assetId = readStringAttribute(attrs.assetId);
         const placement = isImagePlacement(attrs.placement) ? attrs.placement : "block";
         const widthPercent = normalizeImageWidth(attrs.widthPercent, placement);
         const url = assetUrls.get(assetId);
@@ -244,7 +248,7 @@ export const ImageRef = Node.create<ImageRefOptions>({
         if (url) {
           const image = document.createElement("img");
           image.src = url;
-          image.alt = String(attrs.alt ?? "");
+          image.alt = readStringAttribute(attrs.alt);
           dom.append(image);
         } else {
           const missing = document.createElement("span");
@@ -265,7 +269,7 @@ export const ImageRef = Node.create<ImageRefOptions>({
             this.options.onEdit?.({
               id,
               assetId,
-              alt: String(attrs.alt ?? ""),
+              alt: readStringAttribute(attrs.alt),
               placement,
               widthPercent,
               ...(answerColor ? { answerColor: true } : {}),

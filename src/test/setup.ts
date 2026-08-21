@@ -1,7 +1,9 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import { afterEach, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
+
+configure({ asyncUtilTimeout: 5_000 });
 
 afterEach(() => cleanup());
 

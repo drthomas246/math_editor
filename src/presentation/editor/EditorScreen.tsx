@@ -3,9 +3,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
+import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
-import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode, Worksheet } from "../../domain/worksheet/worksheet";
-import { addContent, addProblem, applyWorksheetSettings, setWorksheetTitle, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
+import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
+import { addContent, addProblem, applyWorksheetSettings, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
 import { getProblemNumbers } from "../../domain/worksheet/worksheet.numbering";
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
@@ -15,12 +16,13 @@ import { PdfDialog, WorksheetSettingsDialog } from "../dialogs/EditorDialogs";
 import { calculateFittedPreviewZoom, getNextPreviewZoom, MAX_PREVIEW_ZOOM, MIN_PREVIEW_ZOOM } from "../preview/preview-zoom";
 import { WorksheetPreview } from "../preview/WorksheetPreview";
 import { loadUiPreferences, saveUiPreferences } from "../app/ui-preferences";
-import { useEditorStore } from "./editor-store";
+import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
+import { createSaveRequest, useEditorStore } from "./editor-store";
 import { ProblemCard } from "./ProblemCard";
 
 const SAVE_DEBOUNCE_MS = 750;
 
-export function EditorScreen() {
+export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
   const { worksheetId } = useParams();
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,7 @@ export function EditorScreen() {
   const [previewUpdating, setPreviewUpdating] = useState(false);
 
   const worksheet = useEditorStore((state) => state.worksheet);
+  const sessionId = useEditorStore((state) => state.sessionId);
   const revision = useEditorStore((state) => state.revision);
   const saveStatus = useEditorStore((state) => state.saveStatus);
   const selectedProblemId = useEditorStore((state) => state.selectedProblemId);
@@ -46,6 +49,7 @@ export function EditorScreen() {
   const redoStack = useEditorStore((state) => state.redoStack);
   const initialize = useEditorStore((state) => state.initialize);
   const commit = useEditorStore((state) => state.commit);
+  const mutate = useEditorStore((state) => state.mutate);
   const selectProblem = useEditorStore((state) => state.selectProblem);
   const selectContent = useEditorStore((state) => state.selectContent);
   const undo = useEditorStore((state) => state.undo);
@@ -58,30 +62,65 @@ export function EditorScreen() {
   useEffect(() => {
     if (!worksheetId) return;
     let active = true;
-    void worksheetRepository.get(worksheetId).then((data) => {
+    void repository.get(worksheetId).then((data) => {
       if (!active) return;
       if (!data || data.worksheet.deletedAt !== null) { setNotFound(true); setLoading(false); return; }
       initialize(data.worksheet);
-      const urls = new Map(data.assets.map((asset) => [asset.id, URL.createObjectURL(asset.blob)]));
+      const referencedAssetIds = collectRetainedAssetIds(data.worksheet, []);
+      const urls = new Map(data.assets
+        .filter((asset) => referencedAssetIds.has(asset.id))
+        .map((asset) => [asset.id, URL.createObjectURL(asset.blob)]));
       setAssetUrls(urls);
       setLoading(false);
     }).catch(() => { if (active) { setNotFound(true); setLoading(false); } });
-    return () => { active = false; clear(); };
-  }, [worksheetId, initialize, clear]);
+    return () => {
+      active = false;
+      const state = useEditorStore.getState();
+      if (state.worksheet?.id === worksheetId) {
+        void repository.save(state.worksheet, { pruneUnreferencedAssets: true }).catch(() => undefined);
+      }
+      clear();
+    };
+  }, [worksheetId, initialize, clear, repository]);
 
   useEffect(() => { assetUrlsRef.current = assetUrls; }, [assetUrls]);
   useEffect(() => () => { assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
 
+  const retainedAssetIds = useMemo(
+    () => worksheet ? collectRetainedAssetIds(worksheet, [...undoStack, ...redoStack]) : new Set<string>(),
+    [worksheet, undoStack, redoStack],
+  );
+
+  useEffect(() => {
+    setAssetUrls((current) => pruneAssetUrls(current, retainedAssetIds));
+  }, [retainedAssetIds]);
+
   useEffect(() => {
     if (!worksheet || saveStatus !== "dirty") return;
-    const currentRevision = revision;
+    const request = { worksheetId: worksheet.id, sessionId, revision };
     const timer = window.setTimeout(async () => {
-      markSaving();
-      try { await worksheetRepository.save(worksheet); markSaved(currentRevision); }
-      catch { markFailed(); }
+      markSaving(request);
+      try {
+        await repository.save(worksheet, {
+          pruneUnreferencedAssets: true,
+          retainedAssetIds,
+        });
+        markSaved(request);
+      }
+      catch { markFailed(request); }
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [worksheet, revision, saveStatus, markSaving, markSaved, markFailed]);
+  }, [worksheet, sessionId, revision, saveStatus, retainedAssetIds, markSaving, markSaved, markFailed, repository]);
+
+  useEffect(() => {
+    if (saveStatus === "saved") return;
+    const warnAboutUnsavedChanges = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnAboutUnsavedChanges);
+    return () => window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
+  }, [saveStatus]);
 
   useEffect(() => {
     if (!worksheet) return;
@@ -123,7 +162,11 @@ export function EditorScreen() {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       if (target.closest("input,textarea,[contenteditable='true']")) return;
-      if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+      if (event.ctrlKey && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
       if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); redo(); }
     };
     window.addEventListener("keydown", onKey);
@@ -143,15 +186,32 @@ export function EditorScreen() {
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
   }, [dragging]);
 
-  const flushSave = useCallback(async () => {
+  const flushSave = useCallback(async (discardHistory = false) => {
     const state = useEditorStore.getState();
-    if (!state.worksheet || state.saveStatus === "saved") return true;
-    state.markSaving();
-    try { await worksheetRepository.save(state.worksheet); state.markSaved(state.revision); return true; }
-    catch { state.markFailed(); setToast("保存できませんでした。ブラウザの空き容量を確認してください。"); return false; }
-  }, []);
+    if (!state.worksheet || (state.saveStatus === "saved" && !discardHistory)) return true;
+    const request = createSaveRequest(state);
+    if (!request) return true;
+    state.markSaving(request);
+    try {
+      await repository.save(state.worksheet, {
+        pruneUnreferencedAssets: true,
+        ...(discardHistory ? {} : {
+          retainedAssetIds: collectRetainedAssetIds(
+            state.worksheet,
+            [...state.undoStack, ...state.redoStack],
+          ),
+        }),
+      });
+      state.markSaved(request);
+      return true;
+    } catch {
+      state.markFailed(request);
+      setToast("保存できませんでした。ブラウザの空き容量を確認してください。");
+      return false;
+    }
+  }, [repository]);
 
-  const backToList = async () => { if (await flushSave()) navigate("/"); };
+  const backToList = async () => { if (await flushSave(true)) await navigate("/"); };
   const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
 
   const updatePreferences = (change: Partial<typeof preferences>) => {
@@ -159,6 +219,11 @@ export function EditorScreen() {
     setPreferences(next); saveUiPreferences(next);
   };
   const numericZoom = typeof preferences.zoom === "number" ? preferences.zoom : fittedZoom;
+  const updateTitle = (value: string) => mutate("題名を変更", (draft) => {
+    const title = (value.trim() || "無題のプリント").slice(0, 100);
+    draft.title = title;
+    draft.header.title = title;
+  }, { historyGroup: `text:${worksheet?.id ?? "unknown"}:title` });
 
   const addImage = async (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
     if (!worksheet) return;
@@ -177,7 +242,7 @@ export function EditorScreen() {
       : addContent(worksheet, problemId, image, selectedContentId);
     if (!result.ok) { setToast("画像を追加できませんでした"); return; }
     try {
-      await worksheetRepository.putAsset(asset, result.worksheet);
+      await repository.putAsset(asset, result.worksheet);
       commit("画像を挿入", result.worksheet);
       selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
@@ -195,7 +260,7 @@ export function EditorScreen() {
     if (!result.ok) { setToast("画像を更新できませんでした"); return; }
     try {
       if (asset) {
-        await worksheetRepository.putAsset(asset, result.worksheet);
+        await repository.putAsset(asset, result.worksheet);
         setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
       }
       commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);
@@ -208,7 +273,7 @@ export function EditorScreen() {
   return <div className="editor-app">
     <header className="editor-header">
       <button className="secondary-button" onClick={backToList}><ArrowLeft size={17} />一覧</button>
-      <input className="title-input" aria-label="プリント題名" value={worksheet.title} maxLength={100} onChange={(event) => commit("題名を変更", setWorksheetTitle(worksheet, event.target.value))} onBlur={(event) => { if (!event.target.value.trim()) commit("題名を補正", setWorksheetTitle(worksheet, "無題のプリント")); }} />
+      <input className="title-input" aria-label="プリント題名" value={worksheet.title} maxLength={100} onChange={(event) => updateTitle(event.target.value)} onBlur={(event) => { if (!event.target.value.trim()) updateTitle("無題のプリント"); }} />
       <SaveIndicator status={saveStatus} onRetry={() => void flushSave()} />
       <span className="header-spacer" />
       <button className="icon-text-button" title="元に戻す (Ctrl+Z)" disabled={undoStack.length === 0} onClick={undo}><Undo2 size={17} /><span>元に戻す</span></button>
@@ -222,7 +287,7 @@ export function EditorScreen() {
       <section className="editing-pane" style={{ width: `${preferences.paneRatio * 100}%` }}>
         <div className="pane-heading"><div><p className="eyebrow">WORKSHEET</p><h1>編集</h1></div><span>{worksheet.problems.filter((problem) => problem.kind === "problem").length}問・{worksheet.problems.filter((problem) => problem.kind === "example").length}例題</span></div>
         <div className="problem-list">
-          {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
+          {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onMutate={mutate} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
         </div>
         <button className="add-problem-button" disabled={worksheet.problems.length >= 200} onClick={() => { const result = addProblem(worksheet, selectedProblemId); if (result.ok) { commit("問題を追加", result.worksheet); const selectedIndex = result.worksheet.problems.findIndex((problem) => problem.id === selectedProblemId); selectProblem(result.worksheet.problems[selectedIndex + 1]?.id ?? result.worksheet.problems.at(-1)?.id ?? null); } }}><Plus size={17} />問題・例題を追加</button>
       </section>

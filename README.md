@@ -8,7 +8,7 @@
 
 - 最新版のGoogle ChromeまたはMicrosoft Edge
 - 編集画面は横幅1024px以上のPC画面
-- IndexedDB、Blob、Object URL、BroadcastChannel、`createImageBitmap`を利用できること
+- IndexedDB、Blob、Object URL、`createImageBitmap`を利用できること
 
 アカウント、クラウド保存、同期、共同編集には対応していません。ブラウザやプロファイルが異なると、保存済みデータは共有されません。
 
@@ -20,6 +20,8 @@ npm run dev
 ```
 
 Viteが表示したURLをChromeまたはEdgeで開きます。
+
+100問題規模の編集処理を計測する場合は、`npm run benchmark:editor`を実行します。
 
 ## 主な使い方
 
@@ -52,7 +54,7 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 - PNG、JPEG、WebP画像の挿入、差し替え、配置、サイズ、代替テキスト
 - 一般表、関数表、度数分布表、行列操作、セル結合、行高、列幅、セル内数式
 - 数式、画像、表を含む問題色・解答色の内容と、問題単位の教師用解説
-- 最大100操作のUndo / Redo
+- 最大100操作のUndo / Redo（同じ入力欄への短時間の連続入力は1操作へ結合）
 
 ### プレビューとPDF
 
@@ -67,6 +69,7 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 
 - 編集内容は最後の変更から750ms後にIndexedDBへ自動保存します。
 - 一覧へ戻る前とPDF出力前には未保存内容を即時保存します。
+- 未保存状態でリロードやタブ終了を行う場合は、ブラウザの離脱警告を表示します。
 - Undo / Redo履歴は編集セッション内だけで保持し、再読み込み後は復元しません。
 - JSON形式は`format: "math-worksheet"`、`version: 1`です。
 - 画像Blobは通常データと分離してIndexedDBへ保存し、JSON出力時だけ`assets[].dataBase64`へ変換します。
@@ -82,7 +85,7 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 - 自動ページ分割はコンテンツブロック単位です。1ブロックが1ページより高い場合の内部分割・自動縮小は未実装で、紙面からはみ出す部分が切れる場合があります。
 - PDFは各ページを画像として格納するため、PDF内の文字は検索・選択できません。
 - 画像挿入時はMIME型、10MiB、各辺10,000px、40MPを確認します。バックアップ取込時はJSON構造と参照整合性を検証しますが、画像バイトの再デコード検証は行いません。
-- ブラウザのタブを直接閉じる直前の未保存変更を同期保存する処理はありません。
+- ブラウザのタブを直接閉じる直前の未保存変更を同期保存する処理はありません。離脱警告が出た場合はキャンセルし、「保存済み」になってから閉じてください。
 
 詳細な上限値と受け入れ条件は[要件定義書.md](要件定義書.md)を参照してください。
 
@@ -94,6 +97,7 @@ src/
 ├─ application/        Repository契約、バックアップ、PDF生成
 ├─ infrastructure/     Dexie / IndexedDB、ファイルダウンロード
 └─ presentation/       一覧、編集、プレビュー、ゴミ箱、ダイアログ
+e2e/                    Playwrightによる離脱・保存の実ブラウザテスト
 schemas/                生成済みJSON Schema
 scripts/                Schema生成・検証スクリプト
 ```
@@ -109,11 +113,19 @@ npm run dev
 # 単体・UI・IndexedDBテスト
 npm run test
 
-# 型、Schema生成差分、Schema振る舞い、全テスト
+# Oxlint（TypeScript type-aware・React Hooksを含む）
+npm run lint
+
+# 型、Lint、Schema生成差分、Schema振る舞い、全テスト
 npm run verify
+
+# Chromeによる離脱・保存E2Eテスト
+npm run test:e2e
 
 # 本番ビルド
 npm run build
 ```
+
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。

@@ -319,16 +319,16 @@ function RichNode({ node, assetUrls, showAnswers }: { node: unknown; assetUrls: 
       return rendered;
     }
     case "hardBreak": return <br />;
-    case "paragraph": return <p className={answerClass} style={{ textAlign: String(value.attrs?.textAlign ?? "left") as React.CSSProperties["textAlign"] }}>{children.length ? children : <>&nbsp;</>}</p>;
+    case "paragraph": return <p className={answerClass} style={{ textAlign: toTextAlign(value.attrs?.textAlign) }}>{children.length ? children : <>&nbsp;</>}</p>;
     case "listItem": return <li className={answerClass}>{children}</li>;
     case "bulletList": return <ul className={answerClass}>{children}</ul>;
     case "orderedList": return <ol className={answerClass} start={Number(value.attrs?.start ?? 1)}>{children}</ol>;
-    case "inlineMath": return <span className={nodeUsesAnswerColor(node) ? "answer-color" : undefined}><MathFormula latex={String(value.attrs?.latex ?? "")} textSize={toMathTextSize(value.attrs?.textSize)} /></span>;
-    case "blockMath": return <div className={nodeUsesAnswerColor(node) ? "answer-color" : undefined}><MathFormula latex={String(value.attrs?.latex ?? "")} textSize={toMathTextSize(value.attrs?.textSize)} block /></div>;
+    case "inlineMath": return <span className={nodeUsesAnswerColor(node) ? "answer-color" : undefined}><MathFormula latex={readStringAttribute(value.attrs?.latex)} textSize={toMathTextSize(value.attrs?.textSize)} /></span>;
+    case "blockMath": return <div className={nodeUsesAnswerColor(node) ? "answer-color" : undefined}><MathFormula latex={readStringAttribute(value.attrs?.latex)} textSize={toMathTextSize(value.attrs?.textSize)} block /></div>;
     case "imageRef": {
-      const url = assetUrls.get(String(value.attrs?.assetId ?? ""));
+      const url = assetUrls.get(readStringAttribute(value.attrs?.assetId));
       return url
-        ? <img className={`paper-image ${String(value.attrs?.placement ?? "block")}${nodeUsesAnswerColor(node) ? " answer-color" : ""}`} style={{ width: `${Number(value.attrs?.widthPercent ?? 50)}%` }} src={url} alt={String(value.attrs?.alt ?? "")} />
+        ? <img className={`paper-image ${toImagePlacement(value.attrs?.placement)}${nodeUsesAnswerColor(node) ? " answer-color" : ""}`} style={{ width: `${Number(value.attrs?.widthPercent ?? 50)}%` }} src={url} alt={readStringAttribute(value.attrs?.alt)} />
         : <div className="missing-asset">画像を読み込めません</div>;
     }
     case "richTable": return <div className={nodeUsesAnswerColor(node) ? "answer-color" : undefined}><PreviewTable rows={Array.isArray(value.attrs?.rows) ? value.attrs.rows as TableRow[] : []} headerRow={Boolean(value.attrs?.headerRow)} columnWidthsPercent={Array.isArray(value.attrs?.columnWidthsPercent) ? value.attrs.columnWidthsPercent as number[] : []} assetUrls={assetUrls} showAnswers={showAnswers} /></div>;
@@ -364,6 +364,18 @@ function PreviewTable({ rows, headerRow, columnWidthsPercent, assetUrls, showAns
 
 function toMathTextSize(value: unknown): "small" | "normal" | "large" | "xLarge" {
   return value === "small" || value === "large" || value === "xLarge" ? value : "normal";
+}
+
+function readStringAttribute(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toTextAlign(value: unknown): React.CSSProperties["textAlign"] {
+  return value === "center" || value === "right" ? value : "left";
+}
+
+function toImagePlacement(value: unknown): "block" | "floatLeft" | "floatRight" {
+  return value === "floatLeft" || value === "floatRight" ? value : "block";
 }
 
 function StudentAnswerArea({ answerArea, showAnswers, assetUrls }: { answerArea: AnswerAreaValue; showAnswers: boolean; assetUrls: Map<string, string> }) {

@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Copy, GripVertical, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from "lucide-react";
+import type { Draft } from "immer";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { colorDocumentAsAnswer, mergeColoredDocuments, type ContentColor } from "../../domain/worksheet/rich-text";
@@ -13,15 +14,13 @@ import {
   duplicateProblem,
   moveContent,
   moveProblem,
-  setProblemSolution,
-  updateContent,
   updateProblem,
   updateRichTextDocument,
   updateSubQuestion,
   type RichTextDocumentTarget,
   type WorksheetCommandResult,
 } from "../../domain/worksheet/worksheet.commands";
-import { createContentBlock, createId, emptyDocument, emptySolutionDocument } from "../../domain/worksheet/worksheet.defaults";
+import { createContentBlock, emptyDocument, emptySolutionDocument } from "../../domain/worksheet/worksheet.defaults";
 import { getSubQuestionNumbers } from "../../domain/worksheet/worksheet.numbering";
 import { MathFormula } from "../components/MathFormula";
 import { RichTextEditor } from "../components/RichTextEditor";
@@ -29,6 +28,9 @@ import { TableStructureToolbar } from "../components/TableStructureToolbar";
 import { useOutsidePointerDown } from "../components/useOutsidePointerDown";
 import type { EditableImageRef } from "../components/rich-text-editor-extensions";
 import { ImageDialog, TableDialog } from "../dialogs/EditorDialogs";
+import type { MutationOptions, WorksheetMutation } from "./editor-store";
+
+type MutateWorksheet = (label: string, change: WorksheetMutation, options?: MutationOptions) => void;
 
 type Props = {
   worksheet: Worksheet;
@@ -40,6 +42,7 @@ type Props = {
   onSelect: () => void;
   onSelectContent: (id: string | null) => void;
   onCommit: (label: string, worksheet: Worksheet) => void;
+  onMutate: MutateWorksheet;
   onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
   onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
   assetUrls: ReadonlyMap<string, string>;
@@ -59,7 +62,7 @@ const ADD_CONTENT_OPTIONS: ReadonlyArray<readonly [AddContentType, string]> = [
 ];
 
 export function ProblemCard(props: Props) {
-  const { worksheet, problem, index, displayNumber, selected, selectedContentId, onSelect, onSelectContent, onCommit, onAddImage, onUpdateImage, assetUrls, onToast } = props;
+  const { worksheet, problem, index, displayNumber, selected, selectedContentId, onSelect, onSelectContent, onCommit, onMutate, onAddImage, onUpdateImage, assetUrls, onToast } = props;
   const [problemMenu, setProblemMenu] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
@@ -90,14 +93,17 @@ export function ProblemCard(props: Props) {
     </header>
     <div className="content-list">
       {problem.contents.length === 0 && <div className="empty-problem"><p>{problem.kind === "example" ? "例題" : "問題"}{displayNumber ?? ""}には内容がありません。</p><span>「内容を追加」から編集を再開できます。</span></div>}
-      {problem.contents.map((content) => <ContentEditor key={content.id} worksheet={worksheet} problem={problem} content={content} selected={selectedContentId === content.id} onSelect={() => onSelectContent(content.id)} commit={commit} assetUrls={assetUrls} onImage={(target) => setImageDialog({ mode: "insert", target })} onEditImage={(target, image) => setImageDialog({ mode: "edit", target, image })} onTable={setTableTarget} />)}
+      {problem.contents.map((content) => <ContentEditor key={content.id} worksheet={worksheet} problem={problem} content={content} selected={selectedContentId === content.id} onSelect={() => onSelectContent(content.id)} commit={commit} mutate={onMutate} assetUrls={assetUrls} onImage={(target) => setImageDialog({ mode: "insert", target })} onEditImage={(target, image) => setImageDialog({ mode: "edit", target, image })} onTable={setTableTarget} />)}
     </div>
     <div className="solution-section">
       <button className="solution-toggle" onClick={(event) => { event.stopPropagation(); setSolutionOpen(!solutionOpen); }}>{solutionOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}教師用の解説{problem.solution && <span className="status-chip">入力済み</span>}</button>
       {solutionOpen && <div className="solution-editor"><label>解説</label><RichTextEditor
         document={(problem.solution ?? emptySolutionDocument()) as never}
         assetUrls={assetUrls}
-        onChange={(document) => commit("教師用の解説を編集", setProblemSolution(worksheet, problem.id, document as never))}
+        onChange={(document) => onMutate("教師用の解説を編集", (draft) => {
+          const target = draft.problems.find((item) => item.id === problem.id);
+          if (target) target.solution = document as never;
+        }, { historyGroup: `richText:${problem.id}:solution` })}
         enableMath
         showColorSelector={false}
         onImage={() => setImageDialog({ mode: "insert", target: { kind: "solution" } })}
@@ -145,14 +151,18 @@ function ProblemMenu({ worksheet, problem, index, commit, close }: { worksheet: 
   </div>;
 }
 
-function ContentEditor({ worksheet, problem, content, selected, onSelect, commit, onImage, onEditImage, onTable, assetUrls }: { worksheet: Worksheet; problem: ProblemBlock; content: ContentBlock; selected: boolean; onSelect: () => void; commit: (label: string, result: WorksheetCommandResult) => void; onImage: (target: RichTextDocumentTarget) => void; onEditImage: (target: RichTextDocumentTarget | null, image: EditableImageRef) => void; onTable: (target: RichTextDocumentTarget) => void; assetUrls: ReadonlyMap<string, string> }) {
-  const update = (label: string, change: (content: ContentBlock) => void) => commit(label, updateContent(worksheet, problem.id, content.id, change));
+function ContentEditor({ worksheet, problem, content, selected, onSelect, commit, mutate, onImage, onEditImage, onTable, assetUrls }: { worksheet: Worksheet; problem: ProblemBlock; content: ContentBlock; selected: boolean; onSelect: () => void; commit: (label: string, result: WorksheetCommandResult) => void; mutate: MutateWorksheet; onImage: (target: RichTextDocumentTarget) => void; onEditImage: (target: RichTextDocumentTarget | null, image: EditableImageRef) => void; onTable: (target: RichTextDocumentTarget) => void; assetUrls: ReadonlyMap<string, string> }) {
+  const update = (label: string, change: (content: Draft<ContentBlock>) => void, historyGroup?: string) => mutate(label, (draft) => {
+    const targetProblem = draft.problems.find((item) => item.id === problem.id);
+    const targetContent = targetProblem?.contents.find((item) => item.id === content.id);
+    if (targetContent) change(targetContent);
+  }, historyGroup ? { historyGroup } : undefined);
   return <section className={selected ? "content-card selected" : "content-card"} onClick={(event) => { event.stopPropagation(); onSelect(); }}>
     {selected && <div className="content-controls"><button aria-label="上へ移動" onClick={() => commit("内容を上へ移動", moveContent(worksheet, problem.id, content.id, -1))}>↑</button><button aria-label="下へ移動" onClick={() => commit("内容を下へ移動", moveContent(worksheet, problem.id, content.id, 1))}>↓</button><button className="danger-text" aria-label="削除" onClick={() => commit("内容を削除", deleteContent(worksheet, problem.id, content.id))}><Trash2 size={14} /></button></div>}
     {content.type === "richText" && <MixedColorDocumentEditor
       document={mergeColoredDocuments(content.document, content.answerDocument)}
       placeholder="問題文・解答を入力…"
-      onChange={(document) => update("本文を編集", (item) => { if (item.type === "richText") { item.document = document; item.answerDocument = emptyDocument(); } })}
+      onChange={(document) => update("本文を編集", (item) => { if (item.type === "richText") { item.document = document; item.answerDocument = emptyDocument(); } }, `richText:${problem.id}:content:${content.id}`)}
       target={{ kind: "content", contentId: content.id }}
       assetUrls={assetUrls}
       onImage={onImage}
@@ -160,11 +170,11 @@ function ContentEditor({ worksheet, problem, content, selected, onSelect, commit
       onTable={onTable}
     />}
     {content.type === "box" && <div className={`box-editor box-${content.preset}`}>
-      <div className="content-setting-row"><label>囲み枠</label><input value={content.title} placeholder="題名（空欄可）" onChange={(event) => update("囲み枠の題名", (item) => { if (item.type === "box") item.title = event.target.value; })} /><select value={content.preset} onChange={(event) => update("囲み枠デザイン", (item) => { if (item.type === "box") item.preset = event.target.value as typeof item.preset; })}><option value="simple">シンプル</option><option value="heading">見出し付き</option><option value="band">帯見出し</option><option value="emphasis">強調</option></select></div>
+      <div className="content-setting-row"><label>囲み枠</label><input value={content.title} placeholder="題名（空欄可）" onChange={(event) => { const title = event.currentTarget.value; update("囲み枠の題名", (item) => { if (item.type === "box") item.title = title; }, `text:${problem.id}:content:${content.id}:title`); }} /><select value={content.preset} onChange={(event) => update("囲み枠デザイン", (item) => { if (item.type === "box") item.preset = event.target.value as typeof item.preset; })}><option value="simple">シンプル</option><option value="heading">見出し付き</option><option value="band">帯見出し</option><option value="emphasis">強調</option></select></div>
       <MixedColorDocumentEditor
         document={mergeColoredDocuments(content.document, content.answerDocument)}
         placeholder="囲み枠の問題文・解答を入力…"
-        onChange={(document) => update("囲み枠本文を編集", (item) => { if (item.type === "box") { item.document = document; item.answerDocument = emptyDocument(); } })}
+        onChange={(document) => update("囲み枠本文を編集", (item) => { if (item.type === "box") { item.document = document; item.answerDocument = emptyDocument(); } }, `richText:${problem.id}:content:${content.id}`)}
         target={{ kind: "content", contentId: content.id }}
         assetUrls={assetUrls}
         onImage={onImage}
@@ -177,7 +187,7 @@ function ContentEditor({ worksheet, problem, content, selected, onSelect, commit
       <MixedColorDocumentEditor
         document={colorDocumentAsAnswer(content.document)}
         placeholder="めあてを入力…"
-        onChange={(document) => update("めあてを編集", (item) => { if (item.type === "goal") item.document = document; })}
+        onChange={(document) => update("めあてを編集", (item) => { if (item.type === "goal") item.document = document; }, `richText:${problem.id}:content:${content.id}`)}
         target={{ kind: "content", contentId: content.id }}
         initialColor="answer"
         assetUrls={assetUrls}
@@ -189,7 +199,7 @@ function ContentEditor({ worksheet, problem, content, selected, onSelect, commit
     {content.type === "answerArea" && <AnswerAreaEditor
       answerArea={content.answerArea}
       onSettingsChange={(style, rows) => update("解答欄を設定", (item) => { if (item.type === "answerArea") item.answerArea = { ...item.answerArea, style, rows }; })}
-      onChange={(document) => update("解答欄を編集", (item) => { if (item.type === "answerArea") { item.answerArea.document = document; item.answerArea.answerDocument = emptyDocument(); } })}
+      onChange={(document) => update("解答欄を編集", (item) => { if (item.type === "answerArea") { item.answerArea.document = document; item.answerArea.answerDocument = emptyDocument(); } }, `richText:${problem.id}:content:${content.id}:answerArea`)}
       target={{ kind: "content", contentId: content.id }}
       assetUrls={assetUrls}
       onImage={onImage}
@@ -199,8 +209,8 @@ function ContentEditor({ worksheet, problem, content, selected, onSelect, commit
     {content.type === "spacer" && <div className="inline-content-editor"><span>スペーサー</span><label>高さ <select value={content.rows} onChange={(event) => update("スペーサーを設定", (item) => { if (item.type === "spacer") item.rows = Number(event.target.value); })}>{Array.from({ length: 20 }, (_, index) => <option value={index + 1} key={index + 1}>{index + 1}</option>)}</select> 行</label></div>}
     {content.type === "pageBreak" && <div className="page-break-editor"><span><Scissors size={15} />ここで改ページ</span></div>}
     {content.type === "image" && <div className="image-content-editor">{assetUrls.get(content.assetId) ? <img src={assetUrls.get(content.assetId)} alt={content.alt} /> : <span className="image-content-missing">画像を読み込めません</span>}<div><strong>画像</strong><span>配置: {{ block: "独立", floatLeft: "左回り込み", floatRight: "右回り込み" }[content.placement]}</span><span>サイズ: {content.widthPercent}%</span></div><button type="button" className="small-button" onClick={() => onEditImage(null, { id: content.id, assetId: content.assetId, alt: content.alt, placement: content.placement, widthPercent: content.widthPercent, answerColor: false })}><Pencil size={13} />画像を編集</button></div>}
-    {content.type === "table" && <TableEditor content={content} onChange={(table) => update("表を編集", (item) => { if (item.type === "table") { item.rows = table.rows; item.columnWidthsPercent = table.columnWidthsPercent; } })} />}
-    {content.type === "subQuestionGroup" && <SubQuestionEditor worksheet={worksheet} problem={problem} content={content} commit={commit} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable} />}
+    {content.type === "table" && <TableEditor content={content} onChange={(table, historyGroup) => update("表を編集", (item) => { if (item.type === "table") { item.rows = table.rows; item.columnWidthsPercent = table.columnWidthsPercent; } }, historyGroup)} />}
+    {content.type === "subQuestionGroup" && <SubQuestionEditor worksheet={worksheet} problem={problem} content={content} commit={commit} mutate={mutate} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable} />}
   </section>;
 }
 
@@ -243,10 +253,17 @@ function AnswerAreaEditor({ answerArea, onSettingsChange, onChange, target, asse
   </div>;
 }
 
-function SubQuestionEditor({ worksheet, problem, content, commit, assetUrls, onImage, onEditImage, onTable }: { worksheet: Worksheet; problem: ProblemBlock; content: Extract<ContentBlock, { type: "subQuestionGroup" }>; commit: (label: string, result: WorksheetCommandResult) => void; assetUrls: ReadonlyMap<string, string>; onImage: (target: RichTextDocumentTarget) => void; onEditImage: (target: RichTextDocumentTarget | null, image: EditableImageRef) => void; onTable: (target: RichTextDocumentTarget) => void }) {
+function SubQuestionEditor({ worksheet, problem, content, commit, mutate, assetUrls, onImage, onEditImage, onTable }: { worksheet: Worksheet; problem: ProblemBlock; content: Extract<ContentBlock, { type: "subQuestionGroup" }>; commit: (label: string, result: WorksheetCommandResult) => void; mutate: MutateWorksheet; assetUrls: ReadonlyMap<string, string>; onImage: (target: RichTextDocumentTarget) => void; onEditImage: (target: RichTextDocumentTarget | null, image: EditableImageRef) => void; onTable: (target: RichTextDocumentTarget) => void }) {
   const [menuItemId, setMenuItemId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const numbers = getSubQuestionNumbers(content, worksheet.pageSettings.subQuestionNumberFormat);
+  const updateItem = (label: string, itemId: string, change: (item: Draft<(typeof content.items)[number]>) => void, historyGroup?: string) => mutate(label, (draft) => {
+    const targetProblem = draft.problems.find((entry) => entry.id === problem.id);
+    const targetGroup = targetProblem?.contents.find((entry) => entry.id === content.id);
+    if (targetGroup?.type !== "subQuestionGroup") return;
+    const targetItem = targetGroup.items.find((entry) => entry.id === itemId);
+    if (targetItem) change(targetItem);
+  }, historyGroup ? { historyGroup } : undefined);
 
   useOutsidePointerDown(menuRef, menuItemId !== null, () => setMenuItemId(null));
 
@@ -255,7 +272,7 @@ function SubQuestionEditor({ worksheet, problem, content, commit, assetUrls, onI
     <div className="subquestion-grid">{content.items.map((item) => <article className={item.width === "full" ? "subquestion-card full" : "subquestion-card"} key={item.id}>
       <header>
         <span><GripVertical size={14} />{numbers.get(item.id)}{item.numbering.restartAt !== null && <span className="status-chip">{item.numbering.restartAt}から再開</span>}</span>
-        <select value={item.width} onChange={(event) => commit("小問幅を変更", updateSubQuestion(worksheet, problem.id, content.id, item.id, (entry) => { entry.width = event.target.value as typeof entry.width; }))}><option value="column">半幅</option><option value="full">全幅</option></select>
+        <select value={item.width} onChange={(event) => updateItem("小問幅を変更", item.id, (entry) => { entry.width = event.target.value as typeof entry.width; })}><option value="column">半幅</option><option value="full">全幅</option></select>
         <div className="relative" ref={menuItemId === item.id ? menuRef : undefined}>
           <button className="icon-button" aria-label="小問設定" onClick={() => setMenuItemId(menuItemId === item.id ? null : item.id)}><MoreHorizontal size={14} /></button>
           {menuItemId === item.id && <SubQuestionMenu worksheet={worksheet} problem={problem} groupId={content.id} item={item} commit={commit} />}
@@ -266,7 +283,7 @@ function SubQuestionEditor({ worksheet, problem, content, commit, assetUrls, onI
         compact
         document={mergeColoredDocuments(item.content, item.answerContent)}
         placeholder="小問の問題文・解答を入力…"
-        onChange={(document) => commit("小問を編集", updateSubQuestion(worksheet, problem.id, content.id, item.id, (entry) => { entry.content = document; entry.answerContent = emptyDocument(); }))}
+        onChange={(document) => updateItem("小問を編集", item.id, (entry) => { entry.content = document; entry.answerContent = emptyDocument(); }, `richText:${problem.id}:subQuestion:${content.id}:${item.id}:content`)}
         target={{ kind: "subQuestion", groupId: content.id, subQuestionId: item.id, field: "content" }}
         assetUrls={assetUrls}
         onImage={onImage}
@@ -275,8 +292,8 @@ function SubQuestionEditor({ worksheet, problem, content, commit, assetUrls, onI
       />
       {item.answerArea && <AnswerAreaEditor
         answerArea={item.answerArea}
-        onSettingsChange={(style, rows) => commit("小問解答欄を設定", updateSubQuestion(worksheet, problem.id, content.id, item.id, (entry) => { if (entry.answerArea) entry.answerArea = { ...entry.answerArea, style, rows }; }))}
-        onChange={(document) => commit("小問解答欄を編集", updateSubQuestion(worksheet, problem.id, content.id, item.id, (entry) => { if (entry.answerArea) { entry.answerArea.document = document; entry.answerArea.answerDocument = emptyDocument(); } }))}
+        onSettingsChange={(style, rows) => updateItem("小問解答欄を設定", item.id, (entry) => { if (entry.answerArea) entry.answerArea = { ...entry.answerArea, style, rows }; })}
+        onChange={(document) => updateItem("小問解答欄を編集", item.id, (entry) => { if (entry.answerArea) { entry.answerArea.document = document; entry.answerArea.answerDocument = emptyDocument(); } }, `richText:${problem.id}:subQuestion:${content.id}:${item.id}:answerArea`)}
         target={{ kind: "subQuestion", groupId: content.id, subQuestionId: item.id, field: "answerArea" }}
         assetUrls={assetUrls}
         onImage={onImage}
@@ -295,7 +312,7 @@ function SubQuestionMenu({ worksheet, problem, groupId, item, commit }: { worksh
   </div>;
 }
 
-function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { type: "table" }>; onChange: (table: EditableTableData) => void }) {
+function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { type: "table" }>; onChange: (table: EditableTableData, historyGroup?: string) => void }) {
   const [activeCellId, setActiveCellId] = useState<string | null>(() => content.rows[0]?.cells[0]?.id ?? null);
   const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
   const tableData: EditableTableData = { rows: content.rows, columnWidthsPercent: content.columnWidthsPercent };
@@ -313,7 +330,7 @@ function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { t
       const cell = row.cells.find((item) => item.id === cellId);
       if (cell) {
         cell.document = document;
-        onChange({ rows, columnWidthsPercent: content.columnWidthsPercent });
+        onChange({ rows, columnWidthsPercent: content.columnWidthsPercent }, `richText:table-cell:${content.id}:${cellId}`);
         return;
       }
     }

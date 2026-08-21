@@ -1,11 +1,50 @@
 import { fireEvent, render, within } from "@testing-library/react";
+import { produce } from "immer";
 import { describe, expect, it, vi } from "vitest";
 
-import { createAnswerAreaBlock, createSubQuestionGroup, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
+import { createAnswerAreaBlock, createBoxBlock, createSubQuestionGroup, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import "../../styles.css";
 import { ProblemCard } from "./ProblemCard";
 
 describe("ProblemCard", () => {
+  it("文字入力をWorksheet全体Commandではなく部分Immer更新へ渡す", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const box = createBoxBlock();
+    problem.contents = [box];
+    const onMutate = vi.fn();
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={box.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={vi.fn()}
+        onMutate={onMutate}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(view.getByPlaceholderText("題名（空欄可）"), { target: { value: "重要" } });
+
+    expect(onMutate).toHaveBeenCalledWith(
+      "囲み枠の題名",
+      expect.any(Function),
+      { historyGroup: `text:${problem.id}:content:${box.id}:title` },
+    );
+    const mutation = onMutate.mock.calls.find(([label]) => label === "囲み枠の題名")?.[1];
+    const updated = produce(worksheet, mutation);
+    expect(updated.problems[0]?.contents[0]).toMatchObject({ type: "box", title: "重要" });
+    expect(updated.problems[0]).not.toBe(worksheet.problems[0]);
+  });
+
   it("カード見出しで問題から例題へ変更する", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
@@ -21,6 +60,7 @@ describe("ProblemCard", () => {
         onSelect={vi.fn()}
         onSelectContent={vi.fn()}
         onCommit={onCommit}
+        onMutate={vi.fn()}
         onAddImage={vi.fn()}
         onUpdateImage={vi.fn()}
         assetUrls={new Map()}
@@ -55,6 +95,7 @@ describe("ProblemCard", () => {
         onSelect={vi.fn()}
         onSelectContent={vi.fn()}
         onCommit={vi.fn()}
+        onMutate={vi.fn()}
         onAddImage={vi.fn()}
         onUpdateImage={vi.fn()}
         assetUrls={new Map()}
@@ -87,6 +128,7 @@ describe("ProblemCard", () => {
         onSelect={vi.fn()}
         onSelectContent={vi.fn()}
         onCommit={vi.fn()}
+        onMutate={vi.fn()}
         onAddImage={vi.fn()}
         onUpdateImage={vi.fn()}
         assetUrls={new Map()}
@@ -122,6 +164,7 @@ describe("ProblemCard", () => {
         onSelect={vi.fn()}
         onSelectContent={vi.fn()}
         onCommit={onCommit}
+        onMutate={vi.fn()}
         onAddImage={vi.fn()}
         onUpdateImage={vi.fn()}
         assetUrls={new Map()}
@@ -168,6 +211,7 @@ describe("ProblemCard", () => {
         onSelect={vi.fn()}
         onSelectContent={vi.fn()}
         onCommit={onCommit}
+        onMutate={vi.fn()}
         onAddImage={vi.fn()}
         onUpdateImage={vi.fn()}
         assetUrls={new Map()}

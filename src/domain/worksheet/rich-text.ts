@@ -10,7 +10,7 @@ export function documentToPlainText(document: AnyDocument | null): string {
     if (node.type === "text" && "text" in node) return String(node.text);
     if (node.type === "hardBreak") return "\n";
     if ((node.type === "inlineMath" || node.type === "blockMath") && node.attrs) {
-      return String(node.attrs.latex ?? "");
+      return typeof node.attrs.latex === "string" ? node.attrs.latex : "";
     }
     if (node.type === "imageRef") return "[画像]";
     if (node.type === "richTable") return "[表]";
@@ -88,7 +88,7 @@ function colorNodeAsAnswer(node: unknown): unknown {
     if (!marks.some((mark) => mark.type === "answerColor")) marks.push({ type: "answerColor" });
     next.marks = marks;
   } else if (["inlineMath", "blockMath", "imageRef", "richTable"].includes(value.type ?? "")) {
-    next.attrs = { ...(value.attrs ?? {}), answerColor: true };
+    next.attrs = { ...value.attrs, answerColor: true };
   }
   if (Array.isArray(value.content)) next.content = value.content.map(colorNodeAsAnswer);
   return next;

@@ -93,21 +93,21 @@ export function addProblem(source: Worksheet, afterProblemId?: string | null): W
 }
 
 export function deleteProblem(source: Worksheet, problemId: string): WorksheetCommandResult {
-  if (source.problems.length <= 1) return { ok: false, worksheet: source, code: "LAST_ITEM" };
   const worksheet = clone(source);
   const index = worksheet.problems.findIndex((problem) => problem.id === problemId);
   if (index < 0) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  if (worksheet.problems.length <= 1) return { ok: false, worksheet: source, code: "LAST_ITEM" };
   worksheet.problems.splice(index, 1);
   return { ok: true, worksheet: touch(worksheet) };
 }
 
 export function duplicateProblem(source: Worksheet, problemId: string): WorksheetCommandResult {
-  if (source.problems.length >= STRUCTURE_LIMITS.problemsPerWorksheet) {
-    return { ok: false, worksheet: source, code: "STRUCTURE_LIMIT_EXCEEDED" };
-  }
   const worksheet = clone(source);
   const index = worksheet.problems.findIndex((problem) => problem.id === problemId);
   if (index < 0) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  if (worksheet.problems.length >= STRUCTURE_LIMITS.problemsPerWorksheet) {
+    return { ok: false, worksheet: source, code: "STRUCTURE_LIMIT_EXCEEDED" };
+  }
   const copy = clone(worksheet.problems[index]!);
   replaceEntityIds(copy);
   worksheet.problems.splice(index + 1, 0, copy);
@@ -160,10 +160,12 @@ export function updateContent(
   contentId: string,
   change: (content: ContentBlock) => void,
 ): WorksheetCommandResult {
-  return updateProblem(source, problemId, (problem) => {
-    const content = problem.contents.find((item) => item.id === contentId);
-    if (content) change(content);
-  });
+  const worksheet = clone(source);
+  const problem = worksheet.problems.find((item) => item.id === problemId);
+  const content = problem?.contents.find((item) => item.id === contentId);
+  if (!content) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  change(content);
+  return { ok: true, worksheet: touch(worksheet) };
 }
 
 export function updateRichTextDocument<T extends RichTextDocumentTarget>(
@@ -320,9 +322,13 @@ export function deleteContent(
   problemId: string,
   contentId: string,
 ): WorksheetCommandResult {
-  return updateProblem(source, problemId, (problem) => {
-    problem.contents = problem.contents.filter((content) => content.id !== contentId);
-  });
+  const worksheet = clone(source);
+  const problem = worksheet.problems.find((item) => item.id === problemId);
+  if (!problem) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  const index = problem.contents.findIndex((content) => content.id === contentId);
+  if (index < 0) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  problem.contents.splice(index, 1);
+  return { ok: true, worksheet: touch(worksheet) };
 }
 
 export function moveContent(
@@ -331,14 +337,17 @@ export function moveContent(
   contentId: string,
   delta: -1 | 1,
 ): WorksheetCommandResult {
-  return updateProblem(source, problemId, (problem) => {
-    const from = problem.contents.findIndex((content) => content.id === contentId);
-    const to = Math.max(0, Math.min(from + delta, problem.contents.length - 1));
-    if (from >= 0 && from !== to) {
-      const [content] = problem.contents.splice(from, 1);
-      problem.contents.splice(to, 0, content!);
-    }
-  });
+  const worksheet = clone(source);
+  const problem = worksheet.problems.find((item) => item.id === problemId);
+  if (!problem) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  const from = problem.contents.findIndex((content) => content.id === contentId);
+  if (from < 0) return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  const to = Math.max(0, Math.min(from + delta, problem.contents.length - 1));
+  if (from !== to) {
+    const [content] = problem.contents.splice(from, 1);
+    problem.contents.splice(to, 0, content!);
+  }
+  return { ok: true, worksheet: touch(worksheet) };
 }
 
 export function setProblemSolution(
@@ -398,8 +407,10 @@ export function deleteSubQuestion(
   const problem = worksheet.problems.find((item) => item.id === problemId);
   const group = problem?.contents.find((item) => item.id === groupId);
   if (!group || group.type !== "subQuestionGroup") return { ok: false, worksheet: source, code: "NOT_FOUND" };
+  const index = group.items.findIndex((item) => item.id === subQuestionId);
+  if (index < 0) return { ok: false, worksheet: source, code: "NOT_FOUND" };
   if (group.items.length <= 1) return { ok: false, worksheet: source, code: "LAST_ITEM" };
-  group.items = group.items.filter((item) => item.id !== subQuestionId);
+  group.items.splice(index, 1);
   return { ok: true, worksheet: touch(worksheet) };
 }
 

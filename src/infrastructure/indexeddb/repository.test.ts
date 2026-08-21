@@ -37,6 +37,32 @@ describe("DexieWorksheetRepository", () => {
     expect(await db.assets.count()).toBe(0);
   });
 
+  it("保存時に現在参照中またはUndo/Redoで保持中のAsset以外を削除する", async () => {
+    const worksheet = createWorksheet();
+    const referencedAsset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([new Uint8Array([1])], { type: "image/png" }), width: 1, height: 1, createdAt: new Date().toISOString() };
+    const historyAsset: AssetRecord = { ...referencedAsset, id: crypto.randomUUID(), blob: new Blob([new Uint8Array([2])], { type: "image/png" }) };
+    const unreferencedAsset: AssetRecord = { ...referencedAsset, id: crypto.randomUUID(), blob: new Blob([new Uint8Array([3])], { type: "image/png" }) };
+    worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: referencedAsset.id, alt: "", placement: "block", widthPercent: 50 });
+    await repository.create({ worksheet, assets: [referencedAsset, historyAsset, unreferencedAsset] });
+
+    await repository.save(worksheet, {
+      pruneUnreferencedAssets: true,
+      retainedAssetIds: new Set([historyAsset.id]),
+    });
+
+    expect(new Set((await db.assets.toArray()).map((asset) => asset.id))).toEqual(new Set([
+      referencedAsset.id,
+      historyAsset.id,
+    ]));
+
+    await repository.save(worksheet, {
+      pruneUnreferencedAssets: true,
+      retainedAssetIds: new Set(),
+    });
+
+    expect((await db.assets.toArray()).map((asset) => asset.id)).toEqual([referencedAsset.id]);
+  });
+
   it("単一JSONを別IDとして復元し画像バイト列を維持する", async () => {
     const worksheet = createWorksheet();
     const asset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }), width: 2, height: 3, createdAt: new Date().toISOString() };
