@@ -82,12 +82,13 @@ export class DexieWorksheetRepository implements WorksheetRepository {
       return;
     }
 
-    const referencedAssetIds = collectReferencedAssetIds(worksheet);
+    const retainedAssetIds = collectReferencedAssetIds(worksheet);
+    options.retainedAssetIds?.forEach((assetId) => retainedAssetIds.add(assetId));
     await this.db.transaction("rw", this.db.worksheets, this.db.assets, async () => {
       await this.db.worksheets.put(worksheet);
       const assets = await this.db.assets.where("worksheetId").equals(worksheet.id).toArray();
       const unreferencedIds = assets
-        .filter((asset) => !referencedAssetIds.has(asset.id))
+        .filter((asset) => !retainedAssetIds.has(asset.id))
         .map((asset) => asset.id);
       if (unreferencedIds.length) await this.db.assets.bulkDelete(unreferencedIds);
     });

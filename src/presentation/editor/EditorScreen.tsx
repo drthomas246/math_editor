@@ -100,11 +100,17 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     const request = { worksheetId: worksheet.id, sessionId, revision };
     const timer = window.setTimeout(async () => {
       markSaving(request);
-      try { await repository.save(worksheet); markSaved(request); }
+      try {
+        await repository.save(worksheet, {
+          pruneUnreferencedAssets: true,
+          retainedAssetIds,
+        });
+        markSaved(request);
+      }
       catch { markFailed(request); }
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [worksheet, sessionId, revision, saveStatus, markSaving, markSaved, markFailed, repository]);
+  }, [worksheet, sessionId, revision, saveStatus, retainedAssetIds, markSaving, markSaved, markFailed, repository]);
 
   useEffect(() => {
     if (saveStatus === "saved") return;
@@ -176,14 +182,22 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
   }, [dragging]);
 
-  const flushSave = useCallback(async (pruneUnreferencedAssets = false) => {
+  const flushSave = useCallback(async (discardHistory = false) => {
     const state = useEditorStore.getState();
-    if (!state.worksheet || (state.saveStatus === "saved" && !pruneUnreferencedAssets)) return true;
+    if (!state.worksheet || (state.saveStatus === "saved" && !discardHistory)) return true;
     const request = createSaveRequest(state);
     if (!request) return true;
     state.markSaving(request);
     try {
-      await repository.save(state.worksheet, { pruneUnreferencedAssets });
+      await repository.save(state.worksheet, {
+        pruneUnreferencedAssets: true,
+        ...(discardHistory ? {} : {
+          retainedAssetIds: collectRetainedAssetIds(
+            state.worksheet,
+            [...state.undoStack, ...state.redoStack],
+          ),
+        }),
+      });
       state.markSaved(request);
       return true;
     } catch {

@@ -12,6 +12,7 @@ export type WorksheetListResult = {
 
 export type SaveWorksheetOptions = {
   pruneUnreferencedAssets?: boolean;
+  retainedAssetIds?: ReadonlySet<string>;
 };
 
 export interface WorksheetRepository {

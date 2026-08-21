@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, type RenderResult } from "@tes
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Worksheet } from "../../domain/worksheet/worksheet";
+import type { AssetRecord, Worksheet } from "../../domain/worksheet/worksheet";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { MathWorksheetDatabase } from "../../infrastructure/indexeddb/database";
 import { DexieWorksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
@@ -79,8 +79,72 @@ describe("EditorScreen 離脱・保存統合", () => {
     expect(screen.getByText("未保存")).toBeInTheDocument();
 
     await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
-    expect(save).toHaveBeenCalledWith(expect.objectContaining({ title: "自動保存されたプリント" }));
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "自動保存されたプリント" }),
+      {
+        pruneUnreferencedAssets: true,
+        retainedAssetIds: new Set(),
+      },
+    );
     expect((await repository.get(worksheet.id))?.worksheet.title).toBe("自動保存されたプリント");
+  });
+
+  it("Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする", async () => {
+    renderEditor();
+    await editorTitleInput();
+
+    const originalAsset = createAsset(worksheet, 1);
+    const source = structuredClone(worksheet);
+    source.problems[0]!.contents = [{
+      id: crypto.randomUUID(),
+      type: "image",
+      assetId: originalAsset.id,
+      alt: "差し替え前",
+      placement: "block",
+      widthPercent: 50,
+    }];
+    await repository.putAsset(originalAsset, source);
+    act(() => useEditorStore.getState().commit("画像を挿入", source));
+
+    const replacementAsset = createAsset(worksheet, 2);
+    const replacement = structuredClone(source);
+    const image = replacement.problems[0]!.contents[0]!;
+    if (image.type !== "image") throw new Error("テスト用画像がありません");
+    image.assetId = replacementAsset.id;
+    await repository.putAsset(replacementAsset, replacement);
+    const save = vi.spyOn(repository, "save");
+
+    act(() => useEditorStore.getState().commit("画像を差し替え", replacement));
+
+    expect(screen.getByText("未保存")).toBeInTheDocument();
+    await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
+    expect(save.mock.calls.at(-1)?.[1]).toEqual({
+      pruneUnreferencedAssets: true,
+      retainedAssetIds: new Set([replacementAsset.id, originalAsset.id]),
+    });
+    expect(new Set((await database.assets.toArray()).map((asset) => asset.id))).toEqual(new Set([
+      originalAsset.id,
+      replacementAsset.id,
+    ]));
+
+    act(() => {
+      for (let index = 0; index < 100; index += 1) {
+        useEditorStore.getState().mutate(`履歴を追加 ${index}`, (draft) => {
+          draft.title = `履歴 ${index}`;
+          draft.header.title = draft.title;
+        });
+      }
+    });
+
+    expect(screen.getByText("未保存")).toBeInTheDocument();
+    await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
+    await waitFor(async () => {
+      expect((await database.assets.toArray()).map((asset) => asset.id)).toEqual([replacementAsset.id]);
+    });
+    expect(save.mock.calls.at(-1)?.[1]).toEqual({
+      pruneUnreferencedAssets: true,
+      retainedAssetIds: new Set([replacementAsset.id]),
+    });
   });
 
   it("保存失敗をfailedで表示し、再試行でIndexedDBへ保存する", async () => {
@@ -167,4 +231,16 @@ function dispatchBeforeUnload(): boolean {
   const event = new Event("beforeunload", { cancelable: true }) as BeforeUnloadEvent;
   window.dispatchEvent(event);
   return event.defaultPrevented;
+}
+
+function createAsset(owner: Worksheet, byte: number): AssetRecord {
+  return {
+    id: crypto.randomUUID(),
+    worksheetId: owner.id,
+    mimeType: "image/png",
+    blob: new Blob([new Uint8Array([byte])], { type: "image/png" }),
+    width: 1,
+    height: 1,
+    createdAt: new Date().toISOString(),
+  };
 }
