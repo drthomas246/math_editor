@@ -308,6 +308,30 @@ describe("worksheet commands", () => {
     expect(WorksheetSchema.safeParse(result.worksheet).success).toBe(true);
   });
 
+  it("存在しない画像の更新はNOT_FOUNDを返して元Worksheetを変更しない", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    problem.contents = [{
+      id: createId(),
+      type: "image",
+      assetId: createId(),
+      alt: "既存画像",
+      placement: "block",
+      widthPercent: 50,
+    }];
+    const before = structuredClone(worksheet);
+
+    const result = updateImageReference(worksheet, problem.id, "missing-image", null, {
+      alt: "変更後",
+      placement: "floatRight",
+      widthPercent: 75,
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    expect(result.worksheet).toBe(worksheet);
+    expect(worksheet).toEqual(before);
+  });
+
   it("小問内の画像は位置とサイズだけを変更して元の画像参照を保つ", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
