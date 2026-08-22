@@ -8,6 +8,7 @@ import overview from "./content/overview.md?raw";
 import previewAndPdf from "./content/preview-and-pdf.md?raw";
 import savingAndHistory from "./content/saving-and-history.md?raw";
 import troubleshooting from "./content/troubleshooting.md?raw";
+import versionAndLicense from "./content/version-and-license.md?raw";
 import worksheetList from "./content/worksheet-list.md?raw";
 import type { ManualChapterSlug } from "./manual-manifest";
 
@@ -23,4 +24,5 @@ export const MANUAL_CONTENT = {
   "saving-and-history": savingAndHistory,
   "backup-and-trash": backupAndTrash,
   troubleshooting,
+  "version-and-license": versionAndLicense,
 } satisfies Record<ManualChapterSlug, string>;

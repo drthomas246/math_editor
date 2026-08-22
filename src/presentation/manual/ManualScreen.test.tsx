@@ -21,11 +21,17 @@ describe("ManualScreen", () => {
   it("章、目次、前後移動を表示する", async () => {
     renderManual("/help/overview");
     expect(screen.getByRole("heading", { level: 1, name: "はじめに・動作環境" })).toBeInTheDocument();
-    expect(screen.getByText("個人・非商用ソフトウェアライセンス 1.0")).toBeInTheDocument();
-    expect(screen.getByText("Copyright © 2026 Yamahara Yoshihiro（山原喜寛）")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /はじめに・動作環境/u })).toHaveAttribute("aria-current", "page");
     await userEvent.click(screen.getByRole("link", { name: /次の章最初のプリントを作る/u }));
     expect(await screen.findByRole("heading", { level: 1, name: "最初のプリントを作る" })).toBeInTheDocument();
+  });
+
+  it("目次の12番目にバージョンとライセンスを表示する", () => {
+    renderManual("/help/version-and-license");
+    expect(screen.getByRole("heading", { level: 1, name: "バージョンとライセンス" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /12バージョンとライセンス/u })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("row", { name: "マニュアル 1.0" })).toBeInTheDocument();
+    expect(screen.getByText("Copyright © 2026 Yamahara Yoshihiro")).toBeInTheDocument();
   });
 
   it("検索結果へ切り替え、選択後に章を表示する", async () => {

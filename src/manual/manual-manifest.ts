@@ -1,22 +1,22 @@
 import type { ManualChapterManifestItem, ManualMetadata } from "./manual-types";
 
 export const MANUAL_METADATA = {
-  manualVersion: "1.2",
+  manualVersion: "1.0",
   targetAppVersion: "1.0.0",
   licenseName: "個人・非商用ソフトウェアライセンス",
   licenseVersion: "1.0",
   copyright: "Copyright © 2026 Yamahara Yoshihiro",
   licenseContact: "yoshihiro@yamahara.email",
-  updatedAt: "2026-08-21",
+  updatedAt: "2026-08-22",
 } as const satisfies ManualMetadata;
 
 export const MANUAL_CHAPTER_MANIFEST = [
   {
     slug: "overview",
     title: "はじめに・動作環境",
-    summary: "このアプリでできること、動作環境、保存場所、バージョン、ライセンスを説明します。",
-    keywords: ["はじめに", "動作環境", "ブラウザ", "保存先", "クラウド", "PC", "初心者", "バージョン", "ライセンス", "著作権"],
-    updatedAt: "2026-08-21",
+    summary: "このアプリでできること、利用できるパソコン、データの保存場所を説明します。",
+    keywords: ["はじめに", "動作環境", "ブラウザ", "保存先", "クラウド", "PC", "初心者"],
+    updatedAt: "2026-08-22",
   },
   {
     slug: "getting-started",
@@ -87,6 +87,13 @@ export const MANUAL_CHAPTER_MANIFEST = [
     summary: "開けない・保存できない・読込めない場合の対処、上限、キー操作をまとめます。",
     keywords: ["トラブル", "エラー", "制約", "上限", "ショートカット", "ページ切れ", "画像", "JSON", "見つからない"],
     updatedAt: "2026-08-21",
+  },
+  {
+    slug: "version-and-license",
+    title: "バージョンとライセンス",
+    summary: "アプリ、マニュアル、ライセンスの版と、著作権・利用条件の確認先を説明します。",
+    keywords: ["バージョン", "版", "ライセンス", "著作権", "Copyright", "商用利用", "組織利用", "再配布", "問い合わせ"],
+    updatedAt: "2026-08-22",
   },
 ] as const satisfies readonly ManualChapterManifestItem[];
 
