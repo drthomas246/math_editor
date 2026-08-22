@@ -12,5 +12,9 @@ export type ManualChapterManifestItem = ManualChapterMetadata & {
 export type ManualMetadata = {
   manualVersion: string;
   targetAppVersion: string;
+  licenseName: string;
+  licenseVersion: string;
+  copyright: string;
+  licenseContact: string;
   updatedAt: string;
 };
