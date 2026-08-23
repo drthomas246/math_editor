@@ -1,5 +1,7 @@
 import { convertLatexToMarkup, convertLatexToSpeakableText } from "mathlive/ssr";
 
+import { mathMacros } from "./math-macros";
+
 type Props = {
   latex: string;
   block?: boolean;
@@ -11,6 +13,7 @@ export function renderMathMarkup(latex: string, block: boolean): string {
   try {
     return convertLatexToMarkup(latex, {
       defaultMode: block ? "math" : "inline-math",
+      macros: mathMacros,
     });
   } catch {
     return "";

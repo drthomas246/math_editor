@@ -7,6 +7,7 @@ import { createId, createTableBlock } from "../../domain/worksheet/worksheet.def
 import { downloadBlob, localTimestamp, sanitizeFileNamePart } from "../../infrastructure/file/download";
 import { MathFormula } from "../components/MathFormula";
 import { ManualContextLink } from "../components/ManualContextLink";
+import { mathMacros } from "../components/math-macros";
 import type { MathTextSize } from "../components/rich-text-editor-extensions";
 import { Modal } from "../components/Modal";
 import { WorksheetPreview } from "../preview/WorksheetPreview";
@@ -72,6 +73,7 @@ type MathDialogInitial = { latex: string; block: boolean; textSize: MathTextSize
 
 type MathfieldHandle = HTMLElement & {
   value: string;
+  macros: Readonly<Record<string, unknown>>;
   insert: (latex: string, options?: {
     selectionMode?: "placeholder" | "after" | "before" | "item";
     focus?: boolean;
@@ -101,12 +103,21 @@ export function MathDialog({ onClose, onInsert, inlineOnly = false, initial }: {
   const [textSize, setTextSize] = useState<MathTextSize>(initial?.textSize ?? "normal");
   const mathfieldRef = useRef<MathfieldHandle | null>(null);
   useEffect(() => {
-    void import("mathlive");
+    let active = true;
+    void import("mathlive").then(() => {
+      const mathfield = mathfieldRef.current;
+      if (!active || !mathfield) return;
+      const currentValue = mathfield.value;
+      mathfield.macros = { ...mathfield.macros, ...mathMacros };
+      mathfield.value = "";
+      mathfield.value = currentValue;
+    });
+    return () => { active = false; };
   }, []);
   return <Modal title={editing ? "数式を編集" : inlineOnly ? "表セルに数式を挿入" : "数式を入力"} size="large" onClose={onClose} footer={<><button className="secondary-button" onClick={onClose}>キャンセル</button><button className="primary-button" disabled={!latex.trim()} onClick={() => onInsert(latex.trim(), inlineOnly ? false : block, textSize)}>{editing ? "変更を保存" : "挿入"}</button></>}>
     <div className="dialog-lead"><Sigma size={20} /><span>基本、分数・指数、平方根、不等号の記号を選択できます。</span></div>
     <div className="manual-dialog-help"><ManualContextLink topic="formula">数式入力の詳しい使い方</ManualContextLink></div>
-    <div className="symbol-grid">{mathSymbols.map((symbol) => <button key={symbol.latex} type="button" aria-label={`${symbol.label}を挿入`} title={symbol.label} onClick={() => { const mathfield = mathfieldRef.current; if (mathfield) { const insertLatex = "insertLatex" in symbol ? symbol.insertLatex : symbol.latex; mathfield.focus(); mathfield.insert(insertLatex, { selectionMode: "placeholder", focus: true, scrollIntoView: true }); setLatex(mathfield.value); } else setLatex((value) => `${value}${symbol.latex}`); }}><MathFormula latex={symbol.preview} /></button>)}</div>
+    <div className="symbol-grid">{mathSymbols.map((symbol) => <button key={symbol.latex} type="button" aria-label={`${symbol.label}を挿入`} title={symbol.label} onClick={() => { const mathfield = mathfieldRef.current; if (mathfield && typeof mathfield.insert === "function") { const insertLatex = "insertLatex" in symbol ? symbol.insertLatex : symbol.latex; mathfield.focus(); mathfield.insert(insertLatex, { selectionMode: "placeholder", focus: true, scrollIntoView: true }); setLatex(mathfield.value); } else setLatex((value) => `${value}${symbol.latex}`); }}><MathFormula latex={symbol.preview} /></button>)}</div>
     <label className="stacked-field"><span>数式</span>{createElement("math-field", { ref: mathfieldRef, value: latex, onInput: (event: Event) => setLatex((event.currentTarget as HTMLElement & { value: string }).value), "aria-label": "数式を視覚的に入力" })}</label>
     <div className="math-preview">{latex ? <MathFormula latex={latex} block textSize={textSize} /> : "数式プレビュー"}</div>
     <label className="form-row"><span className="form-label">文字サイズ</span><select aria-label="数式の文字サイズ" value={textSize} onChange={(event) => setTextSize(event.target.value as MathTextSize)}><option value="small">小</option><option value="normal">標準</option><option value="large">大</option><option value="xLarge">特大</option></select></label>
