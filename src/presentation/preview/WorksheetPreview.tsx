@@ -301,7 +301,9 @@ function RichDocument({ document, assetUrls, showAnswers }: { document: { conten
 }
 
 function RichNode({ node, assetUrls, showAnswers }: { node: unknown; assetUrls: Map<string, string>; showAnswers: boolean }): React.ReactNode {
-  if (!node || typeof node !== "object" || !isNodeVisibleInMode(node, showAnswers)) return null;
+  if (!node || typeof node !== "object") return null;
+  const preserveUnderlinedAnswerWidth = !showAnswers && isUnderlinedAnswerText(node);
+  if (!preserveUnderlinedAnswerWidth && !isNodeVisibleInMode(node, showAnswers)) return null;
   const value = node as { type?: string; text?: string; marks?: Array<{ type?: string; attrs?: { size?: string } }>; attrs?: Record<string, unknown>; content?: readonly unknown[] };
   const children = value.content?.map((child, index) => <RichNode key={index} node={child} assetUrls={assetUrls} showAnswers={showAnswers} />) ?? [];
   const answerClass = isAnswerOnlyNode(node) ? "answer-color" : undefined;
@@ -314,9 +316,11 @@ function RichNode({ node, assetUrls, showAnswers }: { node: unknown; assetUrls: 
         else if (mark.type === "underline") rendered = <u>{rendered}</u>;
         else if (mark.type === "italic") rendered = <em>{rendered}</em>;
         else if (mark.type === "textSize") rendered = <span className={`text-size-${String(mark.attrs?.size ?? "normal")}`}>{rendered}</span>;
-        else if (mark.type === "answerColor") rendered = <span className="answer-color">{rendered}</span>;
+        else if (mark.type === "answerColor" && showAnswers) rendered = <span className="answer-color">{rendered}</span>;
       }
-      return rendered;
+      return preserveUnderlinedAnswerWidth
+        ? <span className="paper-answer-placeholder" aria-hidden="true">{rendered}</span>
+        : rendered;
     }
     case "hardBreak": return <br />;
     case "paragraph": return <p className={answerClass} style={{ textAlign: toTextAlign(value.attrs?.textAlign) }}>{children.length ? children : <>&nbsp;</>}</p>;
@@ -344,6 +348,15 @@ function isNodeVisibleInMode(node: unknown, showAnswers: boolean): boolean {
   if (["hardBreak", "inlineMath", "blockMath", "imageRef", "richTable", "spacer"].includes(value.type ?? "")) return true;
   if (!Array.isArray(value.content) || value.content.length === 0) return value.type === "paragraph";
   return value.content.some((child) => isNodeVisibleInMode(child, showAnswers));
+}
+
+function isUnderlinedAnswerText(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false;
+  const value = node as { type?: string; text?: string; marks?: Array<{ type?: string }> };
+  return value.type === "text"
+    && Boolean(value.text)
+    && nodeUsesAnswerColor(node)
+    && value.marks?.some((mark) => mark.type === "underline") === true;
 }
 
 function isAnswerOnlyNode(node: unknown): boolean {

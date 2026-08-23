@@ -301,6 +301,16 @@ h1, h2, h3, p { margin-top: 0; }
   color: var(--color-danger);
 }
 
+/* 問題のみでも、下線上に入力した解答の幅を解答付きと同じだけ確保する。 */
+.paper-answer-placeholder,
+.paper-answer-placeholder * {
+  color: transparent;
+}
+
+.paper-answer-placeholder u {
+  text-decoration-color: #121212;
+}
+
 .answer-color .paper-table th,
 .answer-color .paper-table td,
 .paper-solution .paper-table th,
