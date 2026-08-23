@@ -31,4 +31,20 @@ describe("UI preferences", () => {
 
     expect(loadUiPreferences()).toEqual(DEFAULT_UI_PREFERENCES);
   });
+
+  it("以前の問題＋解答プレビュー設定を問題のみに移行する", () => {
+    localStorage.setItem(UI_PREFERENCES_KEY, JSON.stringify({
+      ...DEFAULT_UI_PREFERENCES,
+      paneRatio: 0.6,
+      zoom: "fitWidth",
+      previewMode: "questionsAndAnswers",
+    }));
+
+    expect(loadUiPreferences()).toEqual({
+      ...DEFAULT_UI_PREFERENCES,
+      paneRatio: 0.6,
+      zoom: "fitWidth",
+      previewMode: "questions",
+    });
+  });
 });

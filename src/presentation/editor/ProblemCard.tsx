@@ -86,7 +86,7 @@ export function ProblemCard(props: Props) {
     onSelectContent(content.id); setAddMenu(false);
   };
 
-  return <article className={selected ? "problem-card selected" : "problem-card"} onClick={onSelect}>
+  return <article className={selected ? "problem-card selected" : "problem-card"} data-editor-problem-id={problem.id} onClick={onSelect}>
     <header className="problem-card-header">
       <div className="problem-title"><button className="drag-handle" aria-label="問題を並べ替え"><GripVertical size={18} /></button><select className="problem-kind-select" aria-label="問題の種類" value={problem.kind} onClick={(event) => event.stopPropagation()} onChange={(event) => commit("問題の種類を変更", updateProblem(worksheet, problem.id, (item) => { item.kind = event.target.value as typeof item.kind; }))}><option value="problem">問題</option><option value="example">例題</option></select><span>{displayNumber ? displayNumber.replace(/[^0-9]/gu, "") || displayNumber : "番号なし"}</span>{problem.numbering.restartAt && <span className="status-chip">{problem.numbering.restartAt}から再開</span>}</div>
       <div className="problem-actions"><button className="small-button" disabled={worksheet.problems.length >= 200} onClick={(event) => { event.stopPropagation(); commit("問題を複製", duplicateProblem(worksheet, problem.id)); }}><Copy size={14} />複製</button><div className="relative" ref={problemMenuRef}><button className="icon-button" aria-label="問題設定" onClick={(event) => { event.stopPropagation(); setProblemMenu(!problemMenu); }}><MoreHorizontal size={18} /></button>{problemMenu && <ProblemMenu worksheet={worksheet} problem={problem} index={index} commit={commit} close={() => setProblemMenu(false)} />}</div></div>
