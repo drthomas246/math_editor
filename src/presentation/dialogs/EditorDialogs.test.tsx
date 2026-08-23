@@ -31,6 +31,8 @@ describe("MathDialog", () => {
     expect(buttons.getByRole("button", { name: "わり算を挿入" })).toHaveTextContent("÷");
     expect(buttons.getByRole("button", { name: "小なりイコールを挿入" })).toHaveTextContent("≦");
     expect(buttons.getByRole("button", { name: "大なりイコールを挿入" })).toHaveTextContent("≧");
+    const reverseNotEqualSlash = buttons.getByRole("button", { name: "等しくないを挿入" }).querySelector(".ML__rlap .ML__cmr");
+    expect(reverseNotEqualSlash).toHaveTextContent("\\");
     for (const name of ["等しくない", "プラスマイナス", "分数", "平方根", "小なりイコール", "大なりイコール"]) {
       expect(buttons.getByRole("button", { name: `${name}を挿入` }).querySelector(".ML__latex")).not.toBeNull();
     }
