@@ -2,7 +2,7 @@ import { ArrowLeft, FileDown, Minus, Plus, Redo2, Settings2, Undo2 } from "lucid
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import type { PreviewMode } from "../../application/pdf/generate-pdf";
+import type { EditorPreviewMode } from "../../application/pdf/generate-pdf";
 import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
@@ -18,6 +18,7 @@ import { WorksheetPreview } from "../preview/WorksheetPreview";
 import { loadUiPreferences, saveUiPreferences } from "../app/ui-preferences";
 import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
 import { createSaveRequest, useEditorStore } from "./editor-store";
+import { syncProblemScroll } from "./problem-scroll-sync";
 import { ProblemCard } from "./ProblemCard";
 
 const SAVE_DEBOUNCE_MS = 750;
@@ -26,7 +27,9 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const { worksheetId } = useParams();
   const navigate = useNavigate();
   const shellRef = useRef<HTMLDivElement>(null);
+  const editingScrollRef = useRef<HTMLElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
+  const scrollSyncFrameRef = useRef<number | null>(null);
   const assetUrlsRef = useRef<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -219,6 +222,59 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     setPreferences(next); saveUiPreferences(next);
   };
   const numericZoom = typeof preferences.zoom === "number" ? preferences.zoom : fittedZoom;
+  const syncPreviewScroll = useCallback(() => {
+    const editorScroll = editingScrollRef.current;
+    const previewScroll = previewScrollRef.current;
+    if (editorScroll && previewScroll) {
+      syncProblemScroll(editorScroll, previewScroll, preferences.previewMode);
+    }
+  }, [preferences.previewMode]);
+  const schedulePreviewScrollSync = useCallback(() => {
+    if (scrollSyncFrameRef.current !== null && typeof window.cancelAnimationFrame === "function") {
+      window.cancelAnimationFrame(scrollSyncFrameRef.current);
+    }
+    if (typeof window.requestAnimationFrame !== "function") {
+      scrollSyncFrameRef.current = null;
+      syncPreviewScroll();
+      return;
+    }
+    scrollSyncFrameRef.current = window.requestAnimationFrame(() => {
+      scrollSyncFrameRef.current = null;
+      syncPreviewScroll();
+    });
+  }, [syncPreviewScroll]);
+
+  useEffect(() => {
+    const editorScroll = editingScrollRef.current;
+    const previewScroll = previewScrollRef.current;
+    if (!editorScroll || !previewScroll) return;
+
+    editorScroll.addEventListener("scroll", schedulePreviewScrollSync, { passive: true });
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedulePreviewScrollSync);
+    resizeObserver?.observe(editorScroll);
+    resizeObserver?.observe(previewScroll);
+    const problemList = editorScroll.querySelector<HTMLElement>(".problem-list");
+    const previewPages = previewScroll.querySelector<HTMLElement>(".preview-pages");
+    if (problemList) resizeObserver?.observe(problemList);
+    if (previewPages) resizeObserver?.observe(previewPages);
+    schedulePreviewScrollSync();
+
+    return () => {
+      editorScroll.removeEventListener("scroll", schedulePreviewScrollSync);
+      resizeObserver?.disconnect();
+    };
+  }, [schedulePreviewScrollSync, worksheet?.id]);
+
+  useLayoutEffect(() => {
+    if (worksheet) schedulePreviewScrollSync();
+  }, [numericZoom, preferences.previewMode, revision, schedulePreviewScrollSync, worksheet]);
+
+  useEffect(() => () => {
+    if (scrollSyncFrameRef.current !== null && typeof window.cancelAnimationFrame === "function") {
+      window.cancelAnimationFrame(scrollSyncFrameRef.current);
+    }
+  }, []);
+
   const updateTitle = (value: string) => mutate("題名を変更", (draft) => {
     const title = (value.trim() || "無題のプリント").slice(0, 100);
     draft.title = title;
@@ -284,7 +340,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     </header>
     <div className="screen-width-warning"><h2>PCサイズの画面で利用してください</h2><p>プリントの編集には横幅1024px以上の画面が必要です。</p><button className="secondary-button" onClick={backToList}>一覧へ戻る</button></div>
     <div className="editor-workspace" ref={shellRef}>
-      <section className="editing-pane" style={{ width: `${preferences.paneRatio * 100}%` }}>
+      <section className="editing-pane" ref={editingScrollRef} style={{ width: `${preferences.paneRatio * 100}%` }}>
         <div className="pane-heading"><div><p className="eyebrow">WORKSHEET</p><h1>編集</h1></div><span>{worksheet.problems.filter((problem) => problem.kind === "problem").length}問・{worksheet.problems.filter((problem) => problem.kind === "example").length}例題</span></div>
         <div className="problem-list">
           {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onMutate={mutate} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
@@ -293,7 +349,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       </section>
       <div className={dragging ? "pane-divider dragging" : "pane-divider"} role="separator" aria-orientation="vertical" aria-valuemin={35} aria-valuemax={65} aria-valuenow={Math.round(preferences.paneRatio * 100)} tabIndex={0} onPointerDown={() => setDragging(true)} onKeyDown={(event) => { if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return; const step = event.shiftKey ? 0.1 : 0.02; const direction = event.key === "ArrowLeft" ? -1 : 1; updatePreferences({ paneRatio: Math.max(0.35, Math.min(0.65, preferences.paneRatio + step * direction)) }); }}><i /><i /><i /></div>
       <section className="preview-pane" style={{ width: `${(1 - preferences.paneRatio) * 100}%` }}>
-        <div className="preview-toolbar"><div className="preview-heading"><strong>プレビュー</strong>{previewUpdating && <span className="updating">更新中…</span>}</div><select aria-label="プレビューモード" value={preferences.previewMode} onChange={(event) => updatePreferences({ previewMode: event.target.value as PreviewMode })}><option value="questions">問題のみ</option><option value="withAnswers">解答付き</option><option value="questionsAndAnswers">問題＋解答</option></select><div className="zoom-controls"><button className="icon-button" aria-label="縮小" disabled={numericZoom <= MIN_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, -1) })}><Minus size={15} /></button><button className="zoom-value">{Math.round(numericZoom * 100)}%</button><button className="icon-button" aria-label="拡大" disabled={numericZoom >= MAX_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, 1) })}><Plus size={15} /></button></div><button className={preferences.zoom === "fitWidth" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitWidth" })}>幅に合わせる</button><button className={preferences.zoom === "fitPage" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitPage" })}>ページ全体</button></div>
+        <div className="preview-toolbar"><div className="preview-heading"><strong>プレビュー</strong>{previewUpdating && <span className="updating">更新中…</span>}</div><select aria-label="プレビューモード" value={preferences.previewMode} onChange={(event) => updatePreferences({ previewMode: event.target.value as EditorPreviewMode })}><option value="questions">問題のみ</option><option value="withAnswers">解答付き</option></select><div className="zoom-controls"><button className="icon-button" aria-label="縮小" disabled={numericZoom <= MIN_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, -1) })}><Minus size={15} /></button><button className="zoom-value">{Math.round(numericZoom * 100)}%</button><button className="icon-button" aria-label="拡大" disabled={numericZoom >= MAX_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, 1) })}><Plus size={15} /></button></div><button className={preferences.zoom === "fitWidth" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitWidth" })}>幅に合わせる</button><button className={preferences.zoom === "fitPage" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitPage" })}>ページ全体</button></div>
         <div className="preview-scroll" ref={previewScrollRef}><WorksheetPreview worksheet={worksheet} mode={preferences.previewMode} zoom={numericZoom} assetUrls={assetUrls} /></div>
       </section>
     </div>

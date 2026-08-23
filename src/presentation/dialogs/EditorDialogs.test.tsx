@@ -2,7 +2,7 @@ import { fireEvent, render, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
-import { ImageDialog, MathDialog, TableDialog, WorksheetSettingsDialog } from "./EditorDialogs";
+import { ImageDialog, MathDialog, PdfDialog, TableDialog, WorksheetSettingsDialog } from "./EditorDialogs";
 
 describe("WorksheetSettingsDialog", () => {
   it("小問の番号形式だけを選択肢として表示する", () => {
@@ -17,6 +17,23 @@ describe("WorksheetSettingsDialog", () => {
     fireEvent.click(view.getByRole("button", { name: "適用" }));
 
     expect(onApply.mock.lastCall?.[0].subQuestionNumberFormat).toBe("circled");
+  });
+});
+
+describe("PdfDialog", () => {
+  it("PDF出力では問題＋解答を引き続き選べる", () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()} />);
+
+    expect(view.getAllByRole("radio").map((radio) => radio.parentElement?.textContent)).toEqual([
+      "問題のみ生徒配布用。問題色と空の解答欄を表示します。",
+      "解答付き問題色と解答色、教師用の解説を表示します。",
+      "問題＋解答問題編の後、新しいページから解答編を出力します。",
+    ]);
+
+    view.unmount();
+    vi.unstubAllGlobals();
   });
 });
 

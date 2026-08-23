@@ -13,7 +13,11 @@ const UiPreferencesSchema = z.strictObject({
     z.literal("fitWidth"),
     z.literal("fitPage"),
   ]),
-  previewMode: z.enum(["questions", "withAnswers", "questionsAndAnswers"]),
+  previewMode: z.enum(["questions", "withAnswers"]),
+});
+
+const LegacyUiPreferencesSchema = UiPreferencesSchema.extend({
+  previewMode: z.literal("questionsAndAnswers"),
 });
 
 export type UiPreferences = z.infer<typeof UiPreferencesSchema>;
@@ -29,8 +33,11 @@ export function loadUiPreferences(): UiPreferences {
   try {
     const value = localStorage.getItem(UI_PREFERENCES_KEY);
     if (!value) return DEFAULT_UI_PREFERENCES;
-    const parsed = UiPreferencesSchema.safeParse(JSON.parse(value));
-    return parsed.success ? parsed.data : DEFAULT_UI_PREFERENCES;
+    const parsed = z.union([UiPreferencesSchema, LegacyUiPreferencesSchema]).safeParse(JSON.parse(value));
+    if (!parsed.success) return DEFAULT_UI_PREFERENCES;
+    return parsed.data.previewMode === "questionsAndAnswers"
+      ? { ...parsed.data, previewMode: "questions" }
+      : parsed.data;
   } catch {
     return DEFAULT_UI_PREFERENCES;
   }

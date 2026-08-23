@@ -70,6 +70,14 @@ describe("EditorScreen 離脱・保存統合", () => {
     expect(dispatchBeforeUnload()).toBe(false);
   });
 
+  it("通常プレビューは問題のみと解答付きだけを選べる", async () => {
+    renderEditor();
+    await editorTitleInput();
+
+    const mode = screen.getByRole("combobox", { name: "プレビューモード" }) as HTMLSelectElement;
+    expect(Array.from(mode.options, (option) => option.textContent)).toEqual(["問題のみ", "解答付き"]);
+  });
+
   it("編集後にdebounce保存を行いIndexedDBと表示をsavedへ更新する", async () => {
     const save = vi.spyOn(repository, "save");
     renderEditor();

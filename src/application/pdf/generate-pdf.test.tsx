@@ -46,7 +46,7 @@ describe("generateWorksheetPdf", () => {
     await generateWorksheetPdf(createWorksheet(), pages);
 
     expect(htmlToImage.getFontEmbedCSS).toHaveBeenCalledOnce();
-    expect(htmlToImage.getFontEmbedCSS).toHaveBeenCalledWith(previewRoot, { preferredFontFormat: "woff2" });
+    expect(htmlToImage.getFontEmbedCSS).toHaveBeenCalledWith(previewRoot);
     expect(htmlToImage.toPng).toHaveBeenCalledTimes(2);
     for (const [index, page] of pages.entries()) {
       expect(htmlToImage.toPng).toHaveBeenNthCalledWith(index + 1, page, expect.objectContaining({
