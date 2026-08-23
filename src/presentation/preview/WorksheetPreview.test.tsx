@@ -127,4 +127,40 @@ describe("WorksheetPreview header", () => {
     expect(answerPage?.querySelector(".math-formula")).toBeInTheDocument();
     expect(answerPage?.querySelector(".paper-table")).toBeInTheDocument();
   });
+
+  it("問題のみでも下線付き解答色テキストの幅と下線を残す", () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const worksheet = createWorksheet();
+    const richText = worksheet.problems[0]!.contents[0]!;
+    if (richText.type !== "richText") throw new Error("richTextを生成できませんでした");
+    richText.document = {
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        attrs: { textAlign: "left" },
+        content: [
+          { type: "text", text: "問題文" },
+          { type: "text", text: "下線上の解答", marks: [{ type: "underline" }, { type: "answerColor" }] },
+        ],
+      }],
+    };
+    richText.answerDocument = emptyDocument();
+
+    const questions = render(
+      <WorksheetPreview worksheet={worksheet} mode="questions" zoom={1} assetUrls={new Map()} />,
+    );
+    const placeholder = questions.container.querySelector<HTMLElement>(".preview-page-wrap .paper-answer-placeholder");
+    expect(placeholder).toHaveAttribute("aria-hidden", "true");
+    expect(placeholder).toHaveTextContent("下線上の解答");
+    expect(placeholder?.querySelector("u")).toHaveTextContent("下線上の解答");
+    expect(placeholder?.querySelector(".answer-color")).not.toBeInTheDocument();
+    questions.unmount();
+
+    const withAnswers = render(
+      <WorksheetPreview worksheet={worksheet} mode="withAnswers" zoom={1} assetUrls={new Map()} />,
+    );
+    expect(withAnswers.container.querySelector(".paper-answer-placeholder")).not.toBeInTheDocument();
+    expect(withAnswers.container.querySelector(".preview-page-wrap .answer-color")).toHaveTextContent("下線上の解答");
+  });
 });
