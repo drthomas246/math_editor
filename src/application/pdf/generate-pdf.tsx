@@ -5,6 +5,7 @@ import { PAGE_SIZES_MM, mmToPt } from "../../domain/worksheet/page-tokens";
 import type { Worksheet } from "../../domain/worksheet/worksheet";
 
 export type PreviewMode = "questions" | "withAnswers" | "questionsAndAnswers";
+export type EditorPreviewMode = Exclude<PreviewMode, "questionsAndAnswers">;
 
 const PDF_PIXEL_RATIO = 4;
 

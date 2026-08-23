@@ -98,7 +98,7 @@ function PreviewPage({ worksheet, mode, atoms, assetUrls, showHeader, pageNumber
     <div data-preview-page="true" className={`paper-page font-${worksheet.pageSettings.fontFamily}`} style={{ aspectRatio: `${size.width} / ${size.height}`, padding: `${margin / size.width * 100}%` }}>
       {showHeader && <WorksheetHeader worksheet={worksheet} />}
       <div className="paper-problems">
-        {atoms.map((atom) => <PreviewProblemFragment key={atom.key} atom={atom} mode={mode} subQuestionNumberFormat={worksheet.pageSettings.subQuestionNumberFormat} assetUrls={assetUrls} />)}
+        {atoms.map((atom) => <PreviewProblemFragment key={atom.key} atom={atom} mode={mode} subQuestionNumberFormat={worksheet.pageSettings.subQuestionNumberFormat} assetUrls={assetUrls} scrollAnchor={atom.startsProblem} />)}
       </div>
     </div>
     <span className="page-counter">{pageNumber} / {totalPages}</span>
@@ -122,8 +122,8 @@ function WorksheetHeader({ worksheet }: { worksheet: Worksheet }) {
   return <header className="paper-header"><h2>{worksheet.title}</h2><div className="paper-fields">{worksheet.header.gradeField && <span className="grade-field"><i />年</span>}{worksheet.header.classField && <span className="class-field"><i />組</span>}{worksheet.header.numberField && <span className="number-field"><i />番</span>}{worksheet.header.nameField && <span className="name-field">名前<i /></span>}</div></header>;
 }
 
-function PreviewProblemFragment({ atom, mode, subQuestionNumberFormat, assetUrls }: { atom: RenderAtom; mode: SectionMode; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: Map<string, string> }) {
-  return <section className={atom.startsProblem ? "paper-problem" : "paper-problem paper-problem-continuation"}>
+function PreviewProblemFragment({ atom, mode, subQuestionNumberFormat, assetUrls, scrollAnchor = false }: { atom: RenderAtom; mode: SectionMode; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: Map<string, string>; scrollAnchor?: boolean }) {
+  return <section className={atom.startsProblem ? "paper-problem" : "paper-problem paper-problem-continuation"} data-preview-problem-id={scrollAnchor ? atom.problem.id : undefined} data-preview-section={scrollAnchor ? mode : undefined}>
     <span className="paper-problem-number">{atom.startsProblem ? atom.number : null}</span>
     <div className="paper-problem-body">
       {atom.content && <PreviewContent content={atom.content} showAnswers={mode === "withAnswers"} subQuestionNumberFormat={subQuestionNumberFormat} assetUrls={assetUrls} />}

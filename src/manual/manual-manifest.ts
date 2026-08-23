@@ -7,7 +7,7 @@ export const MANUAL_METADATA = {
   licenseVersion: "1.0",
   copyright: "Copyright © 2026 Yamahara Yoshihiro",
   licenseContact: "yoshihiro@yamahara.email",
-  updatedAt: "2026-08-22",
+  updatedAt: "2026-08-23",
 } as const satisfies ManualMetadata;
 
 export const MANUAL_CHAPTER_MANIFEST = [
@@ -58,14 +58,14 @@ export const MANUAL_CHAPTER_MANIFEST = [
     title: "問題色・解答色と教師用の解説",
     summary: "問題色・解答色、生徒用解答欄、教師用解説、3つの出力モードを説明します。",
     keywords: ["正解", "解答", "問題色", "解答色", "赤", "黒", "解説", "教師用", "生徒用", "解答欄"],
-    updatedAt: "2026-08-21",
+    updatedAt: "2026-08-23",
   },
   {
     slug: "preview-and-pdf",
     title: "プリント設定・プレビュー・PDF",
     summary: "用紙・氏名欄の設定、プレビュー、ページ分割、PDF保存と印刷を説明します。",
     keywords: ["用紙", "余白", "ヘッダー", "年組番名前", "プレビュー", "倍率", "PDF", "印刷", "ページ"],
-    updatedAt: "2026-08-21",
+    updatedAt: "2026-08-23",
   },
   {
     slug: "saving-and-history",
