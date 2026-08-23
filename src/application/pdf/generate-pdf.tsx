@@ -29,7 +29,9 @@ export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: r
   // 数式で使用するMathLiveのWebフォントを画像内へ埋め込み、OSフォントへの
   // 置き換わりを防ぐ。生成したCSSは全ページで再利用する。
   const previewRoot = firstPage.closest<HTMLElement>(".preview-pages") ?? firstPage;
-  const fontEmbedCSS = await getFontEmbedCSS(previewRoot, { preferredFontFormat: "woff2" });
+  // MathLiveの配布CSSはWOFF2のみ。preferredFontFormatを指定するとhtml-to-imageの
+  // フィルターが連続する@font-faceのsrcを取りこぼすため、形式指定は行わない。
+  const fontEmbedCSS = await getFontEmbedCSS(previewRoot);
 
   const pageImages: string[] = [];
   for (const page of previewPages) {
