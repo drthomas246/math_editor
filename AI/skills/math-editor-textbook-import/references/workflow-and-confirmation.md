@@ -16,13 +16,13 @@
 
 次の内容を一度に説明し、肯定を得るまで解析しない。
 
-- PDFと処理に必要な内容はChatGPTへ送信される。
+- PDFと処理に必要な内容はMath Editor外部のSkill実行環境へ渡される。
 - Math Editor本体のブラウザ内ローカル保存とは処理経路が異なる。
 - 利用者がPDFの利用権限を確認し、Skillは許諾取得や法的判断を代行しない。
 - 最終JSONには採用内容と採用図版だけを含み、PDF本体、範囲外本文、棄却Crop、OCR中間結果を含めない。
-- OpenAI APIキー、Math Editor API、外部MCPは使わない。
+- 外部AI API、Math Editor API、外部MCPは使わない。
 
-同一会話でPDFが差し替えられたら、旧Draftと確認状態を引き継がず新規Draftを作る。
+同一実行セッションでPDFが差し替えられたら、旧Draftと確認状態を引き継がず新規Draftを作る。
 
 ## 状態遷移
 

@@ -11,14 +11,14 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 - 新規問題、類題、誤答例、ヒント、教科書にない解答の自動生成
 - 一般的なPDF要約、Math Editor以外の教材作成
-- Math Editorへの直接書込み、OpenAI APIまたは外部MCPの利用
+- Math Editorへの直接書込み、外部AI APIまたは外部MCPの利用
 - PDF本体の最終JSON格納、AI画像生成、教科書図版の描き直し
 
 ## 毎回の開始手順
 
 1. 最初に [workflow-and-confirmation.md](references/workflow-and-confirmation.md) を全文読む。
 2. 教科書PDF、開始ページ、開始ラベル、終了ページ、終了ラベルを集める。説明スタイルは`normal`、`detailed`、`concise`から選び、未指定は`normal`とする。題名未指定は`無題のプリント`とする。
-3. PDF解析前に、PDFと必要内容がChatGPTへ送信されること、Math Editorのローカル保存とは経路が異なること、利用者が利用権限を確認すること、最終JSONにPDF本体を含めないことを説明し、確認を得る。PDF差替え時は再確認する。
+3. PDF解析前に、PDFと必要内容がMath Editor外部のSkill実行環境へ渡されること、Math Editorのローカル保存とは経路が異なること、利用者が利用権限を確認すること、最終JSONにPDF本体を含めないことを説明し、確認を得る。PDF差替え時は再確認する。
 4. 必須入力または確認が不足する間は`collecting-input`に留まり、PDF解析を始めない。
 
 ## 段階別ルーティング
@@ -32,7 +32,7 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 - Draft確認時と最終生成時に [validation-rules.md](references/validation-rules.md) を読む。
 - Issueを登録・表示・復旧するときだけ [error-catalog.md](references/error-catalog.md) を読む。
 
-必要なreferenceだけを上記の時点で読み、同じ規則を会話やDraftへ重複コピーしない。
+必要なreferenceだけを上記の時点で読み、同じ規則を実行コンテキストやDraftへ重複コピーしない。
 
 ## 状態と絶対ゲート
 
