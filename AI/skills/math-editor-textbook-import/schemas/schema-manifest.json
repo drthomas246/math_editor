@@ -1,0 +1,9 @@
+{
+  "format": "math-worksheet",
+  "schemaVersion": 1,
+  "source": "src/domain/worksheet/worksheet.schema.ts",
+  "generatedSchema": "schemas/math-worksheet.schema.json",
+  "sourceCommit": "07075b46e0044b10b8b3f4c9550885d2b0226d11",
+  "sha256": "83944CCE31048241FE159CC42A14075834B541214DE592BF6B91C12127A2E6DA",
+  "generatedAt": "2026-08-24T05:48:01.508Z"
+}

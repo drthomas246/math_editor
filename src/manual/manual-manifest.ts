@@ -1,13 +1,13 @@
 import type { ManualChapterManifestItem, ManualMetadata } from "./manual-types";
 
 export const MANUAL_METADATA = {
-  manualVersion: "1.0",
+  manualVersion: "1.1",
   targetAppVersion: "1.0.0",
   licenseName: "個人・非商用ソフトウェアライセンス",
   licenseVersion: "1.0",
   copyright: "Copyright © 2026 Yamahara Yoshihiro",
   licenseContact: "yoshihiro@yamahara.email",
-  updatedAt: "2026-08-23",
+  updatedAt: "2026-08-25",
 } as const satisfies ManualMetadata;
 
 export const MANUAL_CHAPTER_MANIFEST = [
@@ -80,6 +80,13 @@ export const MANUAL_CHAPTER_MANIFEST = [
     summary: "JSONバックアップの保存と読込み、ゴミ箱からの復元、完全削除を説明します。",
     keywords: ["バックアップ", "JSON", "エクスポート", "インポート", "復元", "ゴミ箱", "完全削除", "データ移行", "ダウンロード"],
     updatedAt: "2026-08-21",
+  },
+  {
+    slug: "ai-skills",
+    title: "AI Skillsの使い方",
+    summary: "教科書PDFをAIで読み取り、確認後にMath Editor用JSONとして取り込む手順を説明します。",
+    keywords: ["AI", "Skills", "Skill", "AIサービス", "AIエージェント", "ChatGPT", "Claude", "教科書", "PDF", "JSON", "取込", "インポート", "初心者", "math-editor-textbook-import"],
+    updatedAt: "2026-08-25",
   },
   {
     slug: "troubleshooting",
