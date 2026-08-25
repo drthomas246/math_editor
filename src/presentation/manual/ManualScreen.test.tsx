@@ -26,11 +26,18 @@ describe("ManualScreen", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "最初のプリントを作る" })).toBeInTheDocument();
   });
 
-  it("目次の12番目にバージョンとライセンスを表示する", () => {
+  it("目次の11番目にAI Skillsの使い方を表示する", () => {
+    renderManual("/help/ai-skills");
+    expect(screen.getByRole("heading", { level: 1, name: "AI Skillsの使い方" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /11AI Skillsの使い方/u })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("heading", { level: 2, name: "AIのSkillとは" })).toBeInTheDocument();
+  });
+
+  it("目次の13番目にバージョンとライセンスを表示する", () => {
     renderManual("/help/version-and-license");
     expect(screen.getByRole("heading", { level: 1, name: "バージョンとライセンス" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /12バージョンとライセンス/u })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("row", { name: "マニュアル 1.0" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /13バージョンとライセンス/u })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("row", { name: "マニュアル 1.1" })).toBeInTheDocument();
     expect(screen.getByText("Copyright © 2026 Yamahara Yoshihiro")).toBeInTheDocument();
   });
 

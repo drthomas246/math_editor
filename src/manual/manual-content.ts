@@ -1,4 +1,5 @@
 import answers from "./content/answers.md?raw";
+import aiSkills from "./content/ai-skills.md?raw";
 import backupAndTrash from "./content/backup-and-trash.md?raw";
 import editorBasics from "./content/editor-basics.md?raw";
 import formulas from "./content/formulas.md?raw";
@@ -23,6 +24,7 @@ export const MANUAL_CONTENT = {
   "preview-and-pdf": previewAndPdf,
   "saving-and-history": savingAndHistory,
   "backup-and-trash": backupAndTrash,
+  "ai-skills": aiSkills,
   troubleshooting,
   "version-and-license": versionAndLicense,
 } satisfies Record<ManualChapterSlug, string>;

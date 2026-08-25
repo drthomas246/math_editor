@@ -19,6 +19,8 @@ describe("manual search", () => {
   it("題名、キーワード、本文をAND部分一致で検索する", () => {
     expect(searchManual("数式")[0]?.slug).toBe("formulas");
     expect(searchManual("JSON 完全削除").map((result) => result.slug)).toContain("backup-and-trash");
+    expect(searchManual("AI 教科書")[0]?.slug).toBe("ai-skills");
+    expect(searchManual("Claude")[0]?.slug).toBe("ai-skills");
     expect(searchManual("MathLive ゴミ箱")).toEqual([]);
     expect(searchManual("   ")).toEqual([]);
   });
