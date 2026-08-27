@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -13,12 +16,14 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "benchmark:editor": "tsx scripts/benchmark-editor-input.ts",
+    "benchmark:editor:browser": "playwright test e2e/editor-performance.spec.ts",
     "schema:generate": "tsx scripts/generate-math-worksheet-schema.ts",
     "schema:check": "tsx scripts/generate-math-worksheet-schema.ts --check",
+    "skill:schema:check": "tsx scripts/verify-skill-schema.ts",
     "schema:test": "tsx scripts/verify-schema-behavior.ts",
     "manual:check": "tsx scripts/verify-manual.ts",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run typecheck && npm run lint && npm run schema:check && npm run schema:test && npm run manual:check && npm run test"
+    "verify": "npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.6.0",

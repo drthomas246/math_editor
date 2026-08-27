@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider } from "react-router-dom";
 
 import { EditorScreen } from "./presentation/editor/EditorScreen";
 import { ManualErrorBoundary } from "./presentation/manual/ManualErrorBoundary";
@@ -6,8 +6,7 @@ import { ManualScreen } from "./presentation/manual/ManualScreen";
 import { TrashScreen } from "./presentation/trash/TrashScreen";
 import { WorksheetListScreen } from "./presentation/worksheet-list/WorksheetListScreen";
 
-export default function App() {
-  return <BrowserRouter><Routes>
+const router = createBrowserRouter(createRoutesFromElements(<>
     <Route path="/help" element={<Navigate to="/help/overview" replace />} />
     <Route path="/help/:chapterSlug" element={<ManualErrorBoundary><ManualScreen /></ManualErrorBoundary>} />
     <Route path="/help/*" element={<ManualErrorBoundary><ManualScreen /></ManualErrorBoundary>} />
@@ -17,7 +16,10 @@ export default function App() {
       <Route path="/trash" element={<TrashScreen />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
-  </Routes></BrowserRouter>;
+  </>));
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
 
 function RequiredApiGate() {

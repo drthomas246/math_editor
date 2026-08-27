@@ -16,14 +16,19 @@
 
 ## セットアップ
 
+開発にはNode.js 24.xを使用します。CIも同じメジャーバージョンで検証しています。nvmを使用している場合は、リポジトリの`.nvmrc`を使ってバージョンを切り替えられます。
+
 ```bash
+nvm use
 npm install
 npm run dev
 ```
 
+nvmを使用しない場合は、Node.js 24.xを別途インストールしてから`npm install`を実行してください。
+
 Viteが表示したURLをChromeまたはEdgeで開きます。
 
-100問題規模の編集処理を計測する場合は、`npm run benchmark:editor`を実行します。
+100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。React描画、TipTap、DOM、layout、paintを含む実ブラウザ入力レイテンシは、`npm run benchmark:editor:browser`で検証できます。
 
 ## 主な使い方
 
@@ -206,7 +211,10 @@ npm run lint
 # アプリ内マニュアルの章構成、リンク、本文を検証
 npm run manual:check
 
-# 型、Lint、Schema生成差分、Schema振る舞い、マニュアル、全テスト
+# ルートSchemaとAI Skill同梱Schema・manifest・Validatorの同期を検証
+npm run skill:schema:check
+
+# 型、Lint、Schema生成差分、AI Skill同期、Schema振る舞い、マニュアル、全テスト
 npm run verify
 
 # Chromeによる離脱・保存E2Eテスト

@@ -68,18 +68,19 @@ type ValidationResult = {
 
 ## Schema drift
 
-`schemas/schema-manifest.json`のSHA-256と同梱`schemas/math-worksheet.schema.json`が一致しない場合、`AI_SCHEMA_DRIFT` Fatalとする。更新時はMath Editor側で次を行う。
+`schemas/schema-manifest.json`のSHA-256と同梱`schemas/math-worksheet.schema.json`が一致しない場合、`AI_SCHEMA_DRIFT` Fatalとする。Math Editorリポジトリの`npm run skill:schema:check`は、ルートとSkill同梱Schema、manifestのSchema SHA-256、ValidatorのSchema版・Schema SHA-256・ファイルSHA-256をまとめて検証する。SHA-256計算前に改行をLFへ正規化し、OS固有の改行差は除外する。更新時はMath Editor側で次を行う。
 
 1. `npm run schema:check`
 2. `npm run schema:test`
 3. 最新`worksheet.schema.ts`とZodからValidatorをbundleし直す
 4. 生成SchemaをSkillへコピー
 5. manifestのcommit、hash、generatedAtを更新
-6. リポジトリ版とSkill版のSHA-256一致を確認
-7. 代表JSONをMath Editorの`parseBackup()`へ通す
+6. Validator先頭の`math-editor-validator-metadata`とmanifestの`validator`を更新
+7. `npm run skill:schema:check`
+8. 代表JSONをMath Editorの`parseBackup()`へ通す
 
 Schemaだけ、Validatorだけ、mappingだけを単独更新しない。
 
 ## リリース前回帰
 
-Math Editorリポジトリで`npm run schema:check`、`npm run schema:test`、`npm run verify`、`npm run test:e2e`、`npm run build`を実行する。市販教科書をテストデータへ含めず、権利上問題のないtext/scan PDFで範囲、数式、図版、解答、回転、曖昧ケースを確認する。
+Math Editorリポジトリで`npm run schema:check`、`npm run skill:schema:check`、`npm run schema:test`、`npm run verify`、`npm run test:e2e`、`npm run build`を実行する。`npm run verify`にもSkill同梱物の同期検査を含める。市販教科書をテストデータへ含めず、権利上問題のないtext/scan PDFで範囲、数式、図版、解答、回転、曖昧ケースを確認する。

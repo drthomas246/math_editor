@@ -20,6 +20,10 @@ import { database, type MathWorksheetDatabase } from "./database";
 
 export class WorksheetLimitError extends Error {
   readonly code = "WORKSHEET_LIMIT_EXCEEDED";
+
+  constructor() {
+    super("プリント数の上限に達しています");
+  }
 }
 
 export class DexieWorksheetRepository implements WorksheetRepository {

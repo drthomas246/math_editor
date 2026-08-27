@@ -2,7 +2,7 @@ import type { JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Image, Italic, List, ListOrdered, Sigma, Table2, Underline as UnderlineIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { ContentColor } from "../../domain/worksheet/rich-text";
@@ -34,11 +34,29 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
   const [cellMathOpen, setCellMathOpen] = useState(false);
   const [editingMath, setEditingMath] = useState<EditableMathRef | null>(null);
   const [activeRichTableCell, setActiveRichTableCell] = useState<RichTableCellEditorController | null>(null);
+  const activeRichTableCellRef = useRef<RichTableCellEditorController | null>(null);
+  const updateActiveRichTableCell = useCallback((controller: RichTableCellEditorController | null) => {
+    activeRichTableCellRef.current = controller;
+    setActiveRichTableCell(controller);
+  }, []);
   const [selectedColor, setSelectedColor] = useState<ContentColor>(initialColor);
+  const handleRichTableCellFocus = useCallback((controller: RichTableCellEditorController) => {
+    const current = activeRichTableCellRef.current;
+    if (current && current !== controller) current.deactivate();
+    updateActiveRichTableCell(controller);
+    setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
+  }, [updateActiveRichTableCell]);
   const [, setCellToolbarRevision] = useState(0);
   const [richTableMathInserter, setRichTableMathInserter] = useState<((latex: string, textSize: MathTextSize, color: ContentColor) => void) | null>(null);
   const onEditImageRef = useRef(onEditImage);
-  onEditImageRef.current = onEditImage;
+  useLayoutEffect(() => { onEditImageRef.current = onEditImage; }, [onEditImage]);
+  const handleEditImage = useCallback((image: EditableImageRef) => onEditImageRef.current?.(image), []);
+  const [stableAssetUrls] = useState(() => new Map(assetUrls));
+  useLayoutEffect(() => {
+    stableAssetUrls.clear();
+    assetUrls.forEach((url, assetId) => stableAssetUrls.set(assetId, url));
+  }, [assetUrls, stableAssetUrls]);
+  const canEditImages = onEditImage !== undefined;
   const hasInsertTools = Boolean(enableMath || onImage || onTable || tableCell);
   const normalize = tableCell ? normalizeTableCellEditorDocument : normalizeEditorDocument;
   const editor = useEditor({
@@ -58,14 +76,14 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       AnswerColor,
       InlineMath.configure({ onEdit: setEditingMath }),
       BlockMath.configure({ onEdit: setEditingMath }),
-      ImageRef.configure({ assetUrls, onEdit: onEditImage ? (image) => onEditImageRef.current?.(image) : null }),
+      // TipTap configure stores this ref-backed callback; it does not invoke it during React render.
+      // oxlint-disable-next-line react/refs
+      ImageRef.configure({ assetUrls: stableAssetUrls, onEdit: canEditImages ? handleEditImage : null }),
+      // TipTap configure stores this ref-backed callback; it does not invoke it during React render.
+      // oxlint-disable-next-line react/refs
       RichTable.configure({
-        assetUrls,
-        onCellFocus: (controller) => setActiveRichTableCell((current) => {
-          if (current && current !== controller) current.deactivate();
-          setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
-          return controller;
-        }),
+        assetUrls: stableAssetUrls,
+        onCellFocus: handleRichTableCellFocus,
         onCellStateChange: () => setCellToolbarRevision((revision) => revision + 1),
         onEditMath: setEditingMath,
       }),
@@ -77,12 +95,20 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
     },
     onUpdate: ({ editor: currentEditor }) => onChange(normalize(currentEditor.getJSON())),
     onSelectionUpdate: ({ editor: currentEditor }) => setSelectedColor(getSelectionContentColor(currentEditor)),
-  }, [assetUrls, tableCell, initialColor]);
+  }, [tableCell, initialColor, canEditImages]);
+
+  const previousAssetUrlsRef = useRef(assetUrls);
+  useEffect(() => {
+    if (previousAssetUrlsRef.current === assetUrls) return;
+    previousAssetUrlsRef.current = assetUrls;
+    if (!editor || editor.isDestroyed) return;
+    // Rebuild only the node views so image URLs are refreshed while the
+    // TipTap editor instance, document, history, and selection stay intact.
+    editor.view.setProps({ nodeViews: {} });
+    editor.createNodeViews();
+  }, [assetUrls, editor]);
 
   useEffect(() => {
-    // Updating the asset URL map makes useEditor replace the TipTap instance.
-    // During that replacement React can run this effect once with the instance
-    // that has just been destroyed, whose commands getter no longer has a view.
     if (!editor || editor.isDestroyed || editor.isFocused) return;
     const next = normalize(document as JSONContent);
     const current = normalize(editor.getJSON());
@@ -133,24 +159,24 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       {activeRichTableCell && <TableStructureToolbar
         availability={activeRichTableCell.tableOperationAvailability}
         onOperation={(operation) => {
-          if (activeRichTableCell.applyTableOperation(operation)) setActiveRichTableCell(null);
+          if (activeRichTableCell.applyTableOperation(operation)) updateActiveRichTableCell(null);
         }}
         sizing={{
           rowHeightMm: activeRichTableCell.tableSizing.rowHeightMm,
           columnWidthPercent: activeRichTableCell.tableSizing.columnWidthPercent,
           canResizeColumn: activeRichTableCell.tableSizing.canResizeColumn,
           onRowHeightChange: (heightMm) => {
-            if (activeRichTableCell.tableSizing.setRowHeightMm(heightMm)) setActiveRichTableCell(null);
+            if (activeRichTableCell.tableSizing.setRowHeightMm(heightMm)) updateActiveRichTableCell(null);
           },
           onColumnWidthChange: (widthPercent) => {
-            if (activeRichTableCell.tableSizing.setColumnWidthPercent(widthPercent)) setActiveRichTableCell(null);
+            if (activeRichTableCell.tableSizing.setColumnWidthPercent(widthPercent)) updateActiveRichTableCell(null);
           },
         }}
       />}
       <div onPointerDownCapture={(event) => {
         if (!(event.target as HTMLElement).closest("[data-rich-table]")) {
-          activeRichTableCell?.deactivate();
-          setActiveRichTableCell(null);
+          activeRichTableCellRef.current?.deactivate();
+          updateActiveRichTableCell(null);
         }
       }}><EditorContent editor={editor} /></div>
       {mathOpen && <MathDialog onClose={() => setMathOpen(false)} onInsert={(latex, block, textSize) => {

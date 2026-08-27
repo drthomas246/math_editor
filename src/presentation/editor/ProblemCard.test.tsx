@@ -2,11 +2,62 @@ import { fireEvent, render, within } from "@testing-library/react";
 import { produce } from "immer";
 import { describe, expect, it, vi } from "vitest";
 
-import { createAnswerAreaBlock, createBoxBlock, createSubQuestionGroup, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
+import { createAnswerAreaBlock, createBoxBlock, createRichTextBlock, createSubQuestionGroup, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import "../../styles.css";
 import { ProblemCard } from "./ProblemCard";
 
 describe("ProblemCard", () => {
+  it("選択中の内容だけにTipTapエディターを生成する", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const secondContent = createRichTextBlock();
+    problem.contents.push(secondContent);
+
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={vi.fn()}
+        onMutate={vi.fn()}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(1);
+    expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(1);
+
+    view.rerender(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected={false}
+        selectedContentId={secondContent.id}
+        onSelect={vi.fn()}
+        onSelectContent={vi.fn()}
+        onCommit={vi.fn()}
+        onMutate={vi.fn()}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(0);
+    expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(2);
+  });
+
   it("文字入力をWorksheet全体Commandではなく部分Immer更新へ渡す", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
@@ -76,7 +127,7 @@ describe("ProblemCard", () => {
     );
   });
 
-  it("内容の追加から画像と表を除き、大問と小問のツールバーには残す", () => {
+  it("内容の追加から画像と表を除き、選択中の内容のツールバーには残す", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
     const group = createSubQuestionGroup();
@@ -110,8 +161,9 @@ describe("ProblemCard", () => {
     expect(within(addContentMenu!).queryByRole("button", { name: "画像" })).not.toBeInTheDocument();
     expect(within(addContentMenu!).queryByRole("button", { name: "表" })).not.toBeInTheDocument();
     expect(within(addContentMenu!).getByRole("button", { name: "めあて" })).toBeInTheDocument();
-    expect(view.getAllByRole("button", { name: "画像" })).toHaveLength(2);
-    expect(view.getAllByRole("button", { name: "表" })).toHaveLength(2);
+    expect(view.getAllByRole("button", { name: "画像" })).toHaveLength(1);
+    expect(view.getAllByRole("button", { name: "表" })).toHaveLength(1);
+    expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(1);
   });
 
   it("問題メニューと内容追加メニューを外側の操作で閉じる", () => {

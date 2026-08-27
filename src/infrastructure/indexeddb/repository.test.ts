@@ -4,7 +4,7 @@ import { createSingleBackup, hydrateBackup, parseBackup } from "../../applicatio
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import type { AssetRecord } from "../../domain/worksheet/worksheet";
 import { MathWorksheetDatabase } from "./database";
-import { DexieWorksheetRepository } from "./dexie-worksheet-repository";
+import { DexieWorksheetRepository, WorksheetLimitError } from "./dexie-worksheet-repository";
 
 let db: MathWorksheetDatabase;
 let repository: DexieWorksheetRepository;
@@ -17,6 +17,13 @@ beforeEach(() => {
 afterEach(async () => db.delete());
 
 describe("DexieWorksheetRepository", () => {
+  it("プリント数の上限エラーに画面表示用のメッセージを持たせる", () => {
+    const error = new WorksheetLimitError();
+
+    expect(error.message).toBe("プリント数の上限に達しています");
+    expect(error.code).toBe("WORKSHEET_LIMIT_EXCEEDED");
+  });
+
   it("作成・保存・ゴミ箱・復元・完全削除を往復する", async () => {
     const worksheet = createWorksheet();
     await repository.create({ worksheet, assets: [] });

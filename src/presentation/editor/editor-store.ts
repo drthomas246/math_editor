@@ -150,7 +150,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     savedRevision: 0,
     saveStatus: "saved",
     selectedProblemId: worksheet.problems[0]?.id ?? null,
-    selectedContentId: null,
+    selectedContentId: worksheet.problems[0]?.contents[0]?.id ?? null,
     undoStack: [],
     redoStack: [],
   })),
@@ -206,7 +206,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
-  selectProblem: (id) => set({ selectedProblemId: id }),
+  selectProblem: (id) => set((state) => {
+    const problem = state.worksheet?.problems.find((item) => item.id === id);
+    const selectedContentId = problem?.contents.some((content) => content.id === state.selectedContentId)
+      ? state.selectedContentId
+      : problem?.contents[0]?.id ?? null;
+    return { selectedProblemId: id, selectedContentId };
+  }),
   selectContent: (id) => set({ selectedContentId: id }),
 
   undo: () => {

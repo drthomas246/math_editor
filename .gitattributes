@@ -1,0 +1,4 @@
+# Schema and Validator integrity hashes use LF-normalized text.
+schemas/math-worksheet.schema.json text eol=lf
+AI/skills/math-editor-textbook-import/schemas/*.json text eol=lf
+AI/skills/math-editor-textbook-import/scripts/validate_math_worksheet.mjs text eol=lf
