@@ -5,5 +5,11 @@
   "generatedSchema": "schemas/math-worksheet.schema.json",
   "sourceCommit": "07075b46e0044b10b8b3f4c9550885d2b0226d11",
   "sha256": "83944CCE31048241FE159CC42A14075834B541214DE592BF6B91C12127A2E6DA",
+  "validator": {
+    "path": "scripts/validate_math_worksheet.mjs",
+    "schemaVersion": 1,
+    "schemaSha256": "83944CCE31048241FE159CC42A14075834B541214DE592BF6B91C12127A2E6DA",
+    "sha256": "0F8450C8C77CEF1C5606D2EF4B02398CC91FE55DEEBFACD0592BC74F64E985BC"
+  },
   "generatedAt": "2026-08-24T05:48:01.508Z"
 }

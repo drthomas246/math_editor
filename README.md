@@ -206,7 +206,10 @@ npm run lint
 # アプリ内マニュアルの章構成、リンク、本文を検証
 npm run manual:check
 
-# 型、Lint、Schema生成差分、Schema振る舞い、マニュアル、全テスト
+# ルートSchemaとAI Skill同梱Schema・manifest・Validatorの同期を検証
+npm run skill:schema:check
+
+# 型、Lint、Schema生成差分、AI Skill同期、Schema振る舞い、マニュアル、全テスト
 npm run verify
 
 # Chromeによる離脱・保存E2Eテスト
