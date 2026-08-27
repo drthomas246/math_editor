@@ -21,6 +21,7 @@ import { syncProblemScroll } from "./problem-scroll-sync";
 import { ProblemList } from "./ProblemList";
 
 const SAVE_DEBOUNCE_MS = 750;
+type EditorLoadState = "loading" | "ready" | "notFound" | "error";
 
 export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
   const { worksheetId } = useParams();
@@ -30,8 +31,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const scrollSyncFrameRef = useRef<number | null>(null);
   const assetUrlsRef = useRef<Map<string, string>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [loadState, setLoadState] = useState<EditorLoadState>("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -61,11 +62,16 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const clear = useEditorStore((state) => state.clear);
 
   useEffect(() => {
-    if (!worksheetId) return;
+    setLoadState("loading");
+    setPreviewWorksheet(null);
+    if (!worksheetId) {
+      setLoadState("notFound");
+      return;
+    }
     let active = true;
     void repository.get(worksheetId).then((data) => {
       if (!active) return;
-      if (!data || data.worksheet.deletedAt !== null) { setNotFound(true); setLoading(false); return; }
+      if (!data || data.worksheet.deletedAt !== null) { setLoadState("notFound"); return; }
       initialize(data.worksheet);
       setPreviewWorksheet(data.worksheet);
       const referencedAssetIds = collectRetainedAssetIds(data.worksheet, []);
@@ -73,13 +79,13 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
         .filter((asset) => referencedAssetIds.has(asset.id))
         .map((asset) => [asset.id, URL.createObjectURL(asset.blob)]));
       setAssetUrls(urls);
-      setLoading(false);
-    }).catch(() => { if (active) { setNotFound(true); setLoading(false); } });
+      setLoadState("ready");
+    }).catch(() => { if (active) setLoadState("error"); });
     return () => {
       active = false;
       clear();
     };
-  }, [worksheetId, initialize, clear, repository]);
+  }, [worksheetId, initialize, clear, repository, loadAttempt]);
 
   useEffect(() => { assetUrlsRef.current = assetUrls; }, [assetUrls]);
   useEffect(() => () => { assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
@@ -352,8 +358,9 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     } catch { setToast("画像を保存できませんでした"); }
   }, [repository]);
 
-  if (loading) return <div className="centered-state"><div className="spinner" /><p>プリントを読み込んでいます</p></div>;
-  if (notFound || !worksheet) return <div className="centered-state"><h1>プリントが見つかりません</h1><p>削除されたか、別のブラウザに保存されている可能性があります。</p><button className="primary-button" onClick={() => navigate("/")}>プリント一覧へ戻る</button></div>;
+  if (loadState === "loading") return <div className="centered-state"><div className="spinner" /><p>プリントを読み込んでいます</p></div>;
+  if (loadState === "notFound") return <div className="centered-state"><h1>プリントが見つかりません</h1><p>削除されたか、別のブラウザに保存されている可能性があります。</p><button className="primary-button" onClick={() => navigate("/")}>プリント一覧へ戻る</button></div>;
+  if (loadState === "error" || !worksheet) return <div className="centered-state"><h1>プリントを読み込めませんでした</h1><p>一時的な問題が発生しました。もう一度お試しください。</p><button className="primary-button" onClick={() => setLoadAttempt((current) => current + 1)}>再読み込み</button><button className="secondary-button" onClick={() => navigate("/")}>プリント一覧へ戻る</button></div>;
 
   return <div className="editor-app">
     <header className="editor-header">

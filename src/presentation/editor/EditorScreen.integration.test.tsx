@@ -230,6 +230,51 @@ describe("EditorScreen 離脱・保存統合", () => {
   });
 });
 
+describe("EditorScreen 読み込み状態", () => {
+  it("存在しないプリントはNot Foundとして表示する", async () => {
+    renderEditor([`/worksheets/${crypto.randomUUID()}`]);
+
+    expect(await screen.findByRole("heading", { name: "プリントが見つかりません" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "プリントを読み込めませんでした" })).not.toBeInTheDocument();
+  });
+
+  it("repositoryの読み込み失敗をNot Foundと区別し、再読み込みできる", async () => {
+    const actualGet = repository.get.bind(repository);
+    const get = vi.spyOn(repository, "get").mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+    get.mockImplementation(actualGet);
+    renderEditor();
+
+    expect(await screen.findByRole("heading", { name: "プリントを読み込めませんでした" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "プリントが見つかりません" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "再読み込み" }));
+
+    expect(await editorTitleInput()).toHaveValue(worksheet.title);
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it("worksheetId変更時に以前のNot Found状態をloadingへリセットする", async () => {
+    const missingId = crypto.randomUUID();
+    const actualGet = repository.get.bind(repository);
+    let releaseLoad: (() => void) | undefined;
+    const loadGate = new Promise<void>((resolve) => { releaseLoad = resolve; });
+    vi.spyOn(repository, "get").mockImplementation(async (id) => {
+      if (id === worksheet.id) await loadGate;
+      return actualGet(id);
+    });
+    const view = renderEditor([`/worksheets/${missingId}`]);
+    await screen.findByRole("heading", { name: "プリントが見つかりません" });
+
+    await act(async () => { await view.router.navigate(`/worksheets/${worksheet.id}`); });
+
+    expect(screen.getByText("プリントを読み込んでいます")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "プリントが見つかりません" })).not.toBeInTheDocument();
+
+    releaseLoad!();
+    expect(await editorTitleInput()).toHaveValue(worksheet.title);
+  });
+});
+
 type EditorRenderResult = RenderResult & { router: ReturnType<typeof createMemoryRouter> };
 
 function renderEditor(
