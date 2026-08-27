@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "benchmark:editor": "tsx scripts/benchmark-editor-input.ts",
+    "benchmark:editor:browser": "playwright test e2e/editor-performance.spec.ts",
     "schema:generate": "tsx scripts/generate-math-worksheet-schema.ts",
     "schema:check": "tsx scripts/generate-math-worksheet-schema.ts --check",
     "schema:test": "tsx scripts/verify-schema-behavior.ts",

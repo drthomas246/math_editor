@@ -356,11 +356,13 @@ describe("RichTextEditor", () => {
     };
 
     const view = render(<RichTextEditor document={document} assetUrls={new Map()} onChange={vi.fn()} />);
+    const editorElement = view.container.querySelector(".ProseMirror");
     expect(view.container.querySelector(".editor-missing-asset")).not.toBeNull();
 
     expect(() => view.rerender(
       <RichTextEditor document={document} assetUrls={new Map([[assetId, "blob:added-image"]])} onChange={vi.fn()} />,
     )).not.toThrow();
+    expect(view.container.querySelector(".ProseMirror")).toBe(editorElement);
     expect(view.container.querySelector('[data-image-ref] img')).toHaveAttribute("src", "blob:added-image");
   });
 

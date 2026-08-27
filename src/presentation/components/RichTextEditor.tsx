@@ -39,6 +39,10 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
   const [richTableMathInserter, setRichTableMathInserter] = useState<((latex: string, textSize: MathTextSize, color: ContentColor) => void) | null>(null);
   const onEditImageRef = useRef(onEditImage);
   onEditImageRef.current = onEditImage;
+  const stableAssetUrlsRef = useRef(new Map(assetUrls));
+  stableAssetUrlsRef.current.clear();
+  assetUrls.forEach((url, assetId) => stableAssetUrlsRef.current.set(assetId, url));
+  const stableAssetUrls = stableAssetUrlsRef.current;
   const hasInsertTools = Boolean(enableMath || onImage || onTable || tableCell);
   const normalize = tableCell ? normalizeTableCellEditorDocument : normalizeEditorDocument;
   const editor = useEditor({
@@ -58,9 +62,9 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       AnswerColor,
       InlineMath.configure({ onEdit: setEditingMath }),
       BlockMath.configure({ onEdit: setEditingMath }),
-      ImageRef.configure({ assetUrls, onEdit: onEditImage ? (image) => onEditImageRef.current?.(image) : null }),
+      ImageRef.configure({ assetUrls: stableAssetUrls, onEdit: onEditImage ? (image) => onEditImageRef.current?.(image) : null }),
       RichTable.configure({
-        assetUrls,
+        assetUrls: stableAssetUrls,
         onCellFocus: (controller) => setActiveRichTableCell((current) => {
           if (current && current !== controller) current.deactivate();
           setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
@@ -77,12 +81,20 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
     },
     onUpdate: ({ editor: currentEditor }) => onChange(normalize(currentEditor.getJSON())),
     onSelectionUpdate: ({ editor: currentEditor }) => setSelectedColor(getSelectionContentColor(currentEditor)),
-  }, [assetUrls, tableCell, initialColor]);
+  }, [tableCell, initialColor]);
+
+  const previousAssetUrlsRef = useRef(assetUrls);
+  useEffect(() => {
+    if (previousAssetUrlsRef.current === assetUrls) return;
+    previousAssetUrlsRef.current = assetUrls;
+    if (!editor || editor.isDestroyed) return;
+    // Rebuild only the node views so image URLs are refreshed while the
+    // TipTap editor instance, document, history, and selection stay intact.
+    editor.view.setProps({ nodeViews: {} });
+    editor.createNodeViews();
+  }, [assetUrls, editor]);
 
   useEffect(() => {
-    // Updating the asset URL map makes useEditor replace the TipTap instance.
-    // During that replacement React can run this effect once with the instance
-    // that has just been destroyed, whose commands getter no longer has a view.
     if (!editor || editor.isDestroyed || editor.isFocused) return;
     const next = normalize(document as JSONContent);
     const current = normalize(editor.getJSON());

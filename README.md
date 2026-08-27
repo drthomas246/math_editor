@@ -23,7 +23,7 @@ npm run dev
 
 Viteが表示したURLをChromeまたはEdgeで開きます。
 
-100問題規模の編集処理を計測する場合は、`npm run benchmark:editor`を実行します。
+100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。React描画、TipTap、DOM、layout、paintを含む実ブラウザ入力レイテンシは、`npm run benchmark:editor:browser`で検証できます。
 
 ## 主な使い方
 

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { MARGINS_MM, PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import { colorDocumentAsAnswer, hasVisibleDocument, mergeColoredDocuments, nodeUsesAnswerColor } from "../../domain/worksheet/rich-text";
@@ -12,7 +12,7 @@ type Props = {
   worksheet: Worksheet;
   mode: PreviewMode;
   zoom: number;
-  assetUrls: Map<string, string>;
+  assetUrls: ReadonlyMap<string, string>;
   onPageCountChange?: (pageCount: number) => void;
 };
 
@@ -31,7 +31,7 @@ type RenderAtom = {
 type PreviewSection = { mode: SectionMode; atoms: RenderAtom[] };
 type PlannedPage = { mode: SectionMode; sectionPageIndex: number; atomKeys: string[] };
 
-export function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange }: Props) {
+export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange }: Props) {
   const numbers = useMemo(() => getProblemNumbers(worksheet), [worksheet]);
   const sectionModes = mode === "questionsAndAnswers"
     ? (["questions", "withAnswers"] as const)
@@ -89,9 +89,9 @@ export function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCount
       {sections.map((section) => <MeasurementPage key={section.mode} worksheet={worksheet} section={section} assetUrls={assetUrls} />)}
     </div>
   </div>;
-}
+});
 
-function PreviewPage({ worksheet, mode, atoms, assetUrls, showHeader, pageNumber, totalPages }: { worksheet: Worksheet; mode: SectionMode; atoms: RenderAtom[]; assetUrls: Map<string, string>; showHeader: boolean; pageNumber: number; totalPages: number }) {
+function PreviewPage({ worksheet, mode, atoms, assetUrls, showHeader, pageNumber, totalPages }: { worksheet: Worksheet; mode: SectionMode; atoms: RenderAtom[]; assetUrls: ReadonlyMap<string, string>; showHeader: boolean; pageNumber: number; totalPages: number }) {
   const size = PAGE_SIZES_MM[worksheet.pageSettings.size];
   const margin = MARGINS_MM[worksheet.pageSettings.margin];
   return <div className="preview-page-wrap">
@@ -105,7 +105,7 @@ function PreviewPage({ worksheet, mode, atoms, assetUrls, showHeader, pageNumber
   </div>;
 }
 
-function MeasurementPage({ worksheet, section, assetUrls }: { worksheet: Worksheet; section: PreviewSection; assetUrls: Map<string, string> }) {
+function MeasurementPage({ worksheet, section, assetUrls }: { worksheet: Worksheet; section: PreviewSection; assetUrls: ReadonlyMap<string, string> }) {
   const size = PAGE_SIZES_MM[worksheet.pageSettings.size];
   const margin = MARGINS_MM[worksheet.pageSettings.margin];
   return <div data-pagination-section={section.mode}>
@@ -122,11 +122,11 @@ function WorksheetHeader({ worksheet }: { worksheet: Worksheet }) {
   return <header className="paper-header"><h2>{worksheet.title}</h2><div className="paper-fields">{worksheet.header.gradeField && <span className="grade-field"><i />年</span>}{worksheet.header.classField && <span className="class-field"><i />組</span>}{worksheet.header.numberField && <span className="number-field"><i />番</span>}{worksheet.header.nameField && <span className="name-field">名前<i /></span>}</div></header>;
 }
 
-function PreviewProblemFragment({ atom, mode, subQuestionNumberFormat, assetUrls, scrollAnchor = false }: { atom: RenderAtom; mode: SectionMode; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: Map<string, string>; scrollAnchor?: boolean }) {
+function PreviewProblemFragment({ atom, mode, subQuestionNumberFormat, assetUrls, scrollAnchor = false }: { atom: RenderAtom; mode: SectionMode; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: ReadonlyMap<string, string>; scrollAnchor?: boolean }) {
   return <section className={atom.startsProblem ? "paper-problem" : "paper-problem paper-problem-continuation"} data-preview-problem-id={scrollAnchor ? atom.problem.id : undefined} data-preview-section={scrollAnchor ? mode : undefined}>
     <span className="paper-problem-number">{atom.startsProblem ? atom.number : null}</span>
     <div className="paper-problem-body">
-      {atom.content && <PreviewContent content={atom.content} showAnswers={mode === "withAnswers"} subQuestionNumberFormat={subQuestionNumberFormat} assetUrls={assetUrls} />}
+      {atom.content && <WorksheetContentPreview content={atom.content} showAnswers={mode === "withAnswers"} subQuestionNumberFormat={subQuestionNumberFormat} assetUrls={assetUrls} />}
       {atom.showSolution && <div className="paper-solution">{atom.showSolutionHeading && <strong>解説</strong>}<RichDocument document={atom.problem.solution!} assetUrls={assetUrls} showAnswers /></div>}
     </div>
   </section>;
@@ -275,7 +275,7 @@ function waitForImage(image: HTMLImageElement): Promise<void> {
   });
 }
 
-function PreviewContent({ content, showAnswers, subQuestionNumberFormat, assetUrls }: { content: ContentBlock; showAnswers: boolean; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: Map<string, string> }) {
+export function WorksheetContentPreview({ content, showAnswers, subQuestionNumberFormat, assetUrls }: { content: ContentBlock; showAnswers: boolean; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: ReadonlyMap<string, string> }) {
   switch (content.type) {
     case "richText": return <RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers} />;
     case "box": return <div className={`paper-box box-${content.preset}`}>{content.title && <strong>{content.title}</strong>}<RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers} /></div>;
@@ -296,11 +296,11 @@ function PreviewContent({ content, showAnswers, subQuestionNumberFormat, assetUr
   }
 }
 
-function RichDocument({ document, assetUrls, showAnswers }: { document: { content: readonly unknown[] }; assetUrls: Map<string, string>; showAnswers: boolean }) {
+function RichDocument({ document, assetUrls, showAnswers }: { document: { content: readonly unknown[] }; assetUrls: ReadonlyMap<string, string>; showAnswers: boolean }) {
   return <div className="paper-rich-text">{document.content.map((node, index) => <RichNode key={index} node={node} assetUrls={assetUrls} showAnswers={showAnswers} />)}</div>;
 }
 
-function RichNode({ node, assetUrls, showAnswers }: { node: unknown; assetUrls: Map<string, string>; showAnswers: boolean }): React.ReactNode {
+function RichNode({ node, assetUrls, showAnswers }: { node: unknown; assetUrls: ReadonlyMap<string, string>; showAnswers: boolean }): React.ReactNode {
   if (!node || typeof node !== "object") return null;
   const preserveUnderlinedAnswerWidth = !showAnswers && isUnderlinedAnswerText(node);
   if (!preserveUnderlinedAnswerWidth && !isNodeVisibleInMode(node, showAnswers)) return null;
@@ -368,7 +368,7 @@ function isAnswerOnlyNode(node: unknown): boolean {
   return visibleChildren.length > 0 && visibleChildren.every(isAnswerOnlyNode);
 }
 
-function PreviewTable({ rows, headerRow, columnWidthsPercent, assetUrls, showAnswers }: { rows: TableRow[]; headerRow: boolean; columnWidthsPercent: number[]; assetUrls: Map<string, string>; showAnswers: boolean }) {
+function PreviewTable({ rows, headerRow, columnWidthsPercent, assetUrls, showAnswers }: { rows: TableRow[]; headerRow: boolean; columnWidthsPercent: number[]; assetUrls: ReadonlyMap<string, string>; showAnswers: boolean }) {
   return <table className="paper-table"><colgroup>{columnWidthsPercent.map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup><tbody>{rows.map((row, rowIndex) => <tr key={row.id} style={row.heightMm ? { height: `${row.heightMm}mm` } : undefined}>{row.cells.map((cell) => {
     const Cell = headerRow && rowIndex === 0 ? "th" : "td";
     return <Cell key={cell.id} rowSpan={cell.rowSpan} colSpan={cell.columnSpan}><RichDocument document={cell.document} assetUrls={assetUrls} showAnswers={showAnswers} /></Cell>;
@@ -391,7 +391,7 @@ function toImagePlacement(value: unknown): "block" | "floatLeft" | "floatRight" 
   return value === "floatLeft" || value === "floatRight" ? value : "block";
 }
 
-function StudentAnswerArea({ answerArea, showAnswers, assetUrls }: { answerArea: AnswerAreaValue; showAnswers: boolean; assetUrls: Map<string, string> }) {
+function StudentAnswerArea({ answerArea, showAnswers, assetUrls }: { answerArea: AnswerAreaValue; showAnswers: boolean; assetUrls: ReadonlyMap<string, string> }) {
   return <div className="paper-student-answer-area">
     <div className={`paper-answer-response ${answerArea.style === "box" ? "paper-answer-box" : "paper-answer-lines"}`} style={{ minHeight: `${answerArea.rows * 1.7}em` }}>
       <RichDocument document={mergeColoredDocuments(answerArea.document, answerArea.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers} />

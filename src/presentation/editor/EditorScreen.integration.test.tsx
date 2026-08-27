@@ -9,8 +9,8 @@ import { DexieWorksheetRepository } from "../../infrastructure/indexeddb/dexie-w
 import { createSaveRequest, useEditorStore } from "./editor-store";
 import { EditorScreen } from "./EditorScreen";
 
-vi.mock("./ProblemCard", () => ({
-  ProblemCard: () => <section data-testid="problem-card" />,
+vi.mock("./ProblemList", () => ({
+  ProblemList: () => <section data-testid="problem-card" />,
 }));
 
 vi.mock("../preview/WorksheetPreview", () => ({

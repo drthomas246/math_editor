@@ -5,10 +5,9 @@ import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import type { EditorPreviewMode } from "../../application/pdf/generate-pdf";
 import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
 import { PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
-import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode } from "../../domain/worksheet/worksheet";
+import type { AssetRecord, ImageBlock, ImagePlacement, ImageWidthPercent, RichTextNode, Worksheet } from "../../domain/worksheet/worksheet";
 import { addContent, addProblem, applyWorksheetSettings, updateImageReference, updateRichTextDocument, type RichTextDocumentTarget } from "../../domain/worksheet/worksheet.commands";
 import { createId } from "../../domain/worksheet/worksheet.defaults";
-import { getProblemNumbers } from "../../domain/worksheet/worksheet.numbering";
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
 import { Toast } from "../components/Toast";
 import { ManualContextLink } from "../components/ManualContextLink";
@@ -19,7 +18,7 @@ import { loadUiPreferences, saveUiPreferences } from "../app/ui-preferences";
 import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
 import { createSaveRequest, useEditorStore } from "./editor-store";
 import { syncProblemScroll } from "./problem-scroll-sync";
-import { ProblemCard } from "./ProblemCard";
+import { ProblemList } from "./ProblemList";
 
 const SAVE_DEBOUNCE_MS = 750;
 
@@ -41,20 +40,19 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const [preferences, setPreferences] = useState(loadUiPreferences);
   const [fittedZoom, setFittedZoom] = useState(1);
   const [previewUpdating, setPreviewUpdating] = useState(false);
+  const [previewWorksheet, setPreviewWorksheet] = useState<Worksheet | null>(null);
 
   const worksheet = useEditorStore((state) => state.worksheet);
   const sessionId = useEditorStore((state) => state.sessionId);
   const revision = useEditorStore((state) => state.revision);
   const saveStatus = useEditorStore((state) => state.saveStatus);
   const selectedProblemId = useEditorStore((state) => state.selectedProblemId);
-  const selectedContentId = useEditorStore((state) => state.selectedContentId);
   const undoStack = useEditorStore((state) => state.undoStack);
   const redoStack = useEditorStore((state) => state.redoStack);
   const initialize = useEditorStore((state) => state.initialize);
   const commit = useEditorStore((state) => state.commit);
   const mutate = useEditorStore((state) => state.mutate);
   const selectProblem = useEditorStore((state) => state.selectProblem);
-  const selectContent = useEditorStore((state) => state.selectContent);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
   const markSaving = useEditorStore((state) => state.markSaving);
@@ -69,6 +67,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       if (!active) return;
       if (!data || data.worksheet.deletedAt !== null) { setNotFound(true); setLoading(false); return; }
       initialize(data.worksheet);
+      setPreviewWorksheet(data.worksheet);
       const referencedAssetIds = collectRetainedAssetIds(data.worksheet, []);
       const urls = new Map(data.assets
         .filter((asset) => referencedAssetIds.has(asset.id))
@@ -122,20 +121,25 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [saveStatus]);
 
   useEffect(() => {
-    if (!worksheet) return;
+    if (!worksheet || previewWorksheet === worksheet) return;
     setPreviewUpdating(true);
-    const timer = window.setTimeout(() => setPreviewUpdating(false), 50);
+    const timer = window.setTimeout(() => {
+      setPreviewWorksheet(worksheet);
+      setPreviewUpdating(false);
+    }, 120);
     return () => window.clearTimeout(timer);
-  }, [worksheet]);
+  }, [previewWorksheet, worksheet]);
+
+  const worksheetForPreview = previewWorksheet ?? worksheet;
 
   useLayoutEffect(() => {
-    if (typeof preferences.zoom === "number" || !worksheet) return;
+    if (typeof preferences.zoom === "number" || !worksheetForPreview) return;
     const previewScroll = previewScrollRef.current;
     if (!previewScroll) return;
 
     const updateFittedZoom = () => {
       const style = getComputedStyle(previewScroll);
-      const pageSize = PAGE_SIZES_MM[worksheet.pageSettings.size];
+      const pageSize = PAGE_SIZES_MM[worksheetForPreview.pageSettings.size];
       const nextZoom = calculateFittedPreviewZoom({
         mode: preferences.zoom as "fitWidth" | "fitPage",
         viewportWidth: previewScroll.clientWidth,
@@ -155,7 +159,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateFittedZoom);
     };
-  }, [preferences.zoom, worksheet?.pageSettings.size]);
+  }, [preferences.zoom, worksheetForPreview?.pageSettings.size]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -238,8 +242,6 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [flushSave, navigationBlocker]);
 
   const backToList = () => { void navigate("/"); };
-  const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
-
   const updatePreferences = (change: Partial<typeof preferences>) => {
     const next = { ...preferences, ...change };
     setPreferences(next); saveUiPreferences(next);
@@ -289,8 +291,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [schedulePreviewScrollSync, worksheet?.id]);
 
   useLayoutEffect(() => {
-    if (worksheet) schedulePreviewScrollSync();
-  }, [numericZoom, preferences.previewMode, revision, schedulePreviewScrollSync, worksheet]);
+    if (worksheetForPreview) schedulePreviewScrollSync();
+  }, [numericZoom, preferences.previewMode, schedulePreviewScrollSync, worksheetForPreview]);
 
   useEffect(() => () => {
     if (scrollSyncFrameRef.current !== null && typeof window.cancelAnimationFrame === "function") {
@@ -304,8 +306,10 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     draft.header.title = title;
   }, { historyGroup: `text:${worksheet?.id ?? "unknown"}:title` });
 
-  const addImage = async (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
-    if (!worksheet) return;
+  const addImage = useCallback(async (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
+    const state = useEditorStore.getState();
+    const currentWorksheet = state.worksheet;
+    if (!currentWorksheet) return;
     let image: ImageBlock;
     if (placement === "block") {
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: width };
@@ -315,22 +319,24 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: Math.min(width, 50) as 25 | 33 | 50 };
     }
     const result = target
-      ? updateRichTextDocument(worksheet, problemId, target, (document) => {
+      ? updateRichTextDocument(currentWorksheet, problemId, target, (document) => {
         document.content.push(toImageRef(image, target.kind !== "solution" && target.color === "answer"));
       })
-      : addContent(worksheet, problemId, image, selectedContentId);
+      : addContent(currentWorksheet, problemId, image, state.selectedContentId);
     if (!result.ok) { setToast("画像を追加できませんでした"); return; }
     try {
       await repository.putAsset(asset, result.worksheet);
-      commit("画像を挿入", result.worksheet);
-      selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
+      state.commit("画像を挿入", result.worksheet);
+      state.selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
     } catch { setToast("画像を保存できませんでした"); }
-  };
+  }, [repository]);
 
-  const updateImage = async (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
-    if (!worksheet) return;
-    const result = updateImageReference(worksheet, problemId, imageId, target ?? null, {
+  const updateImage = useCallback(async (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
+    const state = useEditorStore.getState();
+    const currentWorksheet = state.worksheet;
+    if (!currentWorksheet) return;
+    const result = updateImageReference(currentWorksheet, problemId, imageId, target ?? null, {
       ...(asset ? { assetId: asset.id } : {}),
       alt,
       placement,
@@ -342,9 +348,9 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
         await repository.putAsset(asset, result.worksheet);
         setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
       }
-      commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);
+      state.commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);
     } catch { setToast("画像を保存できませんでした"); }
-  };
+  }, [repository]);
 
   if (loading) return <div className="centered-state"><div className="spinner" /><p>プリントを読み込んでいます</p></div>;
   if (notFound || !worksheet) return <div className="centered-state"><h1>プリントが見つかりません</h1><p>削除されたか、別のブラウザに保存されている可能性があります。</p><button className="primary-button" onClick={() => navigate("/")}>プリント一覧へ戻る</button></div>;
@@ -366,14 +372,14 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       <section className="editing-pane" ref={editingScrollRef} style={{ width: `${preferences.paneRatio * 100}%` }}>
         <div className="pane-heading"><div><p className="eyebrow">WORKSHEET</p><h1>編集</h1></div><span>{worksheet.problems.filter((problem) => problem.kind === "problem").length}問・{worksheet.problems.filter((problem) => problem.kind === "example").length}例題</span></div>
         <div className="problem-list">
-          {worksheet.problems.map((problem, index) => <ProblemCard key={problem.id} worksheet={worksheet} problem={problem} index={index} displayNumber={numbers.get(problem.id) ?? null} selected={selectedProblemId === problem.id} selectedContentId={selectedContentId} onSelect={() => selectProblem(problem.id)} onSelectContent={selectContent} onCommit={commit} onMutate={mutate} onAddImage={addImage} onUpdateImage={updateImage} assetUrls={assetUrls} onToast={setToast} />)}
+          <ProblemList assetUrls={assetUrls} onAddImage={addImage} onUpdateImage={updateImage} onToast={setToast} />
         </div>
         <button className="add-problem-button" disabled={worksheet.problems.length >= 200} onClick={() => { const result = addProblem(worksheet, selectedProblemId); if (result.ok) { commit("問題を追加", result.worksheet); const selectedIndex = result.worksheet.problems.findIndex((problem) => problem.id === selectedProblemId); selectProblem(result.worksheet.problems[selectedIndex + 1]?.id ?? result.worksheet.problems.at(-1)?.id ?? null); } }}><Plus size={17} />問題・例題を追加</button>
       </section>
       <div className={dragging ? "pane-divider dragging" : "pane-divider"} role="separator" aria-orientation="vertical" aria-valuemin={35} aria-valuemax={65} aria-valuenow={Math.round(preferences.paneRatio * 100)} tabIndex={0} onPointerDown={() => setDragging(true)} onKeyDown={(event) => { if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return; const step = event.shiftKey ? 0.1 : 0.02; const direction = event.key === "ArrowLeft" ? -1 : 1; updatePreferences({ paneRatio: Math.max(0.35, Math.min(0.65, preferences.paneRatio + step * direction)) }); }}><i /><i /><i /></div>
       <section className="preview-pane" style={{ width: `${(1 - preferences.paneRatio) * 100}%` }}>
         <div className="preview-toolbar"><div className="preview-heading"><strong>プレビュー</strong>{previewUpdating && <span className="updating">更新中…</span>}</div><select aria-label="プレビューモード" value={preferences.previewMode} onChange={(event) => updatePreferences({ previewMode: event.target.value as EditorPreviewMode })}><option value="questions">問題のみ</option><option value="withAnswers">解答付き</option></select><div className="zoom-controls"><button className="icon-button" aria-label="縮小" disabled={numericZoom <= MIN_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, -1) })}><Minus size={15} /></button><button className="zoom-value">{Math.round(numericZoom * 100)}%</button><button className="icon-button" aria-label="拡大" disabled={numericZoom >= MAX_PREVIEW_ZOOM} onClick={() => updatePreferences({ zoom: getNextPreviewZoom(numericZoom, 1) })}><Plus size={15} /></button></div><button className={preferences.zoom === "fitWidth" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitWidth" })}>幅に合わせる</button><button className={preferences.zoom === "fitPage" ? "toolbar-text-button active" : "toolbar-text-button"} onClick={() => updatePreferences({ zoom: "fitPage" })}>ページ全体</button></div>
-        <div className="preview-scroll" ref={previewScrollRef}><WorksheetPreview worksheet={worksheet} mode={preferences.previewMode} zoom={numericZoom} assetUrls={assetUrls} /></div>
+        <div className="preview-scroll" ref={previewScrollRef}><WorksheetPreview worksheet={worksheetForPreview ?? worksheet} mode={preferences.previewMode} zoom={numericZoom} assetUrls={assetUrls} /></div>
       </section>
     </div>
     {settingsOpen && <WorksheetSettingsDialog worksheet={worksheet} onClose={() => setSettingsOpen(false)} onApply={(pageSettings, header) => { commit("プリント設定を適用", applyWorksheetSettings(worksheet, pageSettings, header)); setSettingsOpen(false); }} />}
