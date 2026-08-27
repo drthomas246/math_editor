@@ -14,7 +14,7 @@ import { ManualContextLink } from "../components/ManualContextLink";
 import { PdfDialog, WorksheetSettingsDialog } from "../dialogs/EditorDialogs";
 import { calculateFittedPreviewZoom, getNextPreviewZoom, MAX_PREVIEW_ZOOM, MIN_PREVIEW_ZOOM } from "../preview/preview-zoom";
 import { WorksheetPreview } from "../preview/WorksheetPreview";
-import { loadUiPreferences, saveUiPreferences } from "../app/ui-preferences";
+import { loadUiPreferences, saveUiPreferences, type UiPreferences } from "../app/ui-preferences";
 import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
 import { createSaveRequest, useEditorStore } from "./editor-store";
 import { syncProblemScroll } from "./problem-scroll-sync";
@@ -39,6 +39,13 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const [dragging, setDragging] = useState(false);
   const [assetUrls, setAssetUrls] = useState<Map<string, string>>(new Map());
   const [preferences, setPreferences] = useState(loadUiPreferences);
+  const preferencesRef = useRef(preferences);
+  const applyPreferenceChange = useCallback((change: Partial<UiPreferences>) => {
+    const next = { ...preferencesRef.current, ...change };
+    preferencesRef.current = next;
+    setPreferences(next);
+    return next;
+  }, []);
   const [fittedZoom, setFittedZoom] = useState(1);
   const [previewUpdating, setPreviewUpdating] = useState(false);
   const [previewWorksheet, setPreviewWorksheet] = useState<Worksheet | null>(null);
@@ -188,12 +195,12 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       const bounds = shellRef.current?.getBoundingClientRect();
       if (!bounds) return;
       const ratio = Math.max(0.35, Math.min(0.65, (event.clientX - bounds.left) / bounds.width));
-      setPreferences((current) => ({ ...current, paneRatio: ratio }));
+      applyPreferenceChange({ paneRatio: ratio });
     };
-    const onUp = () => { setDragging(false); setPreferences((current) => { saveUiPreferences(current); return current; }); };
+    const onUp = () => { setDragging(false); saveUiPreferences(preferencesRef.current); };
     window.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp);
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
-  }, [dragging]);
+  }, [applyPreferenceChange, dragging]);
 
   const flushSave = useCallback(async (discardHistory = false) => {
     while (true) {
@@ -249,8 +256,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
 
   const backToList = () => { void navigate("/"); };
   const updatePreferences = (change: Partial<typeof preferences>) => {
-    const next = { ...preferences, ...change };
-    setPreferences(next); saveUiPreferences(next);
+    saveUiPreferences(applyPreferenceChange(change));
   };
   const numericZoom = typeof preferences.zoom === "number" ? preferences.zoom : fittedZoom;
   const syncPreviewScroll = useCallback(() => {

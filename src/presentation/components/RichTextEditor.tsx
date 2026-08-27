@@ -2,7 +2,7 @@ import type { JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Image, Italic, List, ListOrdered, Sigma, Table2, Underline as UnderlineIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { ContentColor } from "../../domain/worksheet/rich-text";
@@ -34,6 +34,11 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
   const [cellMathOpen, setCellMathOpen] = useState(false);
   const [editingMath, setEditingMath] = useState<EditableMathRef | null>(null);
   const [activeRichTableCell, setActiveRichTableCell] = useState<RichTableCellEditorController | null>(null);
+  const activeRichTableCellRef = useRef<RichTableCellEditorController | null>(null);
+  const updateActiveRichTableCell = useCallback((controller: RichTableCellEditorController | null) => {
+    activeRichTableCellRef.current = controller;
+    setActiveRichTableCell(controller);
+  }, []);
   const [selectedColor, setSelectedColor] = useState<ContentColor>(initialColor);
   const [, setCellToolbarRevision] = useState(0);
   const [richTableMathInserter, setRichTableMathInserter] = useState<((latex: string, textSize: MathTextSize, color: ContentColor) => void) | null>(null);
@@ -65,11 +70,12 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       ImageRef.configure({ assetUrls: stableAssetUrls, onEdit: onEditImage ? (image) => onEditImageRef.current?.(image) : null }),
       RichTable.configure({
         assetUrls: stableAssetUrls,
-        onCellFocus: (controller) => setActiveRichTableCell((current) => {
+        onCellFocus: (controller) => {
+          const current = activeRichTableCellRef.current;
           if (current && current !== controller) current.deactivate();
+          updateActiveRichTableCell(controller);
           setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
-          return controller;
-        }),
+        },
         onCellStateChange: () => setCellToolbarRevision((revision) => revision + 1),
         onEditMath: setEditingMath,
       }),
@@ -145,24 +151,24 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       {activeRichTableCell && <TableStructureToolbar
         availability={activeRichTableCell.tableOperationAvailability}
         onOperation={(operation) => {
-          if (activeRichTableCell.applyTableOperation(operation)) setActiveRichTableCell(null);
+          if (activeRichTableCell.applyTableOperation(operation)) updateActiveRichTableCell(null);
         }}
         sizing={{
           rowHeightMm: activeRichTableCell.tableSizing.rowHeightMm,
           columnWidthPercent: activeRichTableCell.tableSizing.columnWidthPercent,
           canResizeColumn: activeRichTableCell.tableSizing.canResizeColumn,
           onRowHeightChange: (heightMm) => {
-            if (activeRichTableCell.tableSizing.setRowHeightMm(heightMm)) setActiveRichTableCell(null);
+            if (activeRichTableCell.tableSizing.setRowHeightMm(heightMm)) updateActiveRichTableCell(null);
           },
           onColumnWidthChange: (widthPercent) => {
-            if (activeRichTableCell.tableSizing.setColumnWidthPercent(widthPercent)) setActiveRichTableCell(null);
+            if (activeRichTableCell.tableSizing.setColumnWidthPercent(widthPercent)) updateActiveRichTableCell(null);
           },
         }}
       />}
       <div onPointerDownCapture={(event) => {
         if (!(event.target as HTMLElement).closest("[data-rich-table]")) {
-          activeRichTableCell?.deactivate();
-          setActiveRichTableCell(null);
+          activeRichTableCellRef.current?.deactivate();
+          updateActiveRichTableCell(null);
         }
       }}><EditorContent editor={editor} /></div>
       {mathOpen && <MathDialog onClose={() => setMathOpen(false)} onInsert={(latex, block, textSize) => {
