@@ -21,10 +21,17 @@ export function Modal({ title, onClose, footer, size = "medium", children }: Mod
         .filter((element) => !element.hasAttribute("disabled"));
       const first = focusable[0];
       const last = focusable.at(-1);
-      if (event.shiftKey && document.activeElement === first) {
+      const activeElement = document.activeElement;
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (!activeElement || !dialog.contains(activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      } else if (event.shiftKey && (activeElement === first || activeElement === dialog)) {
         event.preventDefault();
         last?.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && activeElement === last) {
         event.preventDefault();
         first?.focus();
       }
