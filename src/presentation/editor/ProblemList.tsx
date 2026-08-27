@@ -41,6 +41,9 @@ export const ProblemList = memo(function ProblemList({ assetUrls, onAddImage, on
   }));
 
   const descriptors = useMemo<ProblemDescriptor[]>(() => {
+    // structureKey is the intentionally narrow subscription that invalidates
+    // this snapshot without rerendering the list for rich-text-only edits.
+    void structureKey;
     const worksheet = getCurrentWorksheet();
     if (!worksheet) return [];
     const numbers = getProblemNumbers(worksheet);

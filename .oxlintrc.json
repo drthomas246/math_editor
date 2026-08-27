@@ -7,8 +7,8 @@
   },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "off",
-    "react/refs": "off",
-    "react/set-state-in-effect": "off"
+    "react/exhaustive-deps": "error",
+    "react/refs": "error",
+    "react/set-state-in-effect": "error"
   }
 }

@@ -1,5 +1,5 @@
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
@@ -29,7 +29,7 @@ export function TrashScreen({ repository = worksheetRepository }: { repository?:
   const [target, setTarget] = useState<Worksheet | "all" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -40,8 +40,12 @@ export function TrashScreen({ repository = worksheetRepository }: { repository?:
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { void load(); }, []);
+  }, [repository]);
+  useEffect(() => {
+    // Loading on mount intentionally synchronizes this screen with IndexedDB.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void load();
+  }, [load]);
 
   const restore = async (worksheet: Worksheet) => {
     if (pendingOperation) return;

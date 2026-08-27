@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Copy, GripVertical, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from "lucide-react";
 import type { Draft } from "immer";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { colorDocumentAsAnswer, mergeColoredDocuments, type ContentColor } from "../../domain/worksheet/rich-text";
 import type { AnswerArea, AssetRecord, BasicRichTextDocument, ContentBlock, ImagePlacement, ImageWidthPercent, ProblemBlock, TableCellRichTextDocument, Worksheet } from "../../domain/worksheet/worksheet";
@@ -324,13 +324,11 @@ function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { t
   const [activeCellId, setActiveCellId] = useState<string | null>(() => content.rows[0]?.cells[0]?.id ?? null);
   const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
   const tableData: EditableTableData = { rows: content.rows, columnWidthsPercent: content.columnWidthsPercent };
-  const availability = activeCellId ? getTableOperationAvailability(tableData, activeCellId) : null;
-  const activeLocation = activeCellId ? getTableCellLocation(tableData, activeCellId) : null;
-
-  useEffect(() => {
-    if (activeCellId && getTableCellLocation(tableData, activeCellId)) return;
-    setActiveCellId(content.rows[0]?.cells[0]?.id ?? null);
-  }, [activeCellId, content.rows, content.columnWidthsPercent]);
+  const resolvedActiveCellId = activeCellId && getTableCellLocation(tableData, activeCellId)
+    ? activeCellId
+    : (content.rows[0]?.cells[0]?.id ?? null);
+  const availability = resolvedActiveCellId ? getTableOperationAvailability(tableData, resolvedActiveCellId) : null;
+  const activeLocation = resolvedActiveCellId ? getTableCellLocation(tableData, resolvedActiveCellId) : null;
 
   const updateCell = (cellId: string, document: typeof content.rows[number]["cells"][number]["document"]) => {
     const rows = structuredClone(content.rows);
@@ -344,8 +342,8 @@ function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { t
     }
   };
   const operate = (operation: TableOperation) => {
-    if (!activeCellId) return;
-    const result = applyTableOperation(tableData, activeCellId, operation);
+    if (!resolvedActiveCellId) return;
+    const result = applyTableOperation(tableData, resolvedActiveCellId, operation);
     if (!result) return;
     setActiveCellId(result.activeCellId);
     onChange({ rows: result.rows, columnWidthsPercent: result.columnWidthsPercent });
@@ -379,8 +377,8 @@ function TableEditor({ content, onChange }: { content: Extract<ContentBlock, { t
       const Cell = content.headerRow && rowIndex === 0 ? "th" : "td";
       const location = getTableCellLocation(tableData, cell.id);
       const logicalColumn = location?.column ?? 0;
-      return <Cell key={cell.id} rowSpan={cell.rowSpan} colSpan={cell.columnSpan} className={activeCellId === cell.id ? "active" : ""}>
-        {activeCellId === cell.id
+      return <Cell key={cell.id} rowSpan={cell.rowSpan} colSpan={cell.columnSpan} className={resolvedActiveCellId === cell.id ? "active" : ""}>
+        {resolvedActiveCellId === cell.id
           ? <RichTextEditor tableCell compact toolbarContainer={toolbarContainer} document={cell.document} placeholder={`${rowIndex + 1}行${logicalColumn + 1}列`} onChange={(document) => updateCell(cell.id, document as typeof cell.document)} />
           : <button type="button" className="table-cell-select" aria-label={`${rowIndex + 1}行${logicalColumn + 1}列を編集`} onClick={() => setActiveCellId(cell.id)}><TableCellDocumentPreview document={cell.document} /></button>}
       </Cell>;

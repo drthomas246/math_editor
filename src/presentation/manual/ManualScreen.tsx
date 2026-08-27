@@ -24,6 +24,8 @@ export function ManualScreen() {
     if (searchActive) return;
     headingRef.current?.focus();
     window.scrollTo({ top: 0 });
+    // Clearing search keeps focus in the search box; only route changes should move it.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterSlug, location.pathname]);
 
   const clearQuery = () => setQuery("");

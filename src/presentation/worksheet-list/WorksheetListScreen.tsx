@@ -11,7 +11,7 @@ import {
   Settings,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { createArchiveBackup, createSingleBackup, hydrateBackup, parseBackup } from "../../application/backup/backup";
@@ -53,7 +53,7 @@ export function WorksheetListScreen() {
 
   useOutsidePointerDown(openMenuRef, openMenu !== null, () => setOpenMenu(null));
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -65,9 +65,13 @@ export function WorksheetListScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    // Loading on mount intentionally synchronizes this screen with IndexedDB.
+    // oxlint-disable-next-line react/set-state-in-effect
+    void load();
+  }, [load]);
   useEffect(() => {
     const timer = window.setTimeout(() => { setDebouncedQuery(query); setPage(1); }, 150);
     return () => window.clearTimeout(timer);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { TABLE_COLUMN_WIDTH_PERCENT, TABLE_ROW_HEIGHT_MM } from "../../domain/worksheet/table-operations";
 import type { TableOperation, TableOperationAvailability } from "../../domain/worksheet/table-operations";
@@ -36,11 +36,27 @@ const groups: Array<{ label: string; actions: Array<{ operation: TableOperation;
 const formatNumber = (value: number) => String(Math.round(value * 10) / 10);
 
 export function TableStructureToolbar({ availability, onOperation, sizing }: Props) {
+  const sizingKey = `${sizing.rowHeightMm ?? "auto"}:${sizing.columnWidthPercent}:${sizing.canResizeColumn}`;
+
+  return <div className="table-structure-toolbar" role="toolbar" aria-label="表の行・列・セル操作">
+    {groups.map((group) => <div className="table-structure-group" key={group.label}>
+      <span>{group.label}</span>
+      {group.actions.map((action) => <button
+        type="button"
+        key={action.operation}
+        disabled={!availability[action.operation]}
+        aria-label={action.title}
+        title={action.title}
+        onClick={() => onOperation(action.operation)}
+      >{action.label}</button>)}
+    </div>)}
+    <TableSizingControls key={sizingKey} sizing={sizing} />
+  </div>;
+}
+
+function TableSizingControls({ sizing }: Pick<Props, "sizing">) {
   const [rowHeight, setRowHeight] = useState(sizing.rowHeightMm === null ? "" : formatNumber(sizing.rowHeightMm));
   const [columnWidth, setColumnWidth] = useState(formatNumber(sizing.columnWidthPercent));
-
-  useEffect(() => setRowHeight(sizing.rowHeightMm === null ? "" : formatNumber(sizing.rowHeightMm)), [sizing.rowHeightMm]);
-  useEffect(() => setColumnWidth(formatNumber(sizing.columnWidthPercent)), [sizing.columnWidthPercent]);
 
   const commitRowHeight = () => {
     if (!rowHeight.trim()) { sizing.onRowHeightChange(null); return; }
@@ -58,19 +74,7 @@ export function TableStructureToolbar({ availability, onOperation, sizing }: Pro
     sizing.onColumnWidthChange(next);
   };
 
-  return <div className="table-structure-toolbar" role="toolbar" aria-label="表の行・列・セル操作">
-    {groups.map((group) => <div className="table-structure-group" key={group.label}>
-      <span>{group.label}</span>
-      {group.actions.map((action) => <button
-        type="button"
-        key={action.operation}
-        disabled={!availability[action.operation]}
-        aria-label={action.title}
-        title={action.title}
-        onClick={() => onOperation(action.operation)}
-      >{action.label}</button>)}
-    </div>)}
-    <div className="table-sizing-group">
+  return <div className="table-sizing-group">
       <label className="table-size-control">行高
         <input
           type="number"
@@ -100,6 +104,5 @@ export function TableStructureToolbar({ availability, onOperation, sizing }: Pro
           onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
         /><small>%</small>
       </label>
-    </div>
   </div>;
 }

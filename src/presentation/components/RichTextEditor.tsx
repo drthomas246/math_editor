@@ -2,7 +2,7 @@ import type { JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Image, Italic, List, ListOrdered, Sigma, Table2, Underline as UnderlineIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { ContentColor } from "../../domain/worksheet/rich-text";
@@ -40,14 +40,23 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
     setActiveRichTableCell(controller);
   }, []);
   const [selectedColor, setSelectedColor] = useState<ContentColor>(initialColor);
+  const handleRichTableCellFocus = useCallback((controller: RichTableCellEditorController) => {
+    const current = activeRichTableCellRef.current;
+    if (current && current !== controller) current.deactivate();
+    updateActiveRichTableCell(controller);
+    setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
+  }, [updateActiveRichTableCell]);
   const [, setCellToolbarRevision] = useState(0);
   const [richTableMathInserter, setRichTableMathInserter] = useState<((latex: string, textSize: MathTextSize, color: ContentColor) => void) | null>(null);
   const onEditImageRef = useRef(onEditImage);
-  onEditImageRef.current = onEditImage;
-  const stableAssetUrlsRef = useRef(new Map(assetUrls));
-  stableAssetUrlsRef.current.clear();
-  assetUrls.forEach((url, assetId) => stableAssetUrlsRef.current.set(assetId, url));
-  const stableAssetUrls = stableAssetUrlsRef.current;
+  useLayoutEffect(() => { onEditImageRef.current = onEditImage; }, [onEditImage]);
+  const handleEditImage = useCallback((image: EditableImageRef) => onEditImageRef.current?.(image), []);
+  const [stableAssetUrls] = useState(() => new Map(assetUrls));
+  useLayoutEffect(() => {
+    stableAssetUrls.clear();
+    assetUrls.forEach((url, assetId) => stableAssetUrls.set(assetId, url));
+  }, [assetUrls, stableAssetUrls]);
+  const canEditImages = onEditImage !== undefined;
   const hasInsertTools = Boolean(enableMath || onImage || onTable || tableCell);
   const normalize = tableCell ? normalizeTableCellEditorDocument : normalizeEditorDocument;
   const editor = useEditor({
@@ -67,15 +76,14 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
       AnswerColor,
       InlineMath.configure({ onEdit: setEditingMath }),
       BlockMath.configure({ onEdit: setEditingMath }),
-      ImageRef.configure({ assetUrls: stableAssetUrls, onEdit: onEditImage ? (image) => onEditImageRef.current?.(image) : null }),
+      // TipTap configure stores this ref-backed callback; it does not invoke it during React render.
+      // oxlint-disable-next-line react/refs
+      ImageRef.configure({ assetUrls: stableAssetUrls, onEdit: canEditImages ? handleEditImage : null }),
+      // TipTap configure stores this ref-backed callback; it does not invoke it during React render.
+      // oxlint-disable-next-line react/refs
       RichTable.configure({
         assetUrls: stableAssetUrls,
-        onCellFocus: (controller) => {
-          const current = activeRichTableCellRef.current;
-          if (current && current !== controller) current.deactivate();
-          updateActiveRichTableCell(controller);
-          setSelectedColor(controller.isActive("answerColor") ? "answer" : "problem");
-        },
+        onCellFocus: handleRichTableCellFocus,
         onCellStateChange: () => setCellToolbarRevision((revision) => revision + 1),
         onEditMath: setEditingMath,
       }),
@@ -87,7 +95,7 @@ export function RichTextEditor({ document, onChange, placeholder = "ここに問
     },
     onUpdate: ({ editor: currentEditor }) => onChange(normalize(currentEditor.getJSON())),
     onSelectionUpdate: ({ editor: currentEditor }) => setSelectedColor(getSelectionContentColor(currentEditor)),
-  }, [tableCell, initialColor]);
+  }, [tableCell, initialColor, canEditImages]);
 
   const previousAssetUrlsRef = useRef(assetUrls);
   useEffect(() => {

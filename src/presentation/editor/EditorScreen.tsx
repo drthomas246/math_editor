@@ -69,6 +69,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const clear = useEditorStore((state) => state.clear);
 
   useEffect(() => {
+    // Loading a route synchronizes component state with the external repository.
+    // oxlint-disable-next-line react/set-state-in-effect
     setLoadState("loading");
     setPreviewWorksheet(null);
     if (!worksheetId) {
@@ -103,6 +105,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   );
 
   useEffect(() => {
+    // Object URLs are external resources whose retained set follows editor history.
+    // oxlint-disable-next-line react/set-state-in-effect
     setAssetUrls((current) => pruneAssetUrls(current, retainedAssetIds));
   }, [retainedAssetIds]);
 
@@ -135,6 +139,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
 
   useEffect(() => {
     if (!worksheet || previewWorksheet === worksheet) return;
+    // The preview intentionally lags edits so typing does not repaginate immediately.
+    // oxlint-disable-next-line react/set-state-in-effect
     setPreviewUpdating(true);
     const timer = window.setTimeout(() => {
       setPreviewWorksheet(worksheet);
@@ -144,15 +150,16 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [previewWorksheet, worksheet]);
 
   const worksheetForPreview = previewWorksheet ?? worksheet;
+  const previewPageSize = worksheetForPreview?.pageSettings.size;
 
   useLayoutEffect(() => {
-    if (typeof preferences.zoom === "number" || !worksheetForPreview) return;
+    if (typeof preferences.zoom === "number" || !previewPageSize) return;
     const previewScroll = previewScrollRef.current;
     if (!previewScroll) return;
 
     const updateFittedZoom = () => {
       const style = getComputedStyle(previewScroll);
-      const pageSize = PAGE_SIZES_MM[worksheetForPreview.pageSettings.size];
+      const pageSize = PAGE_SIZES_MM[previewPageSize];
       const nextZoom = calculateFittedPreviewZoom({
         mode: preferences.zoom as "fitWidth" | "fitPage",
         viewportWidth: previewScroll.clientWidth,
@@ -172,7 +179,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateFittedZoom);
     };
-  }, [preferences.zoom, worksheetForPreview?.pageSettings.size]);
+  }, [preferences.zoom, previewPageSize]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -246,6 +253,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   useEffect(() => {
     if (navigationBlocker.state !== "blocked") return;
     let active = true;
+    // A blocked router transition must wait for the external save operation.
+    // oxlint-disable-next-line react/set-state-in-effect
     void flushSave(true).then((saved) => {
       if (!active) return;
       if (saved) navigationBlocker.proceed();

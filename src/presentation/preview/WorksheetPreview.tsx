@@ -33,14 +33,15 @@ type PlannedPage = { mode: SectionMode; sectionPageIndex: number; atomKeys: stri
 
 export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange }: Props) {
   const numbers = useMemo(() => getProblemNumbers(worksheet), [worksheet]);
-  const sectionModes = mode === "questionsAndAnswers"
-    ? (["questions", "withAnswers"] as const)
-    : ([mode] as const);
-  const sectionModeKey = sectionModes.join("|");
-  const sections = useMemo<PreviewSection[]>(
-    () => sectionModes.map((sectionMode) => ({ mode: sectionMode, atoms: createRenderAtoms(worksheet, sectionMode, numbers) })),
-    [numbers, sectionModeKey, worksheet],
-  );
+  const sections = useMemo<PreviewSection[]>(() => {
+    const sectionModes = mode === "questionsAndAnswers"
+      ? (["questions", "withAnswers"] as const)
+      : ([mode] as const);
+    return sectionModes.map((sectionMode) => ({
+      mode: sectionMode,
+      atoms: createRenderAtoms(worksheet, sectionMode, numbers),
+    }));
+  }, [mode, numbers, worksheet]);
   const measurementRef = useRef<HTMLDivElement>(null);
   const [pagination, setPagination] = useState<{ ready: boolean; pages: PlannedPage[] }>({ ready: false, pages: fallbackPages(sections) });
 

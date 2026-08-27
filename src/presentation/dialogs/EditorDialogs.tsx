@@ -34,7 +34,10 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
     { value: "withAnswers", title: "解答付き", description: "問題色と解答色、教師用の解説を表示します。" },
     { value: "questionsAndAnswers", title: "問題＋解答", description: "問題編の後、新しいページから解答編を出力します。" },
   ];
-  useEffect(() => setPageCount(mode === "questionsAndAnswers" ? 2 : 1), [mode]);
+  const selectMode = (nextMode: PreviewMode) => {
+    setMode(nextMode);
+    setPageCount(nextMode === "questionsAndAnswers" ? 2 : 1);
+  };
   const download = async () => {
     setStatus("running"); setError("");
     try {
@@ -49,7 +52,7 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
   };
   return <>
     <Modal title="PDF出力" onClose={onClose} footer={<><button className="secondary-button" onClick={onClose}>キャンセル</button><button className="primary-button" disabled={status === "running"} onClick={download}>{status === "running" ? "PDFを生成中…" : "PDFをダウンロード"}</button></>}>
-      <div className="radio-cards">{modes.map((item) => <label className={mode === item.value ? "radio-card selected" : "radio-card"} key={item.value}><input type="radio" checked={mode === item.value} onChange={() => setMode(item.value)} /><span><strong>{item.title}</strong><small>{item.description}</small></span></label>)}</div>
+      <div className="radio-cards">{modes.map((item) => <label className={mode === item.value ? "radio-card selected" : "radio-card"} key={item.value}><input type="radio" checked={mode === item.value} onChange={() => selectMode(item.value)} /><span><strong>{item.title}</strong><small>{item.description}</small></span></label>)}</div>
       <div className="pdf-meta"><span>用紙: {worksheet.pageSettings.size === "B5" ? "JIS B5" : "A4"} / 縦</span><span>ページ数: {pageCount}ページ</span></div>
       <div className="notice info">ダウンロードしたPDFをChrome、EdgeまたはPDF閲覧ソフトで開き、用紙サイズをPDFと同じにして、倍率を「実際のサイズ／100%」で印刷してください。</div>
       <div className="manual-dialog-help"><ManualContextLink topic="pdf">PDF出力の詳しい使い方</ManualContextLink></div>
