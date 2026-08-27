@@ -16,10 +16,15 @@
 
 ## セットアップ
 
+開発にはNode.js 24.xを使用します。CIも同じメジャーバージョンで検証しています。nvmを使用している場合は、リポジトリの`.nvmrc`を使ってバージョンを切り替えられます。
+
 ```bash
+nvm use
 npm install
 npm run dev
 ```
+
+nvmを使用しない場合は、Node.js 24.xを別途インストールしてから`npm install`を実行してください。
 
 Viteが表示したURLをChromeまたはEdgeで開きます。
 
