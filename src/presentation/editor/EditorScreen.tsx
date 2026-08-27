@@ -1,6 +1,6 @@
 import { ArrowLeft, FileDown, Minus, Plus, Redo2, Settings2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useBlocker, useNavigate, useParams } from "react-router-dom";
 
 import type { EditorPreviewMode } from "../../application/pdf/generate-pdf";
 import type { WorksheetRepository } from "../../application/repositories/worksheet-repository";
@@ -78,10 +78,6 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     }).catch(() => { if (active) { setNotFound(true); setLoading(false); } });
     return () => {
       active = false;
-      const state = useEditorStore.getState();
-      if (state.worksheet?.id === worksheetId) {
-        void repository.save(state.worksheet, { pruneUnreferencedAssets: true }).catch(() => undefined);
-      }
       clear();
     };
   }, [worksheetId, initialize, clear, repository]);
@@ -190,31 +186,58 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [dragging]);
 
   const flushSave = useCallback(async (discardHistory = false) => {
-    const state = useEditorStore.getState();
-    if (!state.worksheet || (state.saveStatus === "saved" && !discardHistory)) return true;
-    const request = createSaveRequest(state);
-    if (!request) return true;
-    state.markSaving(request);
-    try {
-      await repository.save(state.worksheet, {
-        pruneUnreferencedAssets: true,
-        ...(discardHistory ? {} : {
-          retainedAssetIds: collectRetainedAssetIds(
-            state.worksheet,
-            [...state.undoStack, ...state.redoStack],
-          ),
-        }),
-      });
-      state.markSaved(request);
-      return true;
-    } catch {
-      state.markFailed(request);
-      setToast("保存できませんでした。ブラウザの空き容量を確認してください。");
-      return false;
+    while (true) {
+      const state = useEditorStore.getState();
+      if (!state.worksheet || (state.saveStatus === "saved" && !discardHistory)) return true;
+      const request = createSaveRequest(state);
+      if (!request) return true;
+      state.markSaving(request);
+      try {
+        await repository.save(state.worksheet, {
+          pruneUnreferencedAssets: true,
+          ...(discardHistory ? {} : {
+            retainedAssetIds: collectRetainedAssetIds(
+              state.worksheet,
+              [...state.undoStack, ...state.redoStack],
+            ),
+          }),
+        });
+        state.markSaved(request);
+        const latest = useEditorStore.getState();
+        if (
+          latest.worksheet?.id !== request.worksheetId
+          || latest.sessionId !== request.sessionId
+          || (latest.revision === request.revision && latest.saveStatus === "saved")
+        ) return true;
+      } catch {
+        state.markFailed(request);
+        setToast("保存できませんでした。ブラウザの空き容量を確認してください。");
+        return false;
+      }
     }
   }, [repository]);
 
-  const backToList = async () => { if (await flushSave(true)) await navigate("/"); };
+  const shouldBlockNavigation = useCallback(({ currentLocation, nextLocation }: {
+    currentLocation: { pathname: string };
+    nextLocation: { pathname: string };
+  }) => (
+    currentLocation.pathname !== nextLocation.pathname
+    && useEditorStore.getState().saveStatus !== "saved"
+  ), []);
+  const navigationBlocker = useBlocker(shouldBlockNavigation);
+
+  useEffect(() => {
+    if (navigationBlocker.state !== "blocked") return;
+    let active = true;
+    void flushSave(true).then((saved) => {
+      if (!active) return;
+      if (saved) navigationBlocker.proceed();
+      else navigationBlocker.reset();
+    });
+    return () => { active = false; };
+  }, [flushSave, navigationBlocker]);
+
+  const backToList = () => { void navigate("/"); };
   const numbers = useMemo(() => worksheet ? getProblemNumbers(worksheet) : new Map(), [worksheet]);
 
   const updatePreferences = (change: Partial<typeof preferences>) => {

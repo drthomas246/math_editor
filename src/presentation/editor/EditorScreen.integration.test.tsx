@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, type RenderResult } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AssetRecord, Worksheet } from "../../domain/worksheet/worksheet";
@@ -201,32 +201,49 @@ describe("EditorScreen 離脱・保存統合", () => {
     expect((await repository.get(worksheet.id))?.worksheet.title).toBe("離脱前保存");
   });
 
-  it("リロード相当のunmountで最新データを保存し、再表示時に復元する", async () => {
-    const firstView = renderEditor();
+  it("ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する", async () => {
+    const actualSave = repository.save.bind(repository);
+    const save = vi.spyOn(repository, "save").mockImplementation(actualSave);
+    save.mockRejectedValueOnce(new Error("quota exceeded"));
+    const editorPath = `/worksheets/${worksheet.id}`;
+    const view = renderEditor(["/", editorPath], 1);
     const titleInput = await editorTitleInput();
-    fireEvent.change(titleInput, { target: { value: "リロード後に復元" } });
+    fireEvent.change(titleInput, { target: { value: "戻る失敗でも保持" } });
 
-    firstView.unmount();
-    activeViews = activeViews.filter((view) => view !== firstView);
+    await act(async () => { await view.router.navigate(-1); });
 
-    await waitFor(async () => {
-      expect((await repository.get(worksheet.id))?.worksheet.title).toBe("リロード後に復元");
-    }, { timeout: TEST_TIMEOUT_MS });
+    await screen.findByText("保存できませんでした", {}, { timeout: TEST_TIMEOUT_MS });
+    expect(view.router.state.location.pathname).toBe(editorPath);
+    expect(screen.getByRole("textbox", { name: "プリント題名" })).toHaveValue("戻る失敗でも保持");
+    expect(useEditorStore.getState()).toMatchObject({
+      worksheet: { title: "戻る失敗でも保持" },
+      saveStatus: "failed",
+    });
+    expect((await repository.get(worksheet.id))?.worksheet.title).not.toBe("戻る失敗でも保持");
 
-    renderEditor();
-    expect(await editorTitleInput()).toHaveValue("リロード後に復元");
+    await act(async () => { await view.router.navigate(-1); });
+
+    await screen.findByText("一覧画面", {}, { timeout: TEST_TIMEOUT_MS });
+    expect(view.router.state.location.pathname).toBe("/");
+    expect(save).toHaveBeenCalledTimes(2);
+    expect((await repository.get(worksheet.id))?.worksheet.title).toBe("戻る失敗でも保持");
   });
 });
 
-function renderEditor(): RenderResult {
-  const view = render(
-    <MemoryRouter initialEntries={[`/worksheets/${worksheet.id}`]}>
-      <Routes>
-        <Route path="/worksheets/:worksheetId" element={<EditorScreen repository={repository} />} />
-        <Route path="/" element={<main>一覧画面</main>} />
-      </Routes>
-    </MemoryRouter>,
-  );
+type EditorRenderResult = RenderResult & { router: ReturnType<typeof createMemoryRouter> };
+
+function renderEditor(
+  initialEntries: string[] = [`/worksheets/${worksheet.id}`],
+  initialIndex?: number,
+): EditorRenderResult {
+  const router = createMemoryRouter([
+    { path: "/worksheets/:worksheetId", element: <EditorScreen repository={repository} /> },
+    { path: "/", element: <main>一覧画面</main> },
+  ], {
+    initialEntries,
+    ...(initialIndex === undefined ? {} : { initialIndex }),
+  });
+  const view = Object.assign(render(<RouterProvider router={router} />), { router });
   activeViews.push(view);
   return view;
 }
