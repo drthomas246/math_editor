@@ -28,7 +28,7 @@ import { TableStructureToolbar } from "../components/TableStructureToolbar";
 import { useOutsidePointerDown } from "../components/useOutsidePointerDown";
 import type { EditableImageRef } from "../components/rich-text-editor-extensions";
 import { ImageDialog, TableDialog } from "../dialogs/EditorDialogs";
-import { WorksheetContentPreview } from "../preview/WorksheetPreview";
+import { WorksheetContentPreview, WorksheetSolutionPreview } from "../preview/WorksheetPreview";
 import type { MutationOptions, WorksheetMutation } from "./editor-store";
 
 type MutateWorksheet = (label: string, change: WorksheetMutation, options?: MutationOptions) => void;
@@ -88,6 +88,21 @@ export function ProblemCard(props: Props) {
     commit("内容を追加", addContent(readWorksheet(), problem.id, content, selectedContentId));
     onSelectContent(content.id); setAddMenu(false);
   };
+  const solutionSelected = selected && selectedContentId === null;
+  const toggleSolution = () => {
+    if (solutionOpen) {
+      setSolutionOpen(false);
+      if (solutionSelected) onSelectContent(problem.contents[0]?.id ?? null);
+      return;
+    }
+    onSelect();
+    onSelectContent(null);
+    setSolutionOpen(true);
+  };
+  const selectSolution = () => {
+    onSelect();
+    onSelectContent(null);
+  };
 
   return <article className={selected ? "problem-card selected" : "problem-card"} data-editor-problem-id={problem.id} onClick={onSelect}>
     <header className="problem-card-header">
@@ -99,20 +114,27 @@ export function ProblemCard(props: Props) {
       {problem.contents.map((content) => <ContentEditor key={content.id} worksheet={worksheet} getWorksheet={readWorksheet} problem={problem} content={content} selected={selected && selectedContentId === content.id} onSelect={() => { onSelect(); onSelectContent(content.id); }} commit={commit} mutate={onMutate} assetUrls={assetUrls} onImage={(target) => setImageDialog({ mode: "insert", target })} onEditImage={(target, image) => setImageDialog({ mode: "edit", target, image })} onTable={setTableTarget} />)}
     </div>
     <div className="solution-section">
-      <button className="solution-toggle" onClick={(event) => { event.stopPropagation(); onSelect(); setSolutionOpen(!solutionOpen); }}>{solutionOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}教師用の解説{problem.solution && <span className="status-chip">入力済み</span>}</button>
-      {solutionOpen && <div className="solution-editor"><label>解説</label><RichTextEditor
-        document={(problem.solution ?? emptySolutionDocument()) as never}
-        assetUrls={assetUrls}
-        onChange={(document) => onMutate("教師用の解説を編集", (draft) => {
-          const target = draft.problems.find((item) => item.id === problem.id);
-          if (target) target.solution = document as never;
-        }, { historyGroup: `richText:${problem.id}:solution` })}
-        enableMath
-        showColorSelector={false}
-        onImage={() => setImageDialog({ mode: "insert", target: { kind: "solution" } })}
-        onEditImage={(image) => setImageDialog({ mode: "edit", target: { kind: "solution" }, image })}
-        onTable={() => setTableTarget({ kind: "solution" })}
-      /></div>}
+      <button className="solution-toggle" aria-expanded={solutionOpen} onClick={(event) => { event.stopPropagation(); toggleSolution(); }}>{solutionOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}教師用の解説{problem.solution && <span className="status-chip">入力済み</span>}</button>
+      {solutionOpen && (solutionSelected
+        ? <div className="solution-editor"><label>解説</label><RichTextEditor
+          document={(problem.solution ?? emptySolutionDocument()) as never}
+          assetUrls={assetUrls}
+          onChange={(document) => onMutate("教師用の解説を編集", (draft) => {
+            const target = draft.problems.find((item) => item.id === problem.id);
+            if (target) target.solution = document as never;
+          }, { historyGroup: `richText:${problem.id}:solution` })}
+          enableMath
+          showColorSelector={false}
+          onImage={() => setImageDialog({ mode: "insert", target: { kind: "solution" } })}
+          onEditImage={(image) => setImageDialog({ mode: "edit", target: { kind: "solution" }, image })}
+          onTable={() => setTableTarget({ kind: "solution" })}
+        /></div>
+        : <div className="solution-editor solution-editor-static" onClick={(event) => { event.stopPropagation(); selectSolution(); }}>
+          <label>解説</label>
+          {problem.solution
+            ? <WorksheetSolutionPreview document={problem.solution} assetUrls={assetUrls} />
+            : <p className="solution-empty">クリックして解説を入力</p>}
+        </div>)}
     </div>
     <div className="add-content-wrap" ref={addMenuRef}><button className="add-content-button" onClick={(event) => { event.stopPropagation(); setAddMenu(!addMenu); }}><Plus size={16} />内容を追加</button>{addMenu && <div className="add-content-popover"><strong>追加する内容</strong><div>{ADD_CONTENT_OPTIONS.map(([type, label]) => <button key={type} onClick={(event) => { event.stopPropagation(); addBlock(type); }}>{label}</button>)}</div></div>}</div>
     {tableTarget !== undefined && <TableDialog onClose={() => setTableTarget(undefined)} onInsert={(table) => {

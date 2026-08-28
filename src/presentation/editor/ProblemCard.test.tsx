@@ -7,55 +7,68 @@ import "../../styles.css";
 import { ProblemCard } from "./ProblemCard";
 
 describe("ProblemCard", () => {
-  it("選択中の内容だけにTipTapエディターを生成する", () => {
+  it("選択中の内容または教師用解説だけにTipTapエディターを生成する", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
     const secondContent = createRichTextBlock();
     problem.contents.push(secondContent);
+    const onSelect = vi.fn();
+    const onSelectContent = vi.fn();
+    const commonProps = {
+      worksheet,
+      problem,
+      index: 0,
+      displayNumber: "1.",
+      onSelect,
+      onSelectContent,
+      onCommit: vi.fn(),
+      onMutate: vi.fn(),
+      onAddImage: vi.fn(),
+      onUpdateImage: vi.fn(),
+      assetUrls: new Map(),
+      onToast: vi.fn(),
+    };
 
     const view = render(
       <ProblemCard
-        worksheet={worksheet}
-        problem={problem}
-        index={0}
-        displayNumber="1."
+        {...commonProps}
         selected
         selectedContentId={problem.contents[0]!.id}
-        onSelect={vi.fn()}
-        onSelectContent={vi.fn()}
-        onCommit={vi.fn()}
-        onMutate={vi.fn()}
-        onAddImage={vi.fn()}
-        onUpdateImage={vi.fn()}
-        assetUrls={new Map()}
-        onToast={vi.fn()}
       />,
     );
 
     expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(1);
     expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(1);
 
+    fireEvent.click(view.getByRole("button", { name: /教師用の解説/u }));
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(onSelectContent).toHaveBeenLastCalledWith(null);
+    expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(1);
+    expect(view.container.querySelector(".solution-editor-static")).toBeInTheDocument();
+
     view.rerender(
       <ProblemCard
-        worksheet={worksheet}
-        problem={problem}
-        index={0}
-        displayNumber="1."
+        {...commonProps}
+        selected
+        selectedContentId={null}
+      />,
+    );
+
+    expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(1);
+    expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(2);
+    expect(view.container.querySelector(".solution-editor-static")).not.toBeInTheDocument();
+
+    view.rerender(
+      <ProblemCard
+        {...commonProps}
         selected={false}
-        selectedContentId={secondContent.id}
-        onSelect={vi.fn()}
-        onSelectContent={vi.fn()}
-        onCommit={vi.fn()}
-        onMutate={vi.fn()}
-        onAddImage={vi.fn()}
-        onUpdateImage={vi.fn()}
-        assetUrls={new Map()}
-        onToast={vi.fn()}
+        selectedContentId={null}
       />,
     );
 
     expect(view.container.querySelectorAll(".ProseMirror")).toHaveLength(0);
     expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(2);
+    expect(view.container.querySelector(".solution-editor-static")).toBeInTheDocument();
   });
 
   it("文字入力をWorksheet全体Commandではなく部分Immer更新へ渡す", () => {
@@ -252,26 +265,30 @@ describe("ProblemCard", () => {
     const problem = worksheet.problems[0]!;
     const onCommit = vi.fn();
 
+    const commonProps = {
+      worksheet,
+      problem,
+      index: 0,
+      displayNumber: "1.",
+      selected: true,
+      onSelect: vi.fn(),
+      onSelectContent: vi.fn(),
+      onCommit,
+      onMutate: vi.fn(),
+      onAddImage: vi.fn(),
+      onUpdateImage: vi.fn(),
+      assetUrls: new Map(),
+      onToast: vi.fn(),
+    };
     const view = render(
       <ProblemCard
-        worksheet={worksheet}
-        problem={problem}
-        index={0}
-        displayNumber="1."
-        selected
+        {...commonProps}
         selectedContentId={problem.contents[0]!.id}
-        onSelect={vi.fn()}
-        onSelectContent={vi.fn()}
-        onCommit={onCommit}
-        onMutate={vi.fn()}
-        onAddImage={vi.fn()}
-        onUpdateImage={vi.fn()}
-        assetUrls={new Map()}
-        onToast={vi.fn()}
       />,
     );
 
     fireEvent.click(view.getByRole("button", { name: /教師用の解説/u }));
+    view.rerender(<ProblemCard {...commonProps} selectedContentId={null} />);
 
     const solutionEditor = view.container.querySelector<HTMLElement>(".solution-editor");
     expect(solutionEditor).not.toBeNull();

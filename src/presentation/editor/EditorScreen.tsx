@@ -21,6 +21,7 @@ import { syncProblemScroll } from "./problem-scroll-sync";
 import { ProblemList } from "./ProblemList";
 
 const SAVE_DEBOUNCE_MS = 750;
+const PREVIEW_DEBOUNCE_MS = 750;
 type EditorLoadState = "loading" | "ready" | "notFound" | "error";
 
 export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
@@ -145,7 +146,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     const timer = window.setTimeout(() => {
       setPreviewWorksheet(worksheet);
       setPreviewUpdating(false);
-    }, 120);
+    }, PREVIEW_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [previewWorksheet, worksheet]);
 
