@@ -2,7 +2,7 @@ import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState }
 
 import { MARGINS_MM, PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import { colorDocumentAsAnswer, hasVisibleDocument, mergeColoredDocuments, nodeUsesAnswerColor } from "../../domain/worksheet/rich-text";
-import type { AnswerArea as AnswerAreaValue, ContentBlock, ProblemBlock, SubQuestionNumberFormat, TableRow, Worksheet } from "../../domain/worksheet/worksheet";
+import type { AnswerArea as AnswerAreaValue, ContentBlock, ProblemBlock, SolutionRichTextDocument, SubQuestionNumberFormat, TableRow, Worksheet } from "../../domain/worksheet/worksheet";
 import { formatProblemHeading, getProblemNumbers, getSubQuestionNumbers } from "../../domain/worksheet/worksheet.numbering";
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import { MathFormula } from "../components/MathFormula";
@@ -295,6 +295,10 @@ export function WorksheetContentPreview({ content, showAnswers, subQuestionNumbe
       </div>)}</div>;
     }
   }
+}
+
+export function WorksheetSolutionPreview({ document, assetUrls }: { document: SolutionRichTextDocument; assetUrls: ReadonlyMap<string, string> }) {
+  return <RichDocument document={document} assetUrls={assetUrls} showAnswers />;
 }
 
 function RichDocument({ document, assetUrls, showAnswers }: { document: { content: readonly unknown[] }; assetUrls: ReadonlyMap<string, string>; showAnswers: boolean }) {

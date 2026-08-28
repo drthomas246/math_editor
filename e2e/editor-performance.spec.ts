@@ -4,7 +4,7 @@ const PROBLEM_COUNT = 100;
 const MEASURED_KEYSTROKES = 12;
 const MAX_P95_INPUT_LATENCY_MS = 250;
 
-test("100問でも編集中のTipTapを1個に保ち入力遅延を抑える", async ({ page }, testInfo) => {
+test("100問で本文や複数の解説を開いても編集中のTipTapを1個に保つ", async ({ page }, testInfo) => {
   const worksheetId = await openNewWorksheet(page);
   await seedProblems(page, worksheetId, PROBLEM_COUNT);
   await page.reload();
@@ -42,6 +42,18 @@ test("100問でも編集中のTipTapを1個に保ち入力遅延を抑える", a
 
   expect(p95Ms).toBeLessThan(MAX_P95_INPUT_LATENCY_MS);
   await expect(page.locator(".ProseMirror")).toHaveCount(1);
+
+  const solutionToggles = page.getByRole("button", { name: /教師用の解説/u });
+  for (let index = 0; index < 5; index += 1) {
+    await solutionToggles.nth(index).click();
+    await expect(page.locator(".ProseMirror")).toHaveCount(1);
+  }
+  await expect(page.locator(".solution-editor")).toHaveCount(5);
+  await expect(page.locator(".solution-editor-static")).toHaveCount(4);
+
+  await page.locator(".solution-editor-static").first().click();
+  await expect(page.locator(".ProseMirror")).toHaveCount(1);
+  await expect(page.locator(".solution-editor-static")).toHaveCount(4);
 });
 
 async function openNewWorksheet(page: Page): Promise<string> {
