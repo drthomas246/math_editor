@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { plainTextToDocument } from "../../domain/worksheet/rich-text";
@@ -162,5 +162,40 @@ describe("WorksheetPreview header", () => {
     );
     expect(withAnswers.container.querySelector(".paper-answer-placeholder")).not.toBeInTheDocument();
     expect(withAnswers.container.querySelector(".preview-page-wrap .answer-color")).toHaveTextContent("下線上の解答");
+  });
+
+  it("同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する", async () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => window.clearTimeout(id)));
+    const worksheet = createWorksheet();
+    const view = render(
+      <WorksheetPreview worksheet={worksheet} mode="questions" zoom={1} assetUrls={new Map()} />,
+    );
+
+    await waitFor(() => expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true"));
+    view.rerender(
+      <WorksheetPreview worksheet={worksheet} mode="questionsAndAnswers" zoom={1} assetUrls={new Map()} />,
+    );
+
+    await waitFor(() => expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true"));
+    expect(view.container.querySelectorAll(".preview-page-wrap")).toHaveLength(2);
+  });
+
+  it("計測DOMを外す前にResizeObserverを停止する", async () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => window.clearTimeout(id)));
+    const disconnect = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+      observe() {}
+      disconnect() { disconnect(); }
+    });
+
+    const view = render(
+      <WorksheetPreview worksheet={createWorksheet()} mode="questions" zoom={1} assetUrls={new Map()} />,
+    );
+
+    await waitFor(() => expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true"));
+    expect(disconnect).toHaveBeenCalled();
+    expect(view.container.querySelector(".preview-measurement")).not.toBeInTheDocument();
   });
 });

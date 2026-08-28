@@ -56,35 +56,46 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
     sectionStructureKey: string;
     pages: PlannedPage[];
   }>({ ready: false, measuredWorksheet: null, sectionStructureKey, pages: fallbackPages(sections) });
-  const needsMeasurement = pagination.measuredWorksheet !== worksheet;
+  const needsMeasurement = pagination.measuredWorksheet !== worksheet
+    || pagination.sectionStructureKey !== sectionStructureKey;
 
   useLayoutEffect(() => {
     let cancelled = false;
     let animationFrame = 0;
+    let assetsReady = false;
+    let resizeObserver: ResizeObserver | null = null;
     const measurementRoot = measurementRef.current;
     if (!measurementRoot) return;
 
     setPagination((current) => ({ ...current, ready: false }));
     const measure = () => {
-      if (!cancelled) setPagination({
+      if (cancelled || !measurementRoot.isConnected) return;
+      const pages = measurePages(measurementRoot, sections);
+      // The measurement tree is removed after this state update. Disconnect
+      // first so its removal cannot enqueue a second measurement with zero
+      // sized, detached elements and overwrite the valid page plan.
+      resizeObserver?.disconnect();
+      setPagination({
         ready: true,
         measuredWorksheet: worksheet,
         sectionStructureKey,
-        pages: measurePages(measurementRoot, sections),
+        pages,
       });
     };
     const scheduleMeasure = () => {
+      if (!assetsReady) return;
       window.cancelAnimationFrame(animationFrame);
       animationFrame = window.requestAnimationFrame(measure);
     };
     const prepare = async () => {
       await document.fonts?.ready;
       await Promise.all(Array.from(measurementRoot.querySelectorAll("img")).map(waitForImage));
+      assetsReady = true;
       scheduleMeasure();
     };
 
     void prepare();
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
+    resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
     measurementRoot.querySelectorAll(".paper-header, [data-pagination-atom]").forEach((element) => resizeObserver?.observe(element));
 
     return () => {
