@@ -42,8 +42,21 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
       atoms: createRenderAtoms(worksheet, sectionMode, numbers),
     }));
   }, [mode, numbers, worksheet]);
+  const sectionStructureKey = useMemo(
+    () => JSON.stringify(sections.map((section) => [
+      section.mode,
+      ...section.atoms.map((atom) => atom.key),
+    ])),
+    [sections],
+  );
   const measurementRef = useRef<HTMLDivElement>(null);
-  const [pagination, setPagination] = useState<{ ready: boolean; pages: PlannedPage[] }>({ ready: false, pages: fallbackPages(sections) });
+  const [pagination, setPagination] = useState<{
+    ready: boolean;
+    measuredWorksheet: Worksheet | null;
+    sectionStructureKey: string;
+    pages: PlannedPage[];
+  }>({ ready: false, measuredWorksheet: null, sectionStructureKey, pages: fallbackPages(sections) });
+  const needsMeasurement = pagination.measuredWorksheet !== worksheet;
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -53,7 +66,12 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
 
     setPagination((current) => ({ ...current, ready: false }));
     const measure = () => {
-      if (!cancelled) setPagination({ ready: true, pages: measurePages(measurementRoot, sections) });
+      if (!cancelled) setPagination({
+        ready: true,
+        measuredWorksheet: worksheet,
+        sectionStructureKey,
+        pages: measurePages(measurementRoot, sections),
+      });
     };
     const scheduleMeasure = () => {
       window.cancelAnimationFrame(animationFrame);
@@ -74,21 +92,29 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
       window.cancelAnimationFrame(animationFrame);
       resizeObserver?.disconnect();
     };
-  }, [sections, worksheet.pageSettings.margin, worksheet.pageSettings.size]);
+  }, [sectionStructureKey, sections, worksheet]);
 
-  const displayedPages = pagination.ready ? pagination.pages : fallbackPages(sections);
+  // Keep the previous page plan while content is remeasured. Falling back to a
+  // single page on every keystroke remounts the entire preview and makes large
+  // worksheets block the main thread even when only one content block changed.
+  const paginationReady = pagination.ready
+    && !needsMeasurement
+    && pagination.sectionStructureKey === sectionStructureKey;
+  const displayedPages = pagination.sectionStructureKey === sectionStructureKey
+    ? pagination.pages
+    : fallbackPages(sections);
   useEffect(() => {
-    if (pagination.ready) onPageCountChange?.(displayedPages.length);
-  }, [displayedPages.length, onPageCountChange, pagination.ready]);
+    if (paginationReady) onPageCountChange?.(displayedPages.length);
+  }, [displayedPages.length, onPageCountChange, paginationReady]);
   const atomLookup = new Map(sections.flatMap((section) => section.atoms).map((atom) => [atom.key, atom]));
 
-  return <div className="preview-pages" data-pagination-ready={pagination.ready ? "true" : "false"} style={{ "--preview-zoom": zoom } as React.CSSProperties}>
+  return <div className="preview-pages" data-pagination-ready={paginationReady ? "true" : "false"} style={{ "--preview-zoom": zoom } as React.CSSProperties}>
     {displayedPages.map((page, pageIndex) => <Fragment key={`${page.mode}:${page.sectionPageIndex}`}>
       <PreviewPage worksheet={worksheet} mode={page.mode} atoms={page.atomKeys.flatMap((key) => atomLookup.get(key) ?? [])} assetUrls={assetUrls} showHeader={page.sectionPageIndex === 0} pageNumber={pageIndex + 1} totalPages={displayedPages.length} />
     </Fragment>)}
-    <div className="preview-measurement" ref={measurementRef} aria-hidden="true">
+    {needsMeasurement && <div className="preview-measurement" ref={measurementRef} aria-hidden="true">
       {sections.map((section) => <MeasurementPage key={section.mode} worksheet={worksheet} section={section} assetUrls={assetUrls} />)}
-    </div>
+    </div>}
   </div>;
 });
 
@@ -276,7 +302,7 @@ function waitForImage(image: HTMLImageElement): Promise<void> {
   });
 }
 
-export function WorksheetContentPreview({ content, showAnswers, subQuestionNumberFormat, assetUrls }: { content: ContentBlock; showAnswers: boolean; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: ReadonlyMap<string, string> }) {
+export const WorksheetContentPreview = memo(function WorksheetContentPreview({ content, showAnswers, subQuestionNumberFormat, assetUrls }: { content: ContentBlock; showAnswers: boolean; subQuestionNumberFormat: SubQuestionNumberFormat; assetUrls: ReadonlyMap<string, string> }) {
   switch (content.type) {
     case "richText": return <RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers} />;
     case "box": return <div className={`paper-box box-${content.preset}`}>{content.title && <strong>{content.title}</strong>}<RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers} /></div>;
@@ -295,7 +321,7 @@ export function WorksheetContentPreview({ content, showAnswers, subQuestionNumbe
       </div>)}</div>;
     }
   }
-}
+});
 
 export function WorksheetSolutionPreview({ document, assetUrls }: { document: SolutionRichTextDocument; assetUrls: ReadonlyMap<string, string> }) {
   return <RichDocument document={document} assetUrls={assetUrls} showAnswers />;

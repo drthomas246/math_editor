@@ -28,7 +28,7 @@ nvmを使用しない場合は、Node.js 24.xを別途インストールして�
 
 Viteが表示したURLをChromeまたはEdgeで開きます。
 
-100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。React描画、TipTap、DOM、layout、paintを含む実ブラウザ入力レイテンシは、`npm run benchmark:editor:browser`で検証できます。
+100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。通常のE2Eでは100問の軽量データを使い、React描画、TipTap、DOM、layout、paintを含む入力p95が250ms未満であることを検証します。`npm run benchmark:editor:browser`はCIから分離した専用ストレスベンチマークで、構造上限の200問それぞれに5 contents（rich text、数式、表、画像参照、小問、解答色、解答欄、教師用解説を含む）を投入します。
 
 ## 主な使い方
 
@@ -220,10 +220,13 @@ npm run verify
 # Chromeによる離脱・保存E2Eテスト
 npm run test:e2e
 
+# Chromeによる200問・複合コンテンツの専用ストレスベンチマーク
+npm run benchmark:editor:browser
+
 # 本番ビルド
 npm run build
 ```
 
-E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い200問ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの入力p95上限は既定で250msであり、環境差を調査する場合だけ`EDITOR_STRESS_MAX_P95_MS`で変更できる。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。
