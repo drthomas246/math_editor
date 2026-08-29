@@ -7,6 +7,48 @@ import "../../styles.css";
 import { ProblemCard } from "./ProblemCard";
 
 describe("ProblemCard", () => {
+  it("静的な内容と教師用の解説をキーボードで選択でき、装飾グリップを操作要素にしない", () => {
+    const worksheet = createWorksheet();
+    const problem = worksheet.problems[0]!;
+    const secondContent = createRichTextBlock();
+    problem.contents.push(secondContent);
+    const onSelect = vi.fn();
+    const onSelectContent = vi.fn();
+    const view = render(
+      <ProblemCard
+        worksheet={worksheet}
+        problem={problem}
+        index={0}
+        displayNumber="1."
+        selected
+        selectedContentId={problem.contents[0]!.id}
+        onSelect={onSelect}
+        onSelectContent={onSelectContent}
+        onCommit={vi.fn()}
+        onMutate={vi.fn()}
+        onAddImage={vi.fn()}
+        onUpdateImage={vi.fn()}
+        assetUrls={new Map()}
+        onToast={vi.fn()}
+      />,
+    );
+
+    const staticContent = view.getByRole("button", { name: "内容を編集" });
+    fireEvent.keyDown(staticContent, { key: "Enter" });
+    expect(onSelectContent).toHaveBeenLastCalledWith(secondContent.id);
+
+    fireEvent.click(view.getByRole("button", { name: /教師用の解説/u }));
+    onSelect.mockClear();
+    onSelectContent.mockClear();
+    const staticSolution = view.getByRole("button", { name: "教師用の解説を編集" });
+    fireEvent.keyDown(staticSolution, { key: " " });
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(onSelectContent).toHaveBeenCalledWith(null);
+
+    expect(view.queryByRole("button", { name: "問題を並べ替え" })).not.toBeInTheDocument();
+    expect(view.container.querySelector(".drag-handle")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("選択中の内容または教師用解説だけにTipTapエディターを生成する", () => {
     const worksheet = createWorksheet();
     const problem = worksheet.problems[0]!;
