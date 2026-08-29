@@ -10,9 +10,19 @@ import {
 const WARMUP_KEYSTROKES = 3;
 const MEASURED_KEYSTROKES = 20;
 const DEFAULT_MAX_P95_INPUT_LATENCY_MS = 250;
+const DEFAULT_MAX_INITIAL_LOAD_MS = 30_000;
+const DEFAULT_MAX_TARGET_SELECTION_MS = 2_000;
 const MAX_P95_INPUT_LATENCY_MS = readPositiveNumber(
   process.env.EDITOR_STRESS_MAX_P95_MS,
   DEFAULT_MAX_P95_INPUT_LATENCY_MS,
+);
+const MAX_INITIAL_LOAD_MS = readPositiveNumber(
+  process.env.EDITOR_STRESS_MAX_INITIAL_LOAD_MS,
+  DEFAULT_MAX_INITIAL_LOAD_MS,
+);
+const MAX_TARGET_SELECTION_MS = readPositiveNumber(
+  process.env.EDITOR_STRESS_MAX_SELECTION_MS,
+  DEFAULT_MAX_TARGET_SELECTION_MS,
 );
 
 // A valid transparent 1x1 PNG. The stress fixture deliberately reuses small
@@ -90,7 +100,11 @@ test("200問の複合Worksheetでも入力レイテンシを上限内に保つ",
       assets: fixture.assets.length,
       measuredKeystrokes: MEASURED_KEYSTROKES,
     },
-    thresholds: { maxP95InputLatencyMs: MAX_P95_INPUT_LATENCY_MS },
+    thresholds: {
+      maxInitialLoadMs: MAX_INITIAL_LOAD_MS,
+      maxTargetSelectionMs: MAX_TARGET_SELECTION_MS,
+      maxP95InputLatencyMs: MAX_P95_INPUT_LATENCY_MS,
+    },
     initialLoadMs,
     targetSelectionMs,
     inputLatency: { durationsMs, p95Ms },
@@ -104,6 +118,8 @@ test("200問の複合Worksheetでも入力レイテンシを上限内に保つ",
   console.info(`200-problem stress input latency p95: ${p95Ms.toFixed(1)}ms`);
   console.info(`Initial render: ${initialLoadMs}ms; target selection: ${targetSelectionMs}ms; DOM nodes: ${browserStats.domNodes}`);
 
+  expect(initialLoadMs).toBeLessThan(MAX_INITIAL_LOAD_MS);
+  expect(targetSelectionMs).toBeLessThan(MAX_TARGET_SELECTION_MS);
   expect(p95Ms).toBeLessThan(MAX_P95_INPUT_LATENCY_MS);
   await expect(page.locator(".ProseMirror")).toHaveCount(1);
 });

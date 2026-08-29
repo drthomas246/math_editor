@@ -43,9 +43,11 @@ test("100問で本文や複数の解説を開いても編集中のTipTapを1個�
   expect(p95Ms).toBeLessThan(MAX_P95_INPUT_LATENCY_MS);
   await expect(page.locator(".ProseMirror")).toHaveCount(1);
 
-  const solutionToggles = page.getByRole("button", { name: /教師用の解説/u });
+  const solutionToggles = page.getByRole("button", { name: "教師用の解説", exact: true });
   for (let index = 0; index < 5; index += 1) {
-    await solutionToggles.nth(index).click();
+    const toggle = solutionToggles.nth(index);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
     await expect(page.locator(".ProseMirror")).toHaveCount(1);
   }
   await expect(page.locator(".solution-editor")).toHaveCount(5);

@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { performance } from "node:perf_hooks";
 
 import {
@@ -54,7 +56,14 @@ const result = {
   },
 };
 
-console.log(JSON.stringify(result, null, 2));
+const resultJson = JSON.stringify(result, null, 2);
+console.log(resultJson);
+
+const resultPath = process.env.STRUCTURE_BENCHMARK_RESULT_PATH;
+if (resultPath) {
+  await mkdir(dirname(resultPath), { recursive: true });
+  await writeFile(resultPath, `${resultJson}\n`, "utf8");
+}
 
 const failures = Object.entries(measurements)
   .filter(([, measurement]) => measurement.p95Ms >= MAX_P95_MS)

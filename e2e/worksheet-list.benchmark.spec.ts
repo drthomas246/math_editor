@@ -8,9 +8,9 @@ type WorksheetRepositoryModule = typeof import("../src/infrastructure/indexeddb/
 
 const WORKSHEET_COUNT = STRUCTURE_LIMITS.worksheetsPerArchive;
 const PAGE_SIZE = 50;
-const DEFAULT_MAX_REPOSITORY_LIST_MS = 10_000;
-const DEFAULT_MAX_FIRST_PAGE_RENDER_MS = 15_000;
-const DEFAULT_MAX_SEARCH_MS = 2_000;
+const DEFAULT_MAX_REPOSITORY_LIST_MS = 2_000;
+const DEFAULT_MAX_FIRST_PAGE_RENDER_MS = 5_000;
+const DEFAULT_MAX_SEARCH_MS = 1_000;
 const DEFAULT_MAX_PAGE_CHANGE_MS = 1_000;
 
 const thresholds = {

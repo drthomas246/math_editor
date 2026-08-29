@@ -75,7 +75,7 @@ PDF・一覧・構造操作の上限規模を測る場合は、`npm run benchmar
 - 25～200%の倍率（5%刻み）、ペイン実寸に追従する「幅に合わせる」「ページ全体」
 - コンテンツ単位の自動改ページと明示改ページ
 - 各出力セクションの先頭ページに題名と年・組・番・名前を表示
-- プレビューの各ページを高解像度PNGへ変換し、同じ見た目のPDFとして出力
+- プレビューの各ページを高解像度JPEGへ変換し、同じ見た目のPDFとして出力
 
 ### アプリ内マニュアル
 
@@ -229,10 +229,15 @@ npm run benchmark:editor:browser
 # PDF 50/100ページ・一覧2,000件・構造操作199/200問の性能ベンチマーク
 npm run benchmark:performance
 
+# 定期CIと同じ構造操作・全ブラウザ性能ベンチマーク
+npm run benchmark:ci
+
 # 本番ビルド
 npm run build
 ```
 
-E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い性能ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの入力p95上限は既定で250msであり、環境差を調査する場合だけ`EDITOR_STRESS_MAX_P95_MS`で変更できる。追加したベンチマークのしきい値は`STRUCTURE_BENCHMARK_MAX_P95_MS`、`LIST_BENCHMARK_MAX_REPOSITORY_MS`、`LIST_BENCHMARK_MAX_RENDER_MS`、`LIST_BENCHMARK_MAX_SEARCH_MS`、`LIST_BENCHMARK_MAX_PAGE_CHANGE_MS`、`PDF_BENCHMARK_MAX_GENERATION_MS`で変更でき、PDFページ数は`PDF_BENCHMARK_PAGE_COUNTS`（例: `10,50,100`）で指定できる。
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い性能ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの上限は初期表示30秒、対象選択2秒、入力p95 250msであり、`EDITOR_STRESS_MAX_INITIAL_LOAD_MS`、`EDITOR_STRESS_MAX_SELECTION_MS`、`EDITOR_STRESS_MAX_P95_MS`で変更できる。追加したベンチマークのしきい値は`STRUCTURE_BENCHMARK_MAX_P95_MS`、`LIST_BENCHMARK_MAX_REPOSITORY_MS`、`LIST_BENCHMARK_MAX_RENDER_MS`、`LIST_BENCHMARK_MAX_SEARCH_MS`、`LIST_BENCHMARK_MAX_PAGE_CHANGE_MS`、`PDF_BENCHMARK_MAX_GENERATION_MS`、`PDF_BENCHMARK_MAX_MS_PER_PAGE`で変更でき、PDFページ数は`PDF_BENCHMARK_PAGE_COUNTS`（例: `10,50,100`）で指定できる。
+
+GitHub Actionsの`Performance Benchmark`は毎週月曜日03:00（日本時間）と手動実行で`benchmark:ci`を実行する。構造操作のJSON、ブラウザ計測JSON、確認用PDFはActions artifactとして30日間保存する。環境差の大きい性能計測をpush / pull requestの必須チェックにはせず、定期実行で上限超過と長期的な退行を検出する。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。
