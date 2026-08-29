@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { paginateMeasuredItems, type MeasuredPaginationItem } from "./pagination";
+import { paginateMeasuredItems, planMeasuredPagination, type MeasuredPaginationItem } from "./pagination";
 
 const item = (key: string, height: number, startsProblem = true): MeasuredPaginationItem => ({
   key,
@@ -36,5 +36,23 @@ describe("paginateMeasuredItems", () => {
     expect(paginateMeasuredItems([
       item("p1", 70), item("p2", 100),
     ], 80, 110, 10)).toEqual([["p1"], ["p2"]]);
+  });
+
+  it("moves a first fragment to a header-free page when it fits there", () => {
+    expect(planMeasuredPagination([
+      item("p1", 90),
+    ], 80, 100, 10)).toEqual({
+      pages: [[], ["p1"]],
+      oversizedItemKeys: [],
+    });
+  });
+
+  it("reports a fragment that is taller than a header-free page", () => {
+    expect(planMeasuredPagination([
+      item("p1", 120),
+    ], 80, 100, 10)).toEqual({
+      pages: [[], ["p1"]],
+      oversizedItemKeys: ["p1"],
+    });
   });
 });

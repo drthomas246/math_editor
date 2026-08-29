@@ -3,6 +3,7 @@ import { getFontEmbedCSS, toPng } from "html-to-image";
 
 import { PAGE_SIZES_MM, mmToPt } from "../../domain/worksheet/page-tokens";
 import type { Worksheet } from "../../domain/worksheet/worksheet";
+import { assertPreviewPaginationCanExport } from "./pdf-pagination-guard";
 
 export type PreviewMode = "questions" | "withAnswers" | "questionsAndAnswers";
 export type EditorPreviewMode = Exclude<PreviewMode, "questionsAndAnswers">;
@@ -23,12 +24,13 @@ const styles = StyleSheet.create({
 export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: readonly HTMLElement[]): Promise<Blob> {
   const firstPage = previewPages[0];
   if (!firstPage) throw new Error("PDFに出力するページを準備できませんでした");
+  const previewRoot = firstPage.closest<HTMLElement>(".preview-pages") ?? firstPage;
+  assertPreviewPaginationCanExport(previewRoot);
 
   await waitForPreviewAssets(previewPages);
 
   // 数式で使用するMathLiveのWebフォントを画像内へ埋め込み、OSフォントへの
   // 置き換わりを防ぐ。生成したCSSは全ページで再利用する。
-  const previewRoot = firstPage.closest<HTMLElement>(".preview-pages") ?? firstPage;
   // MathLiveの配布CSSはWOFF2のみ。preferredFontFormatを指定するとhtml-to-imageの
   // フィルターが連続する@font-faceのsrcを取りこぼすため、形式指定は行わない。
   const fontEmbedCSS = await getFontEmbedCSS(previewRoot);

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { generateWorksheetPdf } from "./generate-pdf";
+import { OVERSIZED_PAGINATION_ERROR, OVERSIZED_PAGINATION_MESSAGE } from "./pdf-pagination-guard";
 
 const htmlToImage = vi.hoisted(() => ({
   getFontEmbedCSS: vi.fn(async (_node: HTMLElement, _options?: Record<string, unknown>) => "@font-face{font-family:KaTeX_Main}"),
@@ -54,5 +55,20 @@ describe("generateWorksheetPdf", () => {
       }));
       expect(htmlToImage.toPng.mock.calls[index]?.[1]).not.toHaveProperty("skipFonts");
     }
+  });
+
+  it("rejects oversized preview content before rasterizing a PDF page", async () => {
+    const previewRoot = document.createElement("div");
+    previewRoot.className = "preview-pages";
+    previewRoot.dataset.paginationError = OVERSIZED_PAGINATION_ERROR;
+    const page = document.createElement("div");
+    previewRoot.append(page);
+    document.body.append(previewRoot);
+
+    await expect(generateWorksheetPdf(createWorksheet(), [page])).rejects.toThrow(OVERSIZED_PAGINATION_MESSAGE);
+
+    expect(htmlToImage.getFontEmbedCSS).not.toHaveBeenCalled();
+    expect(htmlToImage.toPng).not.toHaveBeenCalled();
+    expect(reactPdf.pdf).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,14 @@
 import { fireEvent, render, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-pagination-guard";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { ImageDialog, MathDialog, PdfDialog, TableDialog, WorksheetSettingsDialog } from "./EditorDialogs";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("WorksheetSettingsDialog", () => {
   it("小問の番号形式だけを選択肢として表示する", () => {
@@ -34,6 +40,21 @@ describe("PdfDialog", () => {
 
     view.unmount();
     vi.unstubAllGlobals();
+  });
+
+  it("1ページに収まらないcontentがある場合はPDFダウンロードを無効化する", async () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => window.clearTimeout(id)));
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function(this: HTMLElement) {
+      if (this.classList.contains("paper-page")) return rectangle(1_000);
+      if (this.classList.contains("paper-header")) return rectangle(100);
+      if (this.dataset.paginationAtom) return rectangle(1_200);
+      return rectangle(0);
+    });
+    const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()} />);
+
+    expect(await view.findByRole("alert")).toHaveTextContent(OVERSIZED_PAGINATION_MESSAGE);
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
   });
 });
 
@@ -136,3 +157,17 @@ describe("ImageDialog", () => {
     expect(onApply).toHaveBeenCalledWith(null, "floatRight", 50, "直角三角形");
   });
 });
+
+function rectangle(height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    width: 0,
+    height,
+    top: 0,
+    right: 0,
+    bottom: height,
+    left: 0,
+    toJSON: () => ({}),
+  };
+}
