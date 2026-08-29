@@ -21,31 +21,6 @@ describe("editor store", () => {
     expect(useEditorStore.getState().revision).toBe(3);
   });
 
-  it("Undo/Redo後のupdatedAtを操作時刻へ更新する", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-08-29T01:00:00.000Z"));
-    const source = createWorksheet();
-    useEditorStore.getState().initialize(source);
-
-    vi.setSystemTime(new Date("2026-08-29T02:00:00.000Z"));
-    useEditorStore.getState().commit("題名を変更", setWorksheetTitle(source, "一次方程式"));
-    expect(useEditorStore.getState().worksheet?.updatedAt).toBe("2026-08-29T02:00:00.000Z");
-
-    vi.setSystemTime(new Date("2026-08-29T03:00:00.000Z"));
-    useEditorStore.getState().undo();
-    expect(useEditorStore.getState().worksheet).toMatchObject({
-      title: "無題のプリント",
-      updatedAt: "2026-08-29T03:00:00.000Z",
-    });
-
-    vi.setSystemTime(new Date("2026-08-29T04:00:00.000Z"));
-    useEditorStore.getState().redo();
-    expect(useEditorStore.getState().worksheet).toMatchObject({
-      title: "一次方程式",
-      updatedAt: "2026-08-29T04:00:00.000Z",
-    });
-  });
-
   it("別プリントの古い保存完了・失敗を現在の保存状態へ反映しない", () => {
     const worksheetA = createWorksheet();
     useEditorStore.getState().initialize(worksheetA);

@@ -89,13 +89,6 @@ function hasMeaningfulMutation(current: Worksheet, next: Worksheet, patches: rea
   ));
 }
 
-function applyHistoryPatches(worksheet: Worksheet, patches: readonly Patch[]): Worksheet {
-  return {
-    ...applyPatches(worksheet, patches),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
 function appendHistoryEntry(
   stack: readonly HistoryEntry[],
   entry: HistoryEntry,
@@ -227,7 +220,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const entry = state.undoStack.at(-1);
     if (!entry || !state.worksheet) return;
     set({
-      worksheet: applyHistoryPatches(state.worksheet, entry.inversePatches),
+      worksheet: applyPatches(state.worksheet, entry.inversePatches),
       revision: state.revision + 1,
       saveStatus: "dirty",
       undoStack: state.undoStack.slice(0, -1),
@@ -240,7 +233,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const entry = state.redoStack.at(-1);
     if (!entry || !state.worksheet) return;
     set({
-      worksheet: applyHistoryPatches(state.worksheet, entry.patches),
+      worksheet: applyPatches(state.worksheet, entry.patches),
       revision: state.revision + 1,
       saveStatus: "dirty",
       undoStack: [...state.undoStack, entry],
