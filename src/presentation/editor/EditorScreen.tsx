@@ -23,6 +23,14 @@ import { ProblemList } from "./ProblemList";
 const SAVE_DEBOUNCE_MS = 750;
 const PREVIEW_DEBOUNCE_MS = 750;
 type EditorLoadState = "loading" | "ready" | "notFound" | "error";
+type EditorSessionIdentity = { worksheetId: string; sessionId: number };
+
+function isCurrentEditorSession(
+  state: ReturnType<typeof useEditorStore.getState>,
+  expected: EditorSessionIdentity,
+): state is ReturnType<typeof useEditorStore.getState> & { worksheet: Worksheet } {
+  return state.worksheet?.id === expected.worksheetId && state.sessionId === expected.sessionId;
+}
 
 export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
   const { worksheetId } = useParams();
@@ -332,6 +340,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     const state = useEditorStore.getState();
     const currentWorksheet = state.worksheet;
     if (!currentWorksheet) return;
+    const operationSession = { worksheetId: currentWorksheet.id, sessionId: state.sessionId };
+    const afterContentId = state.selectedContentId;
     let image: ImageBlock;
     if (placement === "block") {
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: width };
@@ -340,38 +350,59 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     } else {
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: Math.min(width, 50) as 25 | 33 | 50 };
     }
-    const result = target
-      ? updateRichTextDocument(currentWorksheet, problemId, target, (document) => {
+    const applyImage = (source: Worksheet) => target
+      ? updateRichTextDocument(source, problemId, target, (document) => {
         document.content.push(toImageRef(image, target.kind !== "solution" && target.color === "answer"));
       })
-      : addContent(currentWorksheet, problemId, image, state.selectedContentId);
+      : addContent(source, problemId, image, afterContentId);
+    const result = applyImage(currentWorksheet);
     if (!result.ok) { setToast("画像を追加できませんでした"); return; }
     try {
       await repository.putAsset(asset, result.worksheet);
-      state.commit("画像を挿入", result.worksheet);
-      state.selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
+      const latest = useEditorStore.getState();
+      if (!isCurrentEditorSession(latest, operationSession)) return;
+      const rebasedResult = applyImage(latest.worksheet);
+      if (!rebasedResult.ok) { setToast("画像を追加できませんでした"); return; }
+      latest.commit("画像を挿入", rebasedResult.worksheet);
+      latest.selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
-    } catch { setToast("画像を保存できませんでした"); }
+    } catch {
+      if (isCurrentEditorSession(useEditorStore.getState(), operationSession)) {
+        setToast("画像を保存できませんでした");
+      }
+    }
   }, [repository]);
 
   const updateImage = useCallback(async (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
     const state = useEditorStore.getState();
     const currentWorksheet = state.worksheet;
     if (!currentWorksheet) return;
-    const result = updateImageReference(currentWorksheet, problemId, imageId, target ?? null, {
+    const operationSession = { worksheetId: currentWorksheet.id, sessionId: state.sessionId };
+    const applyUpdate = (source: Worksheet) => updateImageReference(source, problemId, imageId, target ?? null, {
       ...(asset ? { assetId: asset.id } : {}),
       alt,
       placement,
       widthPercent: width,
     });
+    const result = applyUpdate(currentWorksheet);
     if (!result.ok) { setToast("画像を更新できませんでした"); return; }
     try {
       if (asset) {
         await repository.putAsset(asset, result.worksheet);
+        const latest = useEditorStore.getState();
+        if (!isCurrentEditorSession(latest, operationSession)) return;
+        const rebasedResult = applyUpdate(latest.worksheet);
+        if (!rebasedResult.ok) { setToast("画像を更新できませんでした"); return; }
+        latest.commit("画像を差し替え", rebasedResult.worksheet);
         setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
+        return;
       }
-      state.commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);
-    } catch { setToast("画像を保存できませんでした"); }
+      state.commit("画像の設定を変更", result.worksheet);
+    } catch {
+      if (isCurrentEditorSession(useEditorStore.getState(), operationSession)) {
+        setToast("画像を保存できませんでした");
+      }
+    }
   }, [repository]);
 
   if (loadState === "loading") return <div className="centered-state"><div className="spinner" /><p>プリントを読み込んでいます</p></div>;

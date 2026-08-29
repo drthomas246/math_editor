@@ -45,8 +45,8 @@ type Props = {
   onSelectContent: (id: string | null) => void;
   onCommit: (label: string, worksheet: Worksheet) => void;
   onMutate: MutateWorksheet;
-  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
-  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
+  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
+  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
   assetUrls: ReadonlyMap<string, string>;
   onToast: (message: string) => void;
 };
@@ -151,9 +151,9 @@ export function ProblemCard(props: Props) {
     }} />}
     {imageDialog && <ImageDialog worksheetId={worksheet.id} {...(imageDialog.mode === "edit" ? { initial: { placement: imageDialog.image.placement, widthPercent: imageDialog.image.widthPercent, alt: imageDialog.image.alt, ...(assetUrls.get(imageDialog.image.assetId) ? { previewUrl: assetUrls.get(imageDialog.image.assetId)! } : {}) } } : {})} onClose={() => setImageDialog(null)} onApply={(asset, placement, width, alt) => {
       if (imageDialog.mode === "insert") {
-        if (asset) onAddImage(problem.id, asset, placement, width, alt, imageDialog.target ?? undefined);
+        if (asset) void onAddImage(problem.id, asset, placement, width, alt, imageDialog.target ?? undefined);
       } else {
-        onUpdateImage(problem.id, imageDialog.image.id, asset, placement, width, alt, imageDialog.target ?? undefined);
+        void onUpdateImage(problem.id, imageDialog.image.id, asset, placement, width, alt, imageDialog.target ?? undefined);
       }
       setImageDialog(null);
     }} />}
