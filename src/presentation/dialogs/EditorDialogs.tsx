@@ -1,6 +1,7 @@
 import { Sigma, Table2, Upload } from "lucide-react";
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
+import { validateImageBlob } from "../../application/assets/image-validation";
 import { assertPreviewPaginationCanExport } from "../../application/pdf/pdf-pagination-guard";
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import type { AssetRecord, ImagePlacement, ImageWidthPercent, PageSettings, Worksheet, WorksheetHeader } from "../../domain/worksheet/worksheet";
@@ -174,13 +175,12 @@ export function ImageDialog({ worksheetId, initial, onClose, onApply }: { worksh
   const choose = async (next?: File) => {
     setError(""); setDimensions(null);
     if (!next) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(next.type)) { setError("PNG、JPEG、WebPの画像を選択してください。"); return; }
-    if (next.size > 10 * 1024 * 1024) { setError("画像は1点10MiB以下にしてください。"); return; }
     try {
-      const bitmap = await createImageBitmap(next);
-      if (bitmap.width > 10000 || bitmap.height > 10000 || bitmap.width * bitmap.height > 40_000_000) { bitmap.close(); setError("画像寸法の上限を超えています。"); return; }
-      setDimensions({ width: bitmap.width, height: bitmap.height }); bitmap.close(); setFile(next);
-    } catch { setError("画像を読み込めませんでした。"); }
+      const nextDimensions = await validateImageBlob(next);
+      setDimensions(nextDimensions); setFile(next);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "画像を読み込めませんでした。");
+    }
   };
   const invalidFloat = placement !== "block" && width > 50;
   const invalidFile = Boolean(error) || Boolean(file && !dimensions);

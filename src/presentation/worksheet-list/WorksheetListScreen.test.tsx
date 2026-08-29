@@ -1,8 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createSingleBackup } from "../../application/backup/backup";
+import type { AssetRecord } from "../../domain/worksheet/worksheet";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { database } from "../../infrastructure/indexeddb/database";
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
@@ -12,6 +14,8 @@ beforeEach(async () => {
   await database.worksheets.clear();
   await database.assets.clear();
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("WorksheetListScreen", () => {
   it("個別JSONを利用者が直接保存できるリンクとして準備する", async () => {
@@ -39,6 +43,119 @@ describe("WorksheetListScreen", () => {
     const download = await screen.findByRole("link", { name: "JSONをダウンロード" });
     expect(download).toHaveAttribute("href", "blob:test");
     expect(download).toHaveAttribute("download", expect.stringMatching(/^math-worksheet-backup-\d{8}-\d{4}\.json$/u));
+  });
+
+  it("全体バックアップ中は操作を無効化して多重実行を防ぐ", async () => {
+    await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
+    let release: (() => void) | undefined;
+    const assets = vi.spyOn(database.assets, "toArray").mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve([]);
+    }) as ReturnType<typeof database.assets.toArray>);
+
+    render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: "設定・バックアップ" }));
+    const exportButton = screen.getByRole("button", { name: "全体をエクスポート" });
+    fireEvent.click(exportButton);
+
+    expect(await screen.findByRole("button", { name: "書き出し中…" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "書き出し中…" }));
+    expect(assets).toHaveBeenCalledOnce();
+    release?.();
+    expect(await screen.findByRole("link", { name: "JSONをダウンロード" })).toBeInTheDocument();
+  });
+
+  it("全体バックアップの失敗をダイアログ内に表示して再実行できる", async () => {
+    await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
+    vi.spyOn(database.assets, "toArray").mockRejectedValueOnce(new Error("IndexedDB failure"));
+
+    render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: "設定・バックアップ" }));
+    await userEvent.click(screen.getByRole("button", { name: "全体をエクスポート" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("IndexedDB failure");
+    expect(screen.getByRole("button", { name: "全体をエクスポート" })).toBeEnabled();
+  });
+
+  it("ゴミ箱移動の失敗を捕捉し、ダイアログから再実行できる", async () => {
+    const worksheet = createWorksheet();
+    worksheet.title = "削除失敗テスト";
+    worksheet.header.title = worksheet.title;
+    await worksheetRepository.create({ worksheet, assets: [] });
+    const trash = vi.spyOn(worksheetRepository, "trash").mockRejectedValueOnce(new Error("IndexedDB failure"));
+
+    render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: "削除失敗テストのメニュー" }));
+    await userEvent.click(screen.getByRole("button", { name: "ゴミ箱へ移動" }));
+    await userEvent.click(screen.getByRole("button", { name: "移動する" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("IndexedDB failure");
+    expect(screen.getByRole("button", { name: "移動する" })).toBeEnabled();
+    expect(trash).toHaveBeenCalledOnce();
+  });
+
+  it("ゴミ箱移動の取り消し失敗を捕捉して再実行できる", async () => {
+    const worksheet = createWorksheet();
+    worksheet.title = "復元失敗テスト";
+    worksheet.header.title = worksheet.title;
+    await worksheetRepository.create({ worksheet, assets: [] });
+
+    render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: "復元失敗テストのメニュー" }));
+    await userEvent.click(screen.getByRole("button", { name: "ゴミ箱へ移動" }));
+    await userEvent.click(screen.getByRole("button", { name: "移動する" }));
+    const restore = vi.spyOn(worksheetRepository, "restore").mockRejectedValueOnce(new Error("restore failure"));
+    await userEvent.click(await screen.findByRole("button", { name: "元に戻す" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("restore failure");
+    expect(screen.getByRole("button", { name: "元に戻す" })).toBeEnabled();
+    expect(restore).toHaveBeenCalledOnce();
+  });
+
+  it("インポート中は操作を無効化してcreateManyの多重実行を防ぐ", async () => {
+    const backup = await createSingleBackup(createWorksheet(), []);
+    let release: (() => void) | undefined;
+    const createMany = vi.spyOn(worksheetRepository, "createMany").mockImplementation(() => new Promise((resolve) => {
+      release = resolve;
+    }));
+
+    const view = render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await screen.findByText("まだプリントがありません");
+    await userEvent.click(screen.getAllByRole("button", { name: "インポート" })[0]!);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await userEvent.upload(input, new File([JSON.stringify(backup)], "backup.json", { type: "application/json" }));
+    fireEvent.click(screen.getByRole("button", { name: "インポート実行" }));
+
+    expect(await screen.findByRole("button", { name: "インポート中…" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "インポート中…" }));
+    expect(createMany).toHaveBeenCalledOnce();
+    release?.();
+    expect(await screen.findByText("1件をインポートしました")).toBeInTheDocument();
+  });
+
+  it("インポート画像のMIME偽装をcreateMany前に拒否する", async () => {
+    const worksheet = createWorksheet();
+    const asset: AssetRecord = {
+      id: crypto.randomUUID(),
+      worksheetId: worksheet.id,
+      mimeType: "image/png",
+      blob: new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: "image/png" }),
+      width: 1,
+      height: 1,
+      createdAt: worksheet.createdAt,
+    };
+    worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: asset.id, alt: "", placement: "block", widthPercent: 50 });
+    const backup = await createSingleBackup(worksheet, [asset]);
+    const createMany = vi.spyOn(worksheetRepository, "createMany");
+
+    const view = render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await screen.findByText("まだプリントがありません");
+    await userEvent.click(screen.getAllByRole("button", { name: "インポート" })[0]!);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await userEvent.upload(input, new File([JSON.stringify(backup)], "invalid-image.json", { type: "application/json" }));
+    await userEvent.click(screen.getByRole("button", { name: "インポート実行" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("画像のMIME型とファイル内容が一致しません");
+    expect(createMany).not.toHaveBeenCalled();
   });
 
   it("プリントの操作メニューを外側の操作で閉じる", async () => {

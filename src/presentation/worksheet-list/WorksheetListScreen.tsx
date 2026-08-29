@@ -14,14 +14,21 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { createArchiveBackup, createSingleBackup, hydrateBackup, parseBackup } from "../../application/backup/backup";
+import {
+  assertBackupInputSize,
+  createArchiveBackup,
+  createSingleBackup,
+  hydrateBackup,
+  parseBackup,
+  serializeBackup,
+} from "../../application/backup/backup";
 import { STRUCTURE_LIMITS } from "../../domain/worksheet/structure-limits";
 import type { MathWorksheetFile, Worksheet } from "../../domain/worksheet/worksheet";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { normalizeSearchKey } from "../../domain/worksheet/worksheet.search";
 import {
   localTimestamp,
-  prepareJsonDownload,
+  prepareJsonTextDownload,
   sanitizeFileNamePart,
   type PreparedDownload,
 } from "../../infrastructure/file/download";
@@ -34,12 +41,22 @@ import { useOutsidePointerDown } from "../components/useOutsidePointerDown";
 
 const PAGE_SIZE = 50;
 
+type ListError = {
+  kind: "load" | "operation";
+  title: string;
+  message: string;
+};
+
+type PendingListOperation =
+  | { kind: "trash"; worksheetId: string }
+  | { kind: "restore"; worksheetId: string };
+
 export function WorksheetListScreen() {
   const navigate = useNavigate();
   const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
   const [invalidCount, setInvalidCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ListError | null>(null);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -49,6 +66,7 @@ export function WorksheetListScreen() {
   const [importOpen, setImportOpen] = useState(false);
   const [preparedDownload, setPreparedDownload] = useState<PreparedDownload | null>(null);
   const [toast, setToast] = useState<{ message: string; worksheet?: Worksheet } | null>(null);
+  const [pendingOperation, setPendingOperation] = useState<PendingListOperation | null>(null);
   const openMenuRef = useRef<HTMLDivElement>(null);
 
   useOutsidePointerDown(openMenuRef, openMenu !== null, () => setOpenMenu(null));
@@ -61,7 +79,7 @@ export function WorksheetListScreen() {
       setWorksheets(result.worksheets);
       setInvalidCount(result.invalidCount);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "一覧を読み込めませんでした");
+      setError({ kind: "load", title: "一覧を読み込めませんでした", message: failureMessage(reason, "一覧を読み込めませんでした") });
     } finally {
       setLoading(false);
     }
@@ -93,7 +111,7 @@ export function WorksheetListScreen() {
       await worksheetRepository.create({ worksheet, assets: [] });
       await navigate(`/worksheets/${worksheet.id}`);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "プリントを作成できませんでした");
+      setError({ kind: "operation", title: "プリントを作成できませんでした", message: failureMessage(reason, "プリントを作成できませんでした") });
     }
   };
 
@@ -104,7 +122,7 @@ export function WorksheetListScreen() {
       await load();
       setToast({ message: "プリントを複製しました" });
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "複製できませんでした");
+      setError({ kind: "operation", title: "プリントを複製できませんでした", message: failureMessage(reason, "プリントを複製できませんでした") });
     }
   };
 
@@ -114,13 +132,14 @@ export function WorksheetListScreen() {
       const data = await worksheetRepository.get(worksheet.id);
       if (!data) throw new Error("対象のプリントを読み込めませんでした");
       const backup = await createSingleBackup(data.worksheet, data.assets);
+      const serialized = serializeBackup(backup);
       preparedDownload?.revoke();
-      setPreparedDownload(prepareJsonDownload(
-        backup,
+      setPreparedDownload(prepareJsonTextDownload(
+        serialized,
         `${sanitizeFileNamePart(worksheet.title)}_${localTimestamp()}.json`,
       ));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "JSONを書き出せませんでした");
+      setError({ kind: "operation", title: "JSONを書き出せませんでした", message: failureMessage(reason, "JSONを書き出せませんでした") });
     }
   };
 
@@ -138,19 +157,39 @@ export function WorksheetListScreen() {
   };
 
   const trash = async () => {
-    if (!deleteTarget) return;
-    const worksheet = await worksheetRepository.trash(deleteTarget.id);
-    setDeleteTarget(null);
-    await load();
-    setToast({ message: "ゴミ箱へ移動しました", worksheet });
+    if (!deleteTarget || pendingOperation) return;
+    const target = deleteTarget;
+    setPendingOperation({ kind: "trash", worksheetId: target.id });
+    setError(null);
+    try {
+      const worksheet = await worksheetRepository.trash(target.id);
+      setDeleteTarget(null);
+      await load();
+      setToast({ message: "ゴミ箱へ移動しました", worksheet });
+    } catch (reason) {
+      setError({ kind: "operation", title: "プリントをゴミ箱へ移動できませんでした", message: failureMessage(reason, "プリントをゴミ箱へ移動できませんでした") });
+    } finally {
+      setPendingOperation(null);
+    }
   };
 
   const undoTrash = async () => {
-    if (!toast?.worksheet) return;
-    await worksheetRepository.restore(toast.worksheet.id);
-    setToast(null);
-    await load();
+    if (!toast?.worksheet || pendingOperation) return;
+    const worksheet = toast.worksheet;
+    setPendingOperation({ kind: "restore", worksheetId: worksheet.id });
+    setError(null);
+    try {
+      await worksheetRepository.restore(worksheet.id);
+      setToast(null);
+      await load();
+    } catch (reason) {
+      setError({ kind: "operation", title: "プリントを復元できませんでした", message: failureMessage(reason, "プリントを復元できませんでした") });
+    } finally {
+      setPendingOperation(null);
+    }
   };
+
+  const operationPending = pendingOperation !== null;
 
   return (
     <div className="app-shell">
@@ -176,9 +215,9 @@ export function WorksheetListScreen() {
         </section>
 
         {invalidCount > 0 && <div className="notice warning">破損したプリントが{invalidCount}件あります。データは削除していません。</div>}
-        {error && <div className="error-panel"><strong>一覧を読み込めませんでした</strong><p>{error}</p><button className="secondary-button" onClick={load}>再読み込み</button></div>}
+        {error && !deleteTarget && <div className="error-panel" role="alert"><strong>{error.title}</strong><p>{error.message}</p>{error.kind === "load" && <button className="secondary-button" disabled={loading} onClick={load}>再読み込み</button>}</div>}
 
-        {!error && <section className="worksheet-section">
+        {error?.kind !== "load" && <section className="worksheet-section">
           <div className="section-heading"><h2>最近のプリント</h2><span>更新日時の新しい順</span></div>
           {loading ? <ListSkeleton /> : visible.length > 0 ? (
             <div className="worksheet-list">
@@ -194,7 +233,7 @@ export function WorksheetListScreen() {
                       <button disabled={atLimit} onClick={() => duplicate(worksheet)}>複製</button>
                       <button onClick={() => exportSingle(worksheet)}>JSONエクスポート</button>
                       <hr />
-                      <button className="danger-text" onClick={() => { setDeleteTarget(worksheet); setOpenMenu(null); }}>ゴミ箱へ移動</button>
+                      <button className="danger-text" onClick={() => { setError(null); setDeleteTarget(worksheet); setOpenMenu(null); }}>ゴミ箱へ移動</button>
                     </div>}
                   </div>
                 </article>
@@ -209,27 +248,47 @@ export function WorksheetListScreen() {
         </section>}
       </main>
 
-      {deleteTarget && <Modal title="プリントをゴミ箱へ移動しますか？" size="small" onClose={() => setDeleteTarget(null)} footer={<><button className="secondary-button" autoFocus onClick={() => setDeleteTarget(null)}>キャンセル</button><button className="danger-button" onClick={trash}>移動する</button></>}><p>「{deleteTarget.title}」はゴミ箱から復元できます。</p></Modal>}
+      {deleteTarget && <Modal title="プリントをゴミ箱へ移動しますか？" size="small" onClose={() => { if (!operationPending) setDeleteTarget(null); }} footer={<><button className="secondary-button" autoFocus disabled={operationPending} onClick={() => setDeleteTarget(null)}>キャンセル</button><button className="danger-button" disabled={operationPending} onClick={trash}>{pendingOperation?.kind === "trash" ? "移動中…" : "移動する"}</button></>}><p>「{deleteTarget.title}」はゴミ箱から復元できます。</p>{error && <div className="notice danger" role="alert"><strong>{error.title}</strong><p>{error.message}</p></div>}</Modal>}
       {settingsOpen && <BackupModal worksheets={worksheets} onClose={() => setSettingsOpen(false)} onImport={() => { setSettingsOpen(false); setImportOpen(true); }} onDownloadReady={(download) => { preparedDownload?.revoke(); setPreparedDownload(download); }} />}
       {importOpen && <ImportModal onClose={() => setImportOpen(false)} onImported={async (count) => { setImportOpen(false); await load(); setToast({ message: `${count}件をインポートしました` }); }} />}
       {preparedDownload && <Modal title="JSONを書き出す" size="small" onClose={closePreparedDownload} footer={<><button className="secondary-button" onClick={closePreparedDownload}>キャンセル</button><a className="primary-button" href={preparedDownload.url} download={preparedDownload.fileName} onClick={completePreparedDownload}><FileDown size={16} />JSONをダウンロード</a></>}><p>JSONファイルの準備ができました。ダウンロードをクリックして保存してください。</p><div className="import-summary"><span>ファイル: {preparedDownload.fileName}</span></div></Modal>}
-      {toast && <Toast message={toast.message} {...(toast.worksheet ? { action: "元に戻す", onAction: () => void undoTrash() } : {})} onClose={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} {...(toast.worksheet ? { action: pendingOperation?.kind === "restore" ? "復元中…" : "元に戻す", onAction: () => void undoTrash() } : {})} disabled={operationPending} onClose={() => setToast(null)} />}
     </div>
   );
 }
 
 function BackupModal({ worksheets, onClose, onImport, onDownloadReady }: { worksheets: Worksheet[]; onClose: () => void; onImport: () => void; onDownloadReady: (download: PreparedDownload) => void }) {
   const active = worksheets.filter((worksheet) => worksheet.deletedAt === null);
+  const exportingRef = useRef(false);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const exportAll = async () => {
-    const ids = new Set(active.map((worksheet) => worksheet.id));
-    const assets = (await database.assets.toArray()).filter((asset) => ids.has(asset.worksheetId));
-    const backup = await createArchiveBackup(active, assets);
-    onDownloadReady(prepareJsonDownload(backup, `math-worksheet-backup-${localTimestamp()}.json`));
-    onClose();
+    if (active.length === 0 || exportingRef.current) return;
+    exportingRef.current = true;
+    setExporting(true);
+    setError(null);
+    try {
+      const ids = new Set(active.map((worksheet) => worksheet.id));
+      const assets = (await database.assets.toArray()).filter((asset) => ids.has(asset.worksheetId));
+      const backup = await createArchiveBackup(active, assets);
+      const serialized = serializeBackup(backup);
+      exportingRef.current = false;
+      setExporting(false);
+      onDownloadReady(prepareJsonTextDownload(serialized, `math-worksheet-backup-${localTimestamp()}.json`));
+      onClose();
+    } catch (reason) {
+      setError(failureMessage(reason, "全体バックアップを書き出せませんでした"));
+    } finally {
+      if (exportingRef.current) {
+        exportingRef.current = false;
+        setExporting(false);
+      }
+    }
   };
-  return <Modal title="設定・バックアップ" onClose={onClose}>
-    <div className="settings-section"><div><h3>すべてのプリントをバックアップ</h3><p>通常一覧のプリントを1つのJSONに書き出します。ゴミ箱内のプリントは含まれません。</p></div><button className="secondary-button" disabled={active.length === 0} onClick={exportAll}><FileDown size={16} />全体をエクスポート</button></div>
-    <div className="settings-section"><div><h3>バックアップから復元</h3><p>単一プリントまたは全体バックアップのJSONを読み込みます。</p></div><button className="secondary-button" onClick={onImport}><FileUp size={16} />インポート</button></div>
+  return <Modal title="設定・バックアップ" onClose={() => { if (!exporting) onClose(); }}>
+    <div className="settings-section"><div><h3>すべてのプリントをバックアップ</h3><p>通常一覧のプリントを1つのJSONに書き出します。ゴミ箱内のプリントは含まれません。</p></div><button className="secondary-button" disabled={active.length === 0 || exporting} onClick={exportAll}><FileDown size={16} />{exporting ? "書き出し中…" : "全体をエクスポート"}</button></div>
+    <div className="settings-section"><div><h3>バックアップから復元</h3><p>単一プリントまたは全体バックアップのJSONを読み込みます。</p></div><button className="secondary-button" disabled={exporting} onClick={onImport}><FileUp size={16} />インポート</button></div>
+    {error && <div className="notice danger" role="alert">{error}</div>}
     <div className="data-note"><strong>データについて</strong><span>保存先: このブラウザ内</span><span>スキーマバージョン: 1</span><p>クラウド保存やアカウント機能はありません。</p><ManualContextLink topic="backup">バックアップの詳しい使い方</ManualContextLink></div>
   </Modal>;
 }
@@ -239,24 +298,40 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
   const [fileName, setFileName] = useState("");
   const [backup, setBackup] = useState<MathWorksheetFile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const executingRef = useRef(false);
+  const [executing, setExecuting] = useState(false);
   const choose = async (file?: File) => {
-    if (!file) return;
+    if (!file || executingRef.current) return;
     setFileName(file.name); setError(null); setBackup(null);
-    if (file.size > 100 * 1024 * 1024) { setError("ファイルは100MiB以下にしてください。"); return; }
-    try { setBackup(parseBackup(await file.text())); }
+    try {
+      assertBackupInputSize(file.size);
+      setBackup(parseBackup(await file.text()));
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "このファイルは読み込めません"); }
   };
   const execute = async () => {
-    if (!backup) return;
+    if (!backup || executingRef.current) return;
+    executingRef.current = true;
+    setExecuting(true);
+    setError(null);
     try {
-      const items = hydrateBackup(backup);
+      const items = await hydrateBackup(backup);
       await worksheetRepository.createMany(items);
+      executingRef.current = false;
+      setExecuting(false);
       onImported(items.length);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "インポートできませんでした"); }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "インポートできませんでした");
+    } finally {
+      if (executingRef.current) {
+        executingRef.current = false;
+        setExecuting(false);
+      }
+    }
   };
   const count = backup ? (backup.kind === "single" ? 1 : backup.worksheets.length) : 0;
-  return <Modal title="JSONインポート" onClose={onClose} footer={<><button className="secondary-button" onClick={onClose}>キャンセル</button><button className="primary-button" disabled={!backup} onClick={execute}>インポート実行</button></>}>
-    <div className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void choose(event.dataTransfer.files[0]); }} onClick={() => inputRef.current?.click()}><FileUp size={28} /><strong>JSONファイルを選択</strong><span>またはここへドロップ</span><input ref={inputRef} hidden type="file" accept="application/json,.json" onChange={(event) => void choose(event.target.files?.[0])} /></div>
+  return <Modal title="JSONインポート" onClose={() => { if (!executing) onClose(); }} footer={<><button className="secondary-button" disabled={executing} onClick={onClose}>キャンセル</button><button className="primary-button" disabled={!backup || executing} onClick={execute}>{executing ? "インポート中…" : "インポート実行"}</button></>}>
+    <div className="drop-zone" aria-disabled={executing} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); if (!executing) void choose(event.dataTransfer.files[0]); }} onClick={() => { if (!executing) inputRef.current?.click(); }}><FileUp size={28} /><strong>JSONファイルを選択</strong><span>またはここへドロップ</span><input ref={inputRef} hidden disabled={executing} type="file" accept="application/json,.json" onChange={(event) => void choose(event.target.files?.[0])} /></div>
     {fileName && <div className="import-summary"><span>ファイル: {fileName}</span>{backup && <><span>形式: math-worksheet / バージョン: 1</span><span>内容: プリント{count}件</span></>}</div>}
     {error && <div className="notice danger" role="alert">{error}</div>}
     <div className="notice info">既存のプリントは削除されず、追加で読み込まれます。端末内の既存IDと衝突する場合は、全IDを自動で再生成します。</div>
@@ -282,4 +357,8 @@ function formatDate(value: string): string {
   const time = new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit" }).format(date);
   if (date.toDateString() === today.toDateString()) return `今日 ${time}`;
   return `${new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date)} ${time}`;
+}
+
+function failureMessage(reason: unknown, fallback: string): string {
+  return reason instanceof Error && reason.message ? reason.message : fallback;
 }

@@ -37,7 +37,11 @@ export type PreparedDownload = {
 };
 
 export function prepareJsonDownload(value: unknown, fileName: string): PreparedDownload {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+  return prepareJsonTextDownload(JSON.stringify(value, null, 2), fileName);
+}
+
+export function prepareJsonTextDownload(json: string, fileName: string): PreparedDownload {
+  const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   let revoked = false;
 
