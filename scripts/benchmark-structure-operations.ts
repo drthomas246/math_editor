@@ -1,0 +1,114 @@
+import { performance } from "node:perf_hooks";
+
+import {
+  addProblem,
+  duplicateProblem,
+  moveProblem,
+  type WorksheetCommandResult,
+} from "../src/domain/worksheet/worksheet.commands";
+import type { Worksheet } from "../src/domain/worksheet/worksheet";
+import { createEditorStressFixture } from "../src/test/fixtures/editor-stress-fixture";
+
+const WARMUP_ITERATIONS = 3;
+const MEASURE_ITERATIONS = 20;
+const DEFAULT_MAX_P95_MS = 500;
+const MAX_P95_MS = readPositiveNumber(
+  process.env.STRUCTURE_BENCHMARK_MAX_P95_MS,
+  DEFAULT_MAX_P95_MS,
+);
+
+type Measurement = {
+  durationsMs: number[];
+  medianMs: number;
+  p95Ms: number;
+  maxMs: number;
+  heapDeltaBytes: number;
+};
+
+const fixture199 = createEditorStressFixture(199).worksheet;
+const fixture200 = createEditorStressFixture(200).worksheet;
+const middleProblemId = fixture200.problems[Math.floor(fixture200.problems.length / 2)]!.id;
+const duplicateTargetId = fixture199.problems[Math.floor(fixture199.problems.length / 2)]!.id;
+const appendAfterId = fixture199.problems.at(-1)!.id;
+
+const measurements = {
+  addProblemAt199: measure(() => addProblem(fixture199, appendAfterId)),
+  duplicateProblemAt199: measure(() => duplicateProblem(fixture199, duplicateTargetId)),
+  moveProblemAt200: measure(() => moveProblem(fixture200, middleProblemId, 0)),
+};
+
+const result = {
+  dataset: {
+    sourceProblemsForAddAndDuplicate: fixture199.problems.length,
+    sourceProblemsForMove: fixture200.problems.length,
+    contentsPerProblem: fixture200.problems[0]?.contents.length ?? 0,
+    warmupIterations: WARMUP_ITERATIONS,
+    measuredIterations: MEASURE_ITERATIONS,
+  },
+  threshold: { maxP95Ms: MAX_P95_MS },
+  operations: measurements,
+  process: {
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+  },
+};
+
+console.log(JSON.stringify(result, null, 2));
+
+const failures = Object.entries(measurements)
+  .filter(([, measurement]) => measurement.p95Ms >= MAX_P95_MS)
+  .map(([name, measurement]) => `${name}: ${measurement.p95Ms.toFixed(1)}ms`);
+if (failures.length > 0) {
+  throw new Error(`構造操作のp95が${MAX_P95_MS}ms以上です: ${failures.join(", ")}`);
+}
+
+function measure(operation: () => WorksheetCommandResult): Measurement {
+  for (let iteration = 0; iteration < WARMUP_ITERATIONS; iteration += 1) {
+    assertSuccessfulResult(operation());
+  }
+
+  collectGarbage();
+  const heapBefore = process.memoryUsage().heapUsed;
+  const durationsMs: number[] = [];
+  for (let iteration = 0; iteration < MEASURE_ITERATIONS; iteration += 1) {
+    const startedAt = performance.now();
+    assertSuccessfulResult(operation());
+    durationsMs.push(performance.now() - startedAt);
+  }
+  collectGarbage();
+  const sorted = [...durationsMs].sort((left, right) => left - right);
+  return {
+    durationsMs,
+    medianMs: percentile(sorted, 0.5),
+    p95Ms: percentile(sorted, 0.95),
+    maxMs: sorted.at(-1) ?? 0,
+    heapDeltaBytes: process.memoryUsage().heapUsed - heapBefore,
+  };
+}
+
+function assertSuccessfulResult(result: WorksheetCommandResult): Worksheet {
+  if (!result.ok) throw new Error(`構造操作が失敗しました: ${result.code}`);
+  if (result.worksheet.problems.length !== 200) {
+    throw new Error(`構造操作後の問題数が不正です: ${result.worksheet.problems.length}`);
+  }
+  return result.worksheet;
+}
+
+function percentile(sortedValues: readonly number[], ratio: number): number {
+  return sortedValues[Math.max(0, Math.ceil(sortedValues.length * ratio) - 1)] ?? 0;
+}
+
+function collectGarbage(): void {
+  const gc = (globalThis as typeof globalThis & { gc?: () => void }).gc;
+  gc?.();
+}
+
+function readPositiveNumber(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`STRUCTURE_BENCHMARK_MAX_P95_MS must be a positive number: ${value}`);
+  }
+  return parsed;
+}

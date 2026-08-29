@@ -30,6 +30,8 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 
 100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。通常のE2Eでは100問の軽量データを使い、React描画、TipTap、DOM、layout、paintを含む入力p95が250ms未満であることを検証します。`npm run benchmark:editor:browser`はCIから分離した専用ストレスベンチマークで、構造上限の200問それぞれに5 contents（rich text、数式、表、画像参照、小問、解答色、解答欄、教師用解説を含む）を投入します。
 
+PDF・一覧・構造操作の上限規模を測る場合は、`npm run benchmark:performance`を実行します。PDFは50/100ページの生成時間・出力サイズ・JS heap・成功率、一覧は2,000件のIndexedDB取得/Zod検証・先頭50件描画・検索・ページ切り替え、構造操作は複合contentを持つ199/200問で問題追加・複製・移動のmedian/p95とheap差分をJSONで記録します。個別には`benchmark:pdf`、`benchmark:list`、`benchmark:structure`を使用できます。
+
 ## 主な使い方
 
 1. 一覧画面で「新しいプリント」を選択します。
@@ -224,10 +226,13 @@ npm run test:e2e
 # Chromeによる200問・複合コンテンツの専用ストレスベンチマーク
 npm run benchmark:editor:browser
 
+# PDF 50/100ページ・一覧2,000件・構造操作199/200問の性能ベンチマーク
+npm run benchmark:performance
+
 # 本番ビルド
 npm run build
 ```
 
-E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い200問ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの入力p95上限は既定で250msであり、環境差を調査する場合だけ`EDITOR_STRESS_MAX_P95_MS`で変更できる。
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い性能ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの入力p95上限は既定で250msであり、環境差を調査する場合だけ`EDITOR_STRESS_MAX_P95_MS`で変更できる。追加したベンチマークのしきい値は`STRUCTURE_BENCHMARK_MAX_P95_MS`、`LIST_BENCHMARK_MAX_REPOSITORY_MS`、`LIST_BENCHMARK_MAX_RENDER_MS`、`LIST_BENCHMARK_MAX_SEARCH_MS`、`LIST_BENCHMARK_MAX_PAGE_CHANGE_MS`、`PDF_BENCHMARK_MAX_GENERATION_MS`で変更でき、PDFページ数は`PDF_BENCHMARK_PAGE_COUNTS`（例: `10,50,100`）で指定できる。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。
