@@ -2,10 +2,18 @@ import { stat } from "node:fs/promises";
 
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-import { WorksheetSchema, type Worksheet } from "../src/domain/worksheet/worksheet";
-import { createProblem, createWorksheet } from "../src/domain/worksheet/worksheet.defaults";
+import {
+  COMPLEX_PDF_BENCHMARK_PAGE_COUNT,
+  createComplexPdfBenchmarkFixture,
+  createSimplePdfBenchmarkFixture,
+  type PdfBenchmarkFixture,
+} from "../src/test/fixtures/performance-benchmark-fixtures";
 
 const PAGE_COUNTS = readPageCounts(process.env.PDF_BENCHMARK_PAGE_COUNTS);
+const COMPLEX_PAGE_COUNT = readPositiveInteger(
+  process.env.PDF_BENCHMARK_COMPLEX_PAGE_COUNT,
+  COMPLEX_PDF_BENCHMARK_PAGE_COUNT,
+);
 const DEFAULT_MAX_GENERATION_MS = 600_000;
 const DEFAULT_MAX_MILLISECONDS_PER_PAGE = 1_000;
 const MAX_GENERATION_MS = readPositiveNumber(
@@ -17,15 +25,33 @@ const MAX_MILLISECONDS_PER_PAGE = readPositiveNumber(
   DEFAULT_MAX_MILLISECONDS_PER_PAGE,
 );
 
-for (const pageCount of PAGE_COUNTS) {
-  test(`${pageCount}ページのPDF生成時間・heap・成功を計測する`, async ({ page }, testInfo) => {
+const scenarios = [
+  ...PAGE_COUNTS.map((pageCount) => ({
+    id: `simple-${pageCount}`,
+    profile: "simple" as const,
+    pageCount,
+    description: `${pageCount}ページの短文`,
+  })),
+  {
+    id: `complex-${COMPLEX_PAGE_COUNT}`,
+    profile: "complex" as const,
+    pageCount: COMPLEX_PAGE_COUNT,
+    description: `${COMPLEX_PAGE_COUNT}ページの数式・表・画像`,
+  },
+];
+
+for (const scenario of scenarios) {
+  test(`${scenario.description}を含むPDFの生成時間・heap・成功を計測する`, async ({ page }, testInfo) => {
     test.setTimeout(MAX_GENERATION_MS + 240_000);
-    const worksheet = createPdfFixture(pageCount);
-    await seedWorksheet(page, worksheet);
+    const fixture = scenario.profile === "complex"
+      ? createComplexPdfBenchmarkFixture(scenario.pageCount)
+      : createSimplePdfBenchmarkFixture(scenario.pageCount);
+    const { worksheet } = fixture;
+    await seedWorksheet(page, fixture);
 
     const editorLoadStartedAt = Date.now();
     await page.goto(`/worksheets/${worksheet.id}`);
-    await expect(page.locator("[data-editor-problem-id]")).toHaveCount(pageCount, { timeout: 180_000 });
+    await expect(page.locator("[data-editor-problem-id]")).toHaveCount(scenario.pageCount, { timeout: 180_000 });
     await expect(page.locator("[data-pagination-ready=\"true\"]").first()).toBeVisible({ timeout: 180_000 });
     const editorLoadMs = Date.now() - editorLoadStartedAt;
 
@@ -33,7 +59,7 @@ for (const pageCount of PAGE_COUNTS) {
     const dialog = page.getByRole("dialog", { name: "PDF出力" });
     await expect(dialog).toBeVisible();
     await dialog.getByRole("radio", { name: /問題のみ/u }).check();
-    await expect(dialog.getByText(`ページ数: ${pageCount}ページ`)).toBeVisible({ timeout: 180_000 });
+    await expect(dialog.getByText(`ページ数: ${scenario.pageCount}ページ`)).toBeVisible({ timeout: 180_000 });
     await startHeapSampling(page);
 
     const generationStartedAt = Date.now();
@@ -48,7 +74,14 @@ for (const pageCount of PAGE_COUNTS) {
       const heap = await stopHeapSampling(page);
       const stagesMs = await readPdfPerformanceMeasures(page);
       const result = {
-        dataset: { pages: pageCount, problems: worksheet.problems.length, attempts: 1 },
+        dataset: {
+          profile: scenario.profile,
+          pages: scenario.pageCount,
+          problems: worksheet.problems.length,
+          assets: fixture.assets.length,
+          includesMathTableAndImage: scenario.profile === "complex",
+          attempts: 1,
+        },
         threshold: {
           maxGenerationMs: MAX_GENERATION_MS,
           maxMillisecondsPerPage: MAX_MILLISECONDS_PER_PAGE,
@@ -57,19 +90,19 @@ for (const pageCount of PAGE_COUNTS) {
         successRatePercent: 100,
         editorLoadMs,
         generationMs,
-        millisecondsPerPage: generationMs / pageCount,
+        millisecondsPerPage: generationMs / scenario.pageCount,
         pdfBytes,
         heap,
         stagesMs,
         browser: await browserIdentity(page),
       };
 
-      await attachResult(testInfo, pageCount, result);
-      await testInfo.attach(`pdf-${pageCount}-page-output.pdf`, {
+      await attachResult(testInfo, scenario.id, result);
+      await testInfo.attach(`pdf-${scenario.id}-output.pdf`, {
         path: downloadPath,
         contentType: "application/pdf",
       });
-      console.info(`${pageCount}-page PDF: ${generationMs}ms (${result.millisecondsPerPage.toFixed(1)}ms/page), ${(pdfBytes / 1024 / 1024).toFixed(1)}MiB, peak heap ${formatBytes(heap.peakBytes)}`);
+      console.info(`${scenario.id} PDF: ${generationMs}ms (${result.millisecondsPerPage.toFixed(1)}ms/page), ${(pdfBytes / 1024 / 1024).toFixed(1)}MiB, peak heap ${formatBytes(heap.peakBytes)}`);
       console.info(`Stages: fonts ${formatMilliseconds(stagesMs.fonts)}, rasterization ${formatMilliseconds(stagesMs.rasterization)}, assembly ${formatMilliseconds(stagesMs.assembly)}`);
 
       expect(download.suggestedFilename()).toMatch(/\.pdf$/u);
@@ -78,7 +111,14 @@ for (const pageCount of PAGE_COUNTS) {
       expect(result.millisecondsPerPage).toBeLessThan(MAX_MILLISECONDS_PER_PAGE);
     } catch (reason) {
       const result = {
-        dataset: { pages: pageCount, problems: worksheet.problems.length, attempts: 1 },
+        dataset: {
+          profile: scenario.profile,
+          pages: scenario.pageCount,
+          problems: worksheet.problems.length,
+          assets: fixture.assets.length,
+          includesMathTableAndImage: scenario.profile === "complex",
+          attempts: 1,
+        },
         threshold: {
           maxGenerationMs: MAX_GENERATION_MS,
           maxMillisecondsPerPage: MAX_MILLISECONDS_PER_PAGE,
@@ -91,48 +131,36 @@ for (const pageCount of PAGE_COUNTS) {
         heap: await stopHeapSampling(page),
         browser: await browserIdentity(page),
       };
-      await attachResult(testInfo, pageCount, result);
+      await attachResult(testInfo, scenario.id, result);
       throw reason;
     }
   });
 }
 
-function createPdfFixture(pageCount: number): Worksheet {
-  const worksheet = createWorksheet(new Date("2026-08-28T00:00:00.000Z"));
-  worksheet.title = `${pageCount}ページPDF性能テスト`;
-  worksheet.header.title = worksheet.title;
-  worksheet.problems = Array.from({ length: pageCount }, (_, index) => {
-    const problem = createProblem();
-    problem.pageBreakBefore = index > 0;
-    const content = problem.contents[0];
-    if (content?.type !== "richText") throw new Error("PDF性能テスト用本文を作成できませんでした");
-    content.document.content = [{
-      type: "paragraph",
-      attrs: { textAlign: "left" },
-      content: [{ type: "text", text: `PDF性能テスト問題 ${index + 1}` }],
-    }];
-    return problem;
-  });
-  return WorksheetSchema.parse(worksheet);
-}
-
-async function seedWorksheet(page: Page, worksheet: Worksheet): Promise<void> {
+async function seedWorksheet(page: Page, fixture: PdfBenchmarkFixture): Promise<void> {
   await page.goto("/");
-  await page.evaluate(async (value) => {
+  await page.evaluate(async ({ worksheet, assets }) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("math-worksheet-db");
       request.addEventListener("success", () => resolve(request.result), { once: true });
       request.addEventListener("error", () => reject(request.error), { once: true });
     });
-    const transaction = database.transaction("worksheets", "readwrite");
-    transaction.objectStore("worksheets").put(value);
+    const transaction = database.transaction(["worksheets", "assets"], "readwrite");
+    transaction.objectStore("worksheets").put(worksheet);
+    const assetStore = transaction.objectStore("assets");
+    assets.forEach((asset) => {
+      const { dataBase64, ...metadata } = asset;
+      const binary = atob(dataBase64);
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      assetStore.put({ ...metadata, blob: new Blob([bytes], { type: asset.mimeType }) });
+    });
     await new Promise<void>((resolve, reject) => {
       transaction.addEventListener("complete", () => resolve(), { once: true });
       transaction.addEventListener("error", () => reject(transaction.error), { once: true });
       transaction.addEventListener("abort", () => reject(transaction.error), { once: true });
     });
     database.close();
-  }, worksheet);
+  }, fixture);
 }
 
 type HeapSampleState = {
@@ -218,10 +246,10 @@ async function readPdfPerformanceMeasures(page: Page): Promise<{
 
 async function attachResult(
   testInfo: TestInfo,
-  pageCount: number,
+  scenarioId: string,
   result: unknown,
 ): Promise<void> {
-  await testInfo.attach(`pdf-${pageCount}-page-benchmark.json`, {
+  await testInfo.attach(`pdf-${scenarioId}-benchmark.json`, {
     body: JSON.stringify(result, null, 2),
     contentType: "application/json",
   });
@@ -249,6 +277,15 @@ function readPositiveNumber(value: string | undefined, fallback: number): number
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     throw new Error(`PDF_BENCHMARK_MAX_GENERATION_MS must be a positive number: ${value}`);
+  }
+  return parsed;
+}
+
+function readPositiveInteger(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 200) {
+    throw new Error(`PDF_BENCHMARK_COMPLEX_PAGE_COUNT must be an integer from 1 to 200: ${value}`);
   }
   return parsed;
 }
