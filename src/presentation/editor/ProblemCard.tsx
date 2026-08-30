@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Copy, GripVertical, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from "lucide-react";
 import type { Draft } from "immer";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { colorDocumentAsAnswer, mergeColoredDocuments, type ContentColor } from "../../domain/worksheet/rich-text";
 import type { AnswerArea, AssetRecord, BasicRichTextDocument, ContentBlock, ImagePlacement, ImageWidthPercent, ProblemBlock, TableCellRichTextDocument, Worksheet } from "../../domain/worksheet/worksheet";
@@ -45,8 +45,8 @@ type Props = {
   onSelectContent: (id: string | null) => void;
   onCommit: (label: string, worksheet: Worksheet) => void;
   onMutate: MutateWorksheet;
-  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
-  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
+  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
+  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
   assetUrls: ReadonlyMap<string, string>;
   onToast: (message: string) => void;
 };
@@ -62,6 +62,13 @@ const ADD_CONTENT_OPTIONS: ReadonlyArray<readonly [AddContentType, string]> = [
   ["spacer", "スペーサー"],
   ["pageBreak", "改ページ"],
 ];
+
+function activateOnKeyboard(event: KeyboardEvent<HTMLElement>, action: () => void) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.stopPropagation();
+  action();
+}
 
 export function ProblemCard(props: Props) {
   const { worksheet, getWorksheet, problem, index, displayNumber, selected, selectedContentId, onSelect, onSelectContent, onCommit, onMutate, onAddImage, onUpdateImage, assetUrls, onToast } = props;
@@ -106,7 +113,7 @@ export function ProblemCard(props: Props) {
 
   return <article className={selected ? "problem-card selected" : "problem-card"} data-editor-problem-id={problem.id} onClick={onSelect}>
     <header className="problem-card-header">
-      <div className="problem-title"><button className="drag-handle" aria-label="問題を並べ替え"><GripVertical size={18} /></button><select className="problem-kind-select" aria-label="問題の種類" value={problem.kind} onClick={(event) => event.stopPropagation()} onChange={(event) => commit("問題の種類を変更", updateProblem(readWorksheet(), problem.id, (item) => { item.kind = event.target.value as typeof item.kind; }))}><option value="problem">問題</option><option value="example">例題</option></select><span>{displayNumber ? displayNumber.replace(/[^0-9]/gu, "") || displayNumber : "番号なし"}</span>{problem.numbering.restartAt && <span className="status-chip">{problem.numbering.restartAt}から再開</span>}</div>
+      <div className="problem-title"><span className="drag-handle" aria-hidden="true"><GripVertical size={18} /></span><select className="problem-kind-select" aria-label="問題の種類" value={problem.kind} onClick={(event) => event.stopPropagation()} onChange={(event) => commit("問題の種類を変更", updateProblem(readWorksheet(), problem.id, (item) => { item.kind = event.target.value as typeof item.kind; }))}><option value="problem">問題</option><option value="example">例題</option></select><span>{displayNumber ? displayNumber.replace(/[^0-9]/gu, "") || displayNumber : "番号なし"}</span>{problem.numbering.restartAt && <span className="status-chip">{problem.numbering.restartAt}から再開</span>}</div>
       <div className="problem-actions"><button className="small-button" disabled={worksheet.problems.length >= 200} onClick={(event) => { event.stopPropagation(); commit("問題を複製", duplicateProblem(readWorksheet(), problem.id)); }}><Copy size={14} />複製</button><div className="relative" ref={problemMenuRef}><button className="icon-button" aria-label="問題設定" onClick={(event) => { event.stopPropagation(); setProblemMenu(!problemMenu); }}><MoreHorizontal size={18} /></button>{problemMenu && <ProblemMenu worksheet={worksheet} getWorksheet={readWorksheet} problem={problem} index={index} commit={commit} close={() => setProblemMenu(false)} />}</div></div>
     </header>
     <div className="content-list">
@@ -129,7 +136,7 @@ export function ProblemCard(props: Props) {
           onEditImage={(image) => setImageDialog({ mode: "edit", target: { kind: "solution" }, image })}
           onTable={() => setTableTarget({ kind: "solution" })}
         /></div>
-        : <div className="solution-editor solution-editor-static" onClick={(event) => { event.stopPropagation(); selectSolution(); }}>
+        : <div className="solution-editor solution-editor-static" role="button" tabIndex={0} aria-label="教師用の解説を編集" onKeyDown={(event) => activateOnKeyboard(event, selectSolution)} onClick={(event) => { event.stopPropagation(); selectSolution(); }}>
           <label>解説</label>
           {problem.solution
             ? <WorksheetSolutionPreview document={problem.solution} assetUrls={assetUrls} />
@@ -151,9 +158,9 @@ export function ProblemCard(props: Props) {
     }} />}
     {imageDialog && <ImageDialog worksheetId={worksheet.id} {...(imageDialog.mode === "edit" ? { initial: { placement: imageDialog.image.placement, widthPercent: imageDialog.image.widthPercent, alt: imageDialog.image.alt, ...(assetUrls.get(imageDialog.image.assetId) ? { previewUrl: assetUrls.get(imageDialog.image.assetId)! } : {}) } } : {})} onClose={() => setImageDialog(null)} onApply={(asset, placement, width, alt) => {
       if (imageDialog.mode === "insert") {
-        if (asset) onAddImage(problem.id, asset, placement, width, alt, imageDialog.target ?? undefined);
+        if (asset) void onAddImage(problem.id, asset, placement, width, alt, imageDialog.target ?? undefined);
       } else {
-        onUpdateImage(problem.id, imageDialog.image.id, asset, placement, width, alt, imageDialog.target ?? undefined);
+        void onUpdateImage(problem.id, imageDialog.image.id, asset, placement, width, alt, imageDialog.target ?? undefined);
       }
       setImageDialog(null);
     }} />}
@@ -167,8 +174,8 @@ type ImageDialogState =
 function ProblemMenu({ worksheet, getWorksheet, problem, index, commit, close }: { worksheet: Worksheet; getWorksheet: () => Worksheet; problem: ProblemBlock; index: number; commit: (label: string, result: WorksheetCommandResult) => void; close: () => void }) {
   return <div className="problem-menu" onClick={(event) => event.stopPropagation()}>
     <button onClick={() => { commit("問題を複製", duplicateProblem(getWorksheet(), problem.id)); close(); }}>問題を複製</button>
-    <button disabled={index === 0} onClick={() => { commit("問題を上へ移動", moveProblem(getWorksheet(), problem.id, index - 1)); close(); }}>上へ移動 <kbd>Alt + ↑</kbd></button>
-    <button disabled={index === worksheet.problems.length - 1} onClick={() => { commit("問題を下へ移動", moveProblem(getWorksheet(), problem.id, index + 1)); close(); }}>下へ移動 <kbd>Alt + ↓</kbd></button><hr />
+    <button disabled={index === 0} onClick={() => { commit("問題を上へ移動", moveProblem(getWorksheet(), problem.id, index - 1)); close(); }}>上へ移動</button>
+    <button disabled={index === worksheet.problems.length - 1} onClick={() => { commit("問題を下へ移動", moveProblem(getWorksheet(), problem.id, index + 1)); close(); }}>下へ移動</button><hr />
     <label className="menu-check"><input type="checkbox" checked={problem.numbering.enabled} onChange={(event) => commit("採番を切替", updateProblem(getWorksheet(), problem.id, (item) => { item.numbering.enabled = event.target.checked; }))} />番号を付ける</label>
     <label className="menu-check"><input type="checkbox" checked={problem.numbering.restartAt !== null} onChange={(event) => commit("振り直しを切替", updateProblem(getWorksheet(), problem.id, (item) => { item.numbering.restartAt = event.target.checked ? 1 : null; }))} />この項目から振り直す</label>
     <label className="menu-number">開始番号<input type="number" min={1} disabled={problem.numbering.restartAt === null} value={problem.numbering.restartAt ?? 1} onChange={(event) => commit("開始番号を変更", updateProblem(getWorksheet(), problem.id, (item) => { item.numbering.restartAt = Math.max(1, event.target.valueAsNumber || 1); }))} /></label><hr />
@@ -183,7 +190,7 @@ function ContentEditor({ worksheet, getWorksheet, problem, content, selected, on
     if (targetContent) change(targetContent);
   }, historyGroup ? { historyGroup } : undefined);
   if (!selected) {
-    return <section className="content-card content-card-static" onClick={(event) => { event.stopPropagation(); onSelect(); }}>
+    return <section className="content-card content-card-static" role="button" tabIndex={0} aria-label="内容を編集" onKeyDown={(event) => activateOnKeyboard(event, onSelect)} onClick={(event) => { event.stopPropagation(); onSelect(); }}>
       <WorksheetContentPreview content={content} showAnswers subQuestionNumberFormat={worksheet.pageSettings.subQuestionNumberFormat} assetUrls={assetUrls} />
     </section>;
   }

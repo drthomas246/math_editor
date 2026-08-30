@@ -7,10 +7,10 @@ import type { RichTextDocumentTarget } from "../../domain/worksheet/worksheet.co
 import { useEditorStore } from "./editor-store";
 import { ProblemCard } from "./ProblemCard";
 
-type Props = {
+export type ProblemListProps = {
   assetUrls: ReadonlyMap<string, string>;
-  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
-  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => void;
+  onAddImage: (problemId: string, asset: AssetRecord, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
+  onUpdateImage: (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => Promise<void>;
   onToast: (message: string) => void;
 };
 
@@ -22,7 +22,7 @@ type ProblemDescriptor = {
 
 const getCurrentWorksheet = (): Worksheet | null => useEditorStore.getState().worksheet;
 
-export const ProblemList = memo(function ProblemList({ assetUrls, onAddImage, onUpdateImage, onToast }: Props) {
+export const ProblemList = memo(function ProblemList({ assetUrls, onAddImage, onUpdateImage, onToast }: ProblemListProps) {
   // Rich-text edits preserve these primitive values, so the list itself does
   // not rerender when one problem changes. Structural and numbering changes do.
   const structureKey = useEditorStore(useShallow((state) => {
@@ -64,7 +64,7 @@ export const ProblemList = memo(function ProblemList({ assetUrls, onAddImage, on
   />)}</>;
 });
 
-function StoreProblemCard({ descriptor, assetUrls, onAddImage, onUpdateImage, onToast }: Props & { descriptor: ProblemDescriptor }) {
+function StoreProblemCard({ descriptor, assetUrls, onAddImage, onUpdateImage, onToast }: ProblemListProps & { descriptor: ProblemDescriptor }) {
   const problem = useEditorStore((state) => {
     const candidate = state.worksheet?.problems[descriptor.index];
     return candidate?.id === descriptor.id

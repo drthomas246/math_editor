@@ -1,12 +1,14 @@
 import { render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { OVERSIZED_PAGINATION_ERROR, OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-pagination-guard";
 import { plainTextToDocument } from "../../domain/worksheet/rich-text";
 import { createAnswerAreaBlock, createGoalBlock, createProblem, createSubQuestionGroup, createTableBlock, createWorksheet, emptyDocument } from "../../domain/worksheet/worksheet.defaults";
 import { WorksheetPreview } from "./WorksheetPreview";
 
 describe("WorksheetPreview header", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -198,4 +200,46 @@ describe("WorksheetPreview header", () => {
     expect(disconnect).toHaveBeenCalled();
     expect(view.container.querySelector(".preview-measurement")).not.toBeInTheDocument();
   });
+
+  it("1ページより高いcontentを検出してプレビューに警告する", async () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => window.clearTimeout(id)));
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function(this: HTMLElement) {
+      if (this.classList.contains("paper-page")) return rectangle(1_000);
+      if (this.classList.contains("paper-header")) return rectangle(100);
+      if (this.dataset.paginationAtom) return rectangle(1_200);
+      return rectangle(0);
+    });
+    const onPaginationErrorChange = vi.fn();
+
+    const view = render(
+      <WorksheetPreview
+        worksheet={createWorksheet()}
+        mode="questions"
+        zoom={1}
+        assetUrls={new Map()}
+        onPaginationErrorChange={onPaginationErrorChange}
+      />,
+    );
+
+    const previewPages = view.container.querySelector(".preview-pages");
+    await waitFor(() => expect(previewPages).toHaveAttribute("data-pagination-ready", "true"));
+    expect(previewPages).toHaveAttribute("data-pagination-error", OVERSIZED_PAGINATION_ERROR);
+    expect(view.getByRole("alert")).toHaveTextContent(OVERSIZED_PAGINATION_MESSAGE);
+    expect(onPaginationErrorChange).toHaveBeenLastCalledWith(OVERSIZED_PAGINATION_MESSAGE);
+  });
 });
+
+function rectangle(height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    width: 0,
+    height,
+    top: 0,
+    right: 0,
+    bottom: height,
+    left: 0,
+    toJSON: () => ({}),
+  };
+}

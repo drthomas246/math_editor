@@ -8,9 +8,15 @@ import { MathWorksheetDatabase } from "../../infrastructure/indexeddb/database";
 import { DexieWorksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
 import { createSaveRequest, useEditorStore } from "./editor-store";
 import { EditorScreen } from "./EditorScreen";
+import type { ProblemListProps } from "./ProblemList";
+
+const problemListHarness = vi.hoisted(() => ({ props: null as ProblemListProps | null }));
 
 vi.mock("./ProblemList", () => ({
-  ProblemList: () => <section data-testid="problem-card" />,
+  ProblemList: (props: ProblemListProps) => {
+    problemListHarness.props = props;
+    return <section data-testid="problem-card" />;
+  },
 }));
 
 vi.mock("../preview/WorksheetPreview", () => ({
@@ -35,6 +41,7 @@ beforeEach(async () => {
   worksheet = createWorksheet();
   await repository.create({ worksheet, assets: [] });
   useEditorStore.getState().clear();
+  problemListHarness.props = null;
   activeViews = [];
 });
 
@@ -230,6 +237,179 @@ describe("EditorScreen 離脱・保存統合", () => {
   });
 });
 
+describe("EditorScreen 画像保存の競合制御", () => {
+  it("画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する", async () => {
+    const actualPutAsset = repository.putAsset.bind(repository);
+    const putAssetFinished = createPromiseGate();
+    const assetWritten = createPromiseGate();
+    vi.spyOn(repository, "putAsset").mockImplementation(async (asset, value) => {
+      await actualPutAsset(asset, value);
+      assetWritten.release();
+      await putAssetFinished.promise;
+    });
+    const save = vi.spyOn(repository, "save");
+    renderEditor();
+    const titleInput = await editorTitleInput();
+    const asset = createAsset(worksheet, 1);
+
+    const addImage = currentProblemListProps().onAddImage(
+      worksheet.problems[0]!.id,
+      asset,
+      "block",
+      50,
+      "GCされない画像",
+    );
+    await assetWritten.promise;
+
+    fireEvent.change(titleInput, { target: { value: "画像保存中の編集" } });
+    expect(dispatchBeforeUnload()).toBe(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 900));
+
+    expect(save).not.toHaveBeenCalled();
+    expect(await database.assets.get(asset.id)).toBeDefined();
+
+    putAssetFinished.release();
+    await act(async () => { await addImage; });
+    await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
+
+    const savedWorksheet = await database.worksheets.get(worksheet.id);
+    expect(savedWorksheet).toMatchObject({ title: "画像保存中の編集" });
+    expect(savedWorksheet?.problems[0]?.contents).toContainEqual(expect.objectContaining({
+      type: "image",
+      assetId: asset.id,
+    }));
+    expect(await database.assets.get(asset.id)).toBeDefined();
+  });
+
+  it("画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする", async () => {
+    const actualPutAsset = repository.putAsset.bind(repository);
+    const gate = createPromiseGate();
+    const putAsset = vi.spyOn(repository, "putAsset").mockImplementation(async (asset, value) => {
+      await gate.promise;
+      await actualPutAsset(asset, value);
+    });
+    renderEditor();
+    const titleInput = await editorTitleInput();
+    const asset = createAsset(worksheet, 1);
+    const props = currentProblemListProps();
+
+    const addImage = props.onAddImage(
+      worksheet.problems[0]!.id,
+      asset,
+      "block",
+      50,
+      "追加画像",
+    );
+    await waitFor(() => expect(putAsset).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(titleInput, { target: { value: "ABC" } });
+    gate.release();
+    await act(async () => { await addImage; });
+
+    const latest = useEditorStore.getState().worksheet;
+    expect(latest).toMatchObject({ id: worksheet.id, title: "ABC" });
+    expect(latest?.problems[0]?.contents).toContainEqual(expect.objectContaining({
+      type: "image",
+      assetId: asset.id,
+      alt: "追加画像",
+    }));
+  });
+
+  it("画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする", async () => {
+    const originalAsset = createAsset(worksheet, 1);
+    const imageId = crypto.randomUUID();
+    const source = structuredClone(worksheet);
+    source.problems[0]!.contents = [{
+      id: imageId,
+      type: "image",
+      assetId: originalAsset.id,
+      alt: "差し替え前",
+      placement: "block",
+      widthPercent: 50,
+    }];
+    renderEditor();
+    const titleInput = await editorTitleInput();
+    act(() => useEditorStore.getState().commit("画像を挿入", source));
+    const actualPutAsset = repository.putAsset.bind(repository);
+    const gate = createPromiseGate();
+    const putAsset = vi.spyOn(repository, "putAsset").mockImplementation(async (asset, value) => {
+      await gate.promise;
+      await actualPutAsset(asset, value);
+    });
+    const replacementAsset = createAsset(worksheet, 2);
+    const props = currentProblemListProps();
+
+    const updateImage = props.onUpdateImage(
+      worksheet.problems[0]!.id,
+      imageId,
+      replacementAsset,
+      "floatRight",
+      33,
+      "差し替え後",
+    );
+    await waitFor(() => expect(putAsset).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(titleInput, { target: { value: "差し替え中の編集" } });
+    gate.release();
+    await act(async () => { await updateImage; });
+
+    const latest = useEditorStore.getState().worksheet;
+    expect(latest).toMatchObject({ id: worksheet.id, title: "差し替え中の編集" });
+    expect(latest?.problems[0]?.contents).toContainEqual(expect.objectContaining({
+      id: imageId,
+      type: "image",
+      assetId: replacementAsset.id,
+      alt: "差し替え後",
+      placement: "floatRight",
+      widthPercent: 33,
+    }));
+  });
+
+  it("画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ", async () => {
+    const otherWorksheet = createWorksheet();
+    otherWorksheet.title = "プリントB";
+    otherWorksheet.header.title = otherWorksheet.title;
+    await repository.create({ worksheet: otherWorksheet, assets: [] });
+
+    const actualPutAsset = repository.putAsset.bind(repository);
+    const gate = createPromiseGate();
+    const putAsset = vi.spyOn(repository, "putAsset").mockImplementation(async (asset, value) => {
+      await gate.promise;
+      await actualPutAsset(asset, value);
+    });
+    const view = renderEditor();
+    await editorTitleInput();
+    const asset = createAsset(worksheet, 3);
+    const props = currentProblemListProps();
+    const addImage = props.onAddImage(
+      worksheet.problems[0]!.id,
+      asset,
+      "block",
+      50,
+      "Aの画像",
+    );
+    await waitFor(() => expect(putAsset).toHaveBeenCalledTimes(1));
+
+    let navigation: Promise<void> | undefined;
+    act(() => { navigation = view.router.navigate(`/worksheets/${otherWorksheet.id}`); });
+    await waitFor(() => expect(view.router.state.location.pathname).toBe(`/worksheets/${worksheet.id}`));
+    expect(screen.getByRole("textbox", { name: "プリント題名" })).toHaveValue(worksheet.title);
+
+    gate.release();
+    await act(async () => { await addImage; });
+    await act(async () => { await navigation; });
+    expect(await editorTitleInput()).toHaveValue("プリントB");
+
+    expect(useEditorStore.getState().worksheet).toMatchObject({
+      id: otherWorksheet.id,
+      title: "プリントB",
+    });
+    expect(useEditorStore.getState().worksheet?.problems[0]?.contents).not.toContainEqual(
+      expect.objectContaining({ assetId: asset.id }),
+    );
+  });
+});
+
 describe("EditorScreen 読み込み状態", () => {
   it("存在しないプリントはNot Foundとして表示する", async () => {
     renderEditor([`/worksheets/${crypto.randomUUID()}`]);
@@ -313,4 +493,15 @@ function createAsset(owner: Worksheet, byte: number): AssetRecord {
     height: 1,
     createdAt: new Date().toISOString(),
   };
+}
+
+function currentProblemListProps(): ProblemListProps {
+  if (!problemListHarness.props) throw new Error("ProblemListが表示されていません");
+  return problemListHarness.props;
+}
+
+function createPromiseGate(): { promise: Promise<void>; release: () => void } {
+  let release: () => void = () => undefined;
+  const promise = new Promise<void>((resolve) => { release = resolve; });
+  return { promise, release };
 }

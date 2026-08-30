@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createSingleBackup, hydrateBackup, parseBackup } from "../../application/backup/backup";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
@@ -14,7 +14,10 @@ beforeEach(() => {
   repository = new DexieWorksheetRepository(db);
 });
 
-afterEach(async () => db.delete());
+afterEach(async () => {
+  vi.unstubAllGlobals();
+  await db.delete();
+});
 
 describe("DexieWorksheetRepository", () => {
   it("プリント数の上限エラーに画面表示用のメッセージを持たせる", () => {
@@ -72,12 +75,14 @@ describe("DexieWorksheetRepository", () => {
 
   it("単一JSONを別IDとして復元し画像バイト列を維持する", async () => {
     const worksheet = createWorksheet();
-    const asset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }), width: 2, height: 3, createdAt: new Date().toISOString() };
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const asset: AssetRecord = { id: crypto.randomUUID(), worksheetId: worksheet.id, mimeType: "image/png", blob: new Blob([bytes], { type: "image/png" }), width: 2, height: 3, createdAt: new Date().toISOString() };
     worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: asset.id, alt: "", placement: "block", widthPercent: 50 });
     const backup = await createSingleBackup(worksheet, [asset]);
     const parsed = parseBackup(JSON.stringify(backup));
-    const [hydrated] = hydrateBackup(parsed);
+    vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 2, height: 3, close: vi.fn() })));
+    const [hydrated] = await hydrateBackup(parsed);
     expect(hydrated!.worksheet.id).not.toBe(worksheet.id);
-    expect([...new Uint8Array(await hydrated!.assets[0]!.blob.arrayBuffer())]).toEqual([1, 2, 3]);
+    expect([...new Uint8Array(await hydrated!.assets[0]!.blob.arrayBuffer())]).toEqual([...bytes]);
   });
 });

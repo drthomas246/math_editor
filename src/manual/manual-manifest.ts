@@ -7,7 +7,7 @@ export const MANUAL_METADATA = {
   licenseVersion: "1.0",
   copyright: "Copyright © 2026 Yamahara Yoshihiro",
   licenseContact: "yoshihiro@yamahara.email",
-  updatedAt: "2026-08-25",
+  updatedAt: "2026-08-29",
 } as const satisfies ManualMetadata;
 
 export const MANUAL_CHAPTER_MANIFEST = [
@@ -23,7 +23,7 @@ export const MANUAL_CHAPTER_MANIFEST = [
     title: "最初のプリントを作る",
     summary: "新規作成、解答欄、PDF保存、最初のバックアップを順番に説明します。",
     keywords: ["初心者", "新規作成", "使い方", "PDF", "手順", "クリック", "最初"],
-    updatedAt: "2026-08-21",
+    updatedAt: "2026-08-29",
   },
   {
     slug: "worksheet-list",
@@ -51,7 +51,7 @@ export const MANUAL_CHAPTER_MANIFEST = [
     title: "画像と表",
     summary: "画像の選び方・配置・差し替えと、表の作成・セル編集を説明します。",
     keywords: ["画像", "PNG", "JPEG", "WebP", "表", "セル結合", "行列", "行高", "列幅", "代替テキスト"],
-    updatedAt: "2026-08-21",
+    updatedAt: "2026-08-29",
   },
   {
     slug: "answers",
@@ -65,7 +65,7 @@ export const MANUAL_CHAPTER_MANIFEST = [
     title: "プリント設定・プレビュー・PDF",
     summary: "用紙・氏名欄の設定、プレビュー、ページ分割、PDF保存と印刷を説明します。",
     keywords: ["用紙", "余白", "ヘッダー", "年組番名前", "プレビュー", "倍率", "PDF", "印刷", "ページ"],
-    updatedAt: "2026-08-23",
+    updatedAt: "2026-08-29",
   },
   {
     slug: "saving-and-history",
@@ -93,7 +93,7 @@ export const MANUAL_CHAPTER_MANIFEST = [
     title: "トラブル対応・制約・ショートカット",
     summary: "開けない・保存できない・読込めない場合の対処、上限、キー操作をまとめます。",
     keywords: ["トラブル", "エラー", "制約", "上限", "ショートカット", "ページ切れ", "画像", "JSON", "見つからない"],
-    updatedAt: "2026-08-21",
+    updatedAt: "2026-08-29",
   },
   {
     slug: "version-and-license",

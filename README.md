@@ -30,6 +30,8 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 
 100問題規模の状態更新処理を計測する場合は、`npm run benchmark:editor`を実行します。通常のE2Eでは100問の軽量データを使い、React描画、TipTap、DOM、layout、paintを含む入力p95が250ms未満であることを検証します。`npm run benchmark:editor:browser`はCIから分離した専用ストレスベンチマークで、構造上限の200問それぞれに5 contents（rich text、数式、表、画像参照、小問、解答色、解答欄、教師用解説を含む）を投入します。
 
+PDF・一覧・構造操作の上限規模を測る場合は、`npm run benchmark:performance`を実行します。PDFは50/100ページの短文fixtureに加え、数式・表・画像を含む12ページの複合fixtureで生成時間・出力サイズ・JS heap・成功率を計測します。一覧は最小構成2,000件、標準的な複合コンテンツ2,000件、高密度な複合コンテンツ250件について、IndexedDB取得/Zod検証・先頭50件描画・検索・ページ切り替えを計測します。構造操作は複合contentを持つ199/200問で問題追加・複製・移動のmedian/p95とheap差分をJSONで記録します。個別には`benchmark:pdf`、`benchmark:list`、`benchmark:structure`を使用できます。
+
 ## 主な使い方
 
 1. 一覧画面で「新しいプリント」を選択します。
@@ -73,7 +75,7 @@ Viteが表示したURLをChromeまたはEdgeで開きます。
 - 25～200%の倍率（5%刻み）、ペイン実寸に追従する「幅に合わせる」「ページ全体」
 - コンテンツ単位の自動改ページと明示改ページ
 - 各出力セクションの先頭ページに題名と年・組・番・名前を表示
-- プレビューの各ページを高解像度PNGへ変換し、同じ見た目のPDFとして出力
+- プレビューの各ページを高解像度JPEGへ変換し、同じ見た目のPDFとして出力
 
 ### アプリ内マニュアル
 
@@ -163,7 +165,9 @@ node scripts/validate_math_worksheet.mjs candidate.json
 - Undo / Redo履歴は編集セッション内だけで保持し、再読み込み後は復元しません。
 - JSON形式は`format: "math-worksheet"`、`version: 1`です。
 - 画像Blobは通常データと分離してIndexedDBへ保存し、JSON出力時だけ`assets[].dataBase64`へ変換します。
+- バックアップはUTF-8・2スペースインデントで100MiB以下に制限し、画像のBase64化前に出力サイズを算出して超過を早期拒否します。同じ上限で再インポートできることを保証します。
 - インポートは既存データを置換せず、新しいIDを付けて追加します。
+- インポート画像も通常挿入と同じく、MIMEと実体、10MiB、各辺10,000px、40MP、デコード可否、記録寸法を保存前に検証します。
 - version 1以外や旧`dataUrl`形式の自動移行は行いません。
 
 ## 現在の制約
@@ -172,9 +176,8 @@ node scripts/validate_math_worksheet.mjs candidate.json
 - 小問は追加、削除、半幅／全幅、採番の振り直しに対応します。複製、並べ替え、小問別の教師用正解編集は未実装です。
 - 段落の揃え情報は保存形式にありますが、左・中央・右揃えを変更するツールバーは未実装です。
 - フォント選択値は保存されますが、現行のプレビューとPDFは固定のフォントスタックを使用しており、選択したフォントへの切替は未完了です。
-- 自動ページ分割はコンテンツブロック単位です。1ブロックが1ページより高い場合の内部分割・自動縮小は未実装で、紙面からはみ出す部分が切れる場合があります。
+- 自動ページ分割はコンテンツブロック単位です。1ブロックが1ページより高い場合の内部分割・自動縮小は未実装ですが、プレビューに警告を表示してPDF出力を停止し、無言で内容が欠落することを防ぎます。
 - PDFは各ページを画像として格納するため、PDF内の文字は検索・選択できません。
-- 画像挿入時はMIME型、10MiB、各辺10,000px、40MPを確認します。バックアップ取込時はJSON構造と参照整合性を検証しますが、画像バイトの再デコード検証は行いません。
 - ブラウザのタブを直接閉じる直前の未保存変更を同期保存する処理はありません。離脱警告が出た場合はキャンセルし、「保存済み」になってから閉じてください。
 
 詳細な上限値と受け入れ条件は[要件定義書.md](要件定義書.md)を参照してください。
@@ -223,10 +226,18 @@ npm run test:e2e
 # Chromeによる200問・複合コンテンツの専用ストレスベンチマーク
 npm run benchmark:editor:browser
 
+# PDF短文/複合・一覧minimal/typical/heavy・構造操作199/200問の性能ベンチマーク
+npm run benchmark:performance
+
+# 定期CIと同じ構造操作・全ブラウザ性能ベンチマーク
+npm run benchmark:ci
+
 # 本番ビルド
 npm run build
 ```
 
-E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い200問ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの入力p95上限は既定で250msであり、環境差を調査する場合だけ`EDITOR_STRESS_MAX_P95_MS`で変更できる。
+E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い性能ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの上限は初期表示30秒、対象選択2秒、入力p95 250msであり、`EDITOR_STRESS_MAX_INITIAL_LOAD_MS`、`EDITOR_STRESS_MAX_SELECTION_MS`、`EDITOR_STRESS_MAX_P95_MS`で変更できる。追加したベンチマークのしきい値は`STRUCTURE_BENCHMARK_MAX_P95_MS`、`LIST_BENCHMARK_MAX_REPOSITORY_MS`、`LIST_BENCHMARK_MAX_RENDER_MS`、`LIST_BENCHMARK_MAX_SEARCH_MS`、`LIST_BENCHMARK_MAX_PAGE_CHANGE_MS`、`PDF_BENCHMARK_MAX_GENERATION_MS`、`PDF_BENCHMARK_MAX_MS_PER_PAGE`で変更できる。一覧のrepository・初回描画はfixture密度に応じた既定値を持ち、環境変数を指定した場合は全profileへ同じ上限を適用する。PDFページ数は`PDF_BENCHMARK_PAGE_COUNTS`（例: `10,50,100`）、複合fixtureのページ数は`PDF_BENCHMARK_COMPLEX_PAGE_COUNT`で指定できる。
+
+GitHub Actionsの`Performance Benchmark`は毎週月曜日03:00（日本時間）と手動実行で`benchmark:ci`を実行する。構造操作のJSON、ブラウザ計測JSON、確認用PDFはActions artifactとして30日間保存する。環境差の大きい性能計測をpush / pull requestの必須チェックにはせず、定期実行で上限超過と長期的な退行を検出する。
 
 スキーマを変更した場合は、必要に応じて`structure-limits.ts`も更新し、`npm run schema:generate`でJSON Schemaを再生成してください。

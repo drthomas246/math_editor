@@ -23,6 +23,14 @@ import { ProblemList } from "./ProblemList";
 const SAVE_DEBOUNCE_MS = 750;
 const PREVIEW_DEBOUNCE_MS = 750;
 type EditorLoadState = "loading" | "ready" | "notFound" | "error";
+type EditorSessionIdentity = { worksheetId: string; sessionId: number };
+
+function isCurrentEditorSession(
+  state: ReturnType<typeof useEditorStore.getState>,
+  expected: EditorSessionIdentity,
+): state is ReturnType<typeof useEditorStore.getState> & { worksheet: Worksheet } {
+  return state.worksheet?.id === expected.worksheetId && state.sessionId === expected.sessionId;
+}
 
 export function EditorScreen({ repository = worksheetRepository }: { repository?: WorksheetRepository }) {
   const { worksheetId } = useParams();
@@ -32,6 +40,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const scrollSyncFrameRef = useRef<number | null>(null);
   const assetUrlsRef = useRef<Map<string, string>>(new Map());
+  const pendingAssetOperationsRef = useRef<Set<Promise<void>>>(new Set());
   const [loadState, setLoadState] = useState<EditorLoadState>("loading");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -50,6 +59,7 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   const [fittedZoom, setFittedZoom] = useState(1);
   const [previewUpdating, setPreviewUpdating] = useState(false);
   const [previewWorksheet, setPreviewWorksheet] = useState<Worksheet | null>(null);
+  const [pendingAssetOperationCount, setPendingAssetOperationCount] = useState(0);
 
   const worksheet = useEditorStore((state) => state.worksheet);
   const sessionId = useEditorStore((state) => state.sessionId);
@@ -112,9 +122,10 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
   }, [retainedAssetIds]);
 
   useEffect(() => {
-    if (!worksheet || saveStatus !== "dirty") return;
+    if (!worksheet || saveStatus !== "dirty" || pendingAssetOperationCount > 0) return;
     const request = { worksheetId: worksheet.id, sessionId, revision };
     const timer = window.setTimeout(async () => {
+      if (pendingAssetOperationsRef.current.size > 0) return;
       markSaving(request);
       try {
         await repository.save(worksheet, {
@@ -126,17 +137,20 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
       catch { markFailed(request); }
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [worksheet, sessionId, revision, saveStatus, retainedAssetIds, markSaving, markSaved, markFailed, repository]);
+  }, [worksheet, sessionId, revision, saveStatus, retainedAssetIds, pendingAssetOperationCount, markSaving, markSaved, markFailed, repository]);
 
   useEffect(() => {
-    if (saveStatus === "saved") return;
     const warnAboutUnsavedChanges = (event: BeforeUnloadEvent) => {
+      if (
+        useEditorStore.getState().saveStatus === "saved"
+        && pendingAssetOperationsRef.current.size === 0
+      ) return;
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warnAboutUnsavedChanges);
     return () => window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
-  }, [saveStatus]);
+  }, []);
 
   useEffect(() => {
     if (!worksheet || previewWorksheet === worksheet) return;
@@ -210,7 +224,29 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); };
   }, [applyPreferenceChange, dragging]);
 
+  const beginAssetOperation = useCallback(() => {
+    let resolveOperation: () => void = () => undefined;
+    const operation = new Promise<void>((resolve) => { resolveOperation = resolve; });
+    pendingAssetOperationsRef.current.add(operation);
+    setPendingAssetOperationCount(pendingAssetOperationsRef.current.size);
+    let finished = false;
+    return () => {
+      if (finished) return;
+      finished = true;
+      pendingAssetOperationsRef.current.delete(operation);
+      resolveOperation();
+      setPendingAssetOperationCount(pendingAssetOperationsRef.current.size);
+    };
+  }, []);
+
+  const waitForPendingAssetOperations = useCallback(async () => {
+    while (pendingAssetOperationsRef.current.size > 0) {
+      await Promise.all(pendingAssetOperationsRef.current);
+    }
+  }, []);
+
   const flushSave = useCallback(async (discardHistory = false) => {
+    await waitForPendingAssetOperations();
     while (true) {
       const state = useEditorStore.getState();
       if (!state.worksheet || (state.saveStatus === "saved" && !discardHistory)) return true;
@@ -240,14 +276,17 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
         return false;
       }
     }
-  }, [repository]);
+  }, [repository, waitForPendingAssetOperations]);
 
   const shouldBlockNavigation = useCallback(({ currentLocation, nextLocation }: {
     currentLocation: { pathname: string };
     nextLocation: { pathname: string };
   }) => (
     currentLocation.pathname !== nextLocation.pathname
-    && useEditorStore.getState().saveStatus !== "saved"
+    && (
+      useEditorStore.getState().saveStatus !== "saved"
+      || pendingAssetOperationsRef.current.size > 0
+    )
   ), []);
   const navigationBlocker = useBlocker(shouldBlockNavigation);
 
@@ -332,6 +371,8 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     const state = useEditorStore.getState();
     const currentWorksheet = state.worksheet;
     if (!currentWorksheet) return;
+    const operationSession = { worksheetId: currentWorksheet.id, sessionId: state.sessionId };
+    const afterContentId = state.selectedContentId;
     let image: ImageBlock;
     if (placement === "block") {
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: width };
@@ -340,39 +381,66 @@ export function EditorScreen({ repository = worksheetRepository }: { repository?
     } else {
       image = { id: createId(), type: "image", assetId: asset.id, alt, placement, widthPercent: Math.min(width, 50) as 25 | 33 | 50 };
     }
-    const result = target
-      ? updateRichTextDocument(currentWorksheet, problemId, target, (document) => {
+    const applyImage = (source: Worksheet) => target
+      ? updateRichTextDocument(source, problemId, target, (document) => {
         document.content.push(toImageRef(image, target.kind !== "solution" && target.color === "answer"));
       })
-      : addContent(currentWorksheet, problemId, image, state.selectedContentId);
+      : addContent(source, problemId, image, afterContentId);
+    const result = applyImage(currentWorksheet);
     if (!result.ok) { setToast("画像を追加できませんでした"); return; }
+    const finishAssetOperation = beginAssetOperation();
     try {
       await repository.putAsset(asset, result.worksheet);
-      state.commit("画像を挿入", result.worksheet);
-      state.selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
+      const latest = useEditorStore.getState();
+      if (!isCurrentEditorSession(latest, operationSession)) return;
+      const rebasedResult = applyImage(latest.worksheet);
+      if (!rebasedResult.ok) { setToast("画像を追加できませんでした"); return; }
+      latest.commit("画像を挿入", rebasedResult.worksheet);
+      latest.selectContent(target ? (target.kind === "content" ? target.contentId : target.kind === "subQuestion" ? target.groupId : null) : image.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
-    } catch { setToast("画像を保存できませんでした"); }
-  }, [repository]);
+    } catch {
+      if (isCurrentEditorSession(useEditorStore.getState(), operationSession)) {
+        setToast("画像を保存できませんでした");
+      }
+    } finally {
+      finishAssetOperation();
+    }
+  }, [beginAssetOperation, repository]);
 
   const updateImage = useCallback(async (problemId: string, imageId: string, asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string, target?: RichTextDocumentTarget) => {
     const state = useEditorStore.getState();
     const currentWorksheet = state.worksheet;
     if (!currentWorksheet) return;
-    const result = updateImageReference(currentWorksheet, problemId, imageId, target ?? null, {
+    const operationSession = { worksheetId: currentWorksheet.id, sessionId: state.sessionId };
+    const applyUpdate = (source: Worksheet) => updateImageReference(source, problemId, imageId, target ?? null, {
       ...(asset ? { assetId: asset.id } : {}),
       alt,
       placement,
       widthPercent: width,
     });
+    const result = applyUpdate(currentWorksheet);
     if (!result.ok) { setToast("画像を更新できませんでした"); return; }
+    if (!asset) {
+      state.commit("画像の設定を変更", result.worksheet);
+      return;
+    }
+    const finishAssetOperation = beginAssetOperation();
     try {
-      if (asset) {
-        await repository.putAsset(asset, result.worksheet);
-        setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
+      await repository.putAsset(asset, result.worksheet);
+      const latest = useEditorStore.getState();
+      if (!isCurrentEditorSession(latest, operationSession)) return;
+      const rebasedResult = applyUpdate(latest.worksheet);
+      if (!rebasedResult.ok) { setToast("画像を更新できませんでした"); return; }
+      latest.commit("画像を差し替え", rebasedResult.worksheet);
+      setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(asset.blob)));
+    } catch {
+      if (isCurrentEditorSession(useEditorStore.getState(), operationSession)) {
+        setToast("画像を保存できませんでした");
       }
-      state.commit(asset ? "画像を差し替え" : "画像の設定を変更", result.worksheet);
-    } catch { setToast("画像を保存できませんでした"); }
-  }, [repository]);
+    } finally {
+      finishAssetOperation();
+    }
+  }, [beginAssetOperation, repository]);
 
   if (loadState === "loading") return <div className="centered-state"><div className="spinner" /><p>プリントを読み込んでいます</p></div>;
   if (loadState === "notFound") return <div className="centered-state"><h1>プリントが見つかりません</h1><p>削除されたか、別のブラウザに保存されている可能性があります。</p><button className="primary-button" onClick={() => navigate("/")}>プリント一覧へ戻る</button></div>;

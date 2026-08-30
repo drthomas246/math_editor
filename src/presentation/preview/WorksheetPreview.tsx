@@ -1,12 +1,13 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { OVERSIZED_PAGINATION_ERROR, OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-pagination-guard";
 import { MARGINS_MM, PAGE_SIZES_MM } from "../../domain/worksheet/page-tokens";
 import { colorDocumentAsAnswer, hasVisibleDocument, mergeColoredDocuments, nodeUsesAnswerColor } from "../../domain/worksheet/rich-text";
 import type { AnswerArea as AnswerAreaValue, ContentBlock, ProblemBlock, SolutionRichTextDocument, SubQuestionNumberFormat, TableRow, Worksheet } from "../../domain/worksheet/worksheet";
 import { formatProblemHeading, getProblemNumbers, getSubQuestionNumbers } from "../../domain/worksheet/worksheet.numbering";
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import { MathFormula } from "../components/MathFormula";
-import { paginateMeasuredItems } from "./pagination";
+import { planMeasuredPagination } from "./pagination";
 
 type Props = {
   worksheet: Worksheet;
@@ -14,6 +15,8 @@ type Props = {
   zoom: number;
   assetUrls: ReadonlyMap<string, string>;
   onPageCountChange?: (pageCount: number) => void;
+  onPaginationErrorChange?: (error: string | null) => void;
+  onPaginationReadyChange?: (ready: boolean) => void;
 };
 
 type SectionMode = "questions" | "withAnswers";
@@ -30,8 +33,9 @@ type RenderAtom = {
 };
 type PreviewSection = { mode: SectionMode; atoms: RenderAtom[] };
 type PlannedPage = { mode: SectionMode; sectionPageIndex: number; atomKeys: string[] };
+type MeasuredPagePlan = { pages: PlannedPage[]; oversizedAtomKeys: string[] };
 
-export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange }: Props) {
+export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange, onPaginationReadyChange }: Props) {
   const numbers = useMemo(() => getProblemNumbers(worksheet), [worksheet]);
   const sections = useMemo<PreviewSection[]>(() => {
     const sectionModes = mode === "questionsAndAnswers"
@@ -55,7 +59,8 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
     measuredWorksheet: Worksheet | null;
     sectionStructureKey: string;
     pages: PlannedPage[];
-  }>({ ready: false, measuredWorksheet: null, sectionStructureKey, pages: fallbackPages(sections) });
+    oversizedAtomKeys: string[];
+  }>({ ready: false, measuredWorksheet: null, sectionStructureKey, pages: fallbackPages(sections), oversizedAtomKeys: [] });
   const needsMeasurement = pagination.measuredWorksheet !== worksheet
     || pagination.sectionStructureKey !== sectionStructureKey;
 
@@ -70,7 +75,7 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
     setPagination((current) => ({ ...current, ready: false }));
     const measure = () => {
       if (cancelled || !measurementRoot.isConnected) return;
-      const pages = measurePages(measurementRoot, sections);
+      const plan = measurePages(measurementRoot, sections);
       // The measurement tree is removed after this state update. Disconnect
       // first so its removal cannot enqueue a second measurement with zero
       // sized, detached elements and overwrite the valid page plan.
@@ -79,7 +84,8 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
         ready: true,
         measuredWorksheet: worksheet,
         sectionStructureKey,
-        pages,
+        pages: plan.pages,
+        oversizedAtomKeys: plan.oversizedAtomKeys,
       });
     };
     const scheduleMeasure = () => {
@@ -114,12 +120,26 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
   const displayedPages = pagination.sectionStructureKey === sectionStructureKey
     ? pagination.pages
     : fallbackPages(sections);
+  const paginationError = paginationReady && pagination.oversizedAtomKeys.length > 0
+    ? OVERSIZED_PAGINATION_MESSAGE
+    : null;
   useEffect(() => {
-    if (paginationReady) onPageCountChange?.(displayedPages.length);
-  }, [displayedPages.length, onPageCountChange, paginationReady]);
+    onPaginationReadyChange?.(paginationReady);
+  }, [onPaginationReadyChange, paginationReady]);
+  useEffect(() => {
+    if (!paginationReady) return;
+    onPageCountChange?.(displayedPages.length);
+    onPaginationErrorChange?.(paginationError);
+  }, [displayedPages.length, onPageCountChange, onPaginationErrorChange, paginationError, paginationReady]);
   const atomLookup = new Map(sections.flatMap((section) => section.atoms).map((atom) => [atom.key, atom]));
 
-  return <div className="preview-pages" data-pagination-ready={paginationReady ? "true" : "false"} style={{ "--preview-zoom": zoom } as React.CSSProperties}>
+  return <div
+    className="preview-pages"
+    data-pagination-ready={paginationReady ? "true" : "false"}
+    data-pagination-error={paginationError ? OVERSIZED_PAGINATION_ERROR : undefined}
+    style={{ "--preview-zoom": zoom } as React.CSSProperties}
+  >
+    {paginationError && <div className="notice danger preview-pagination-error" role="alert">{paginationError}</div>}
     {displayedPages.map((page, pageIndex) => <Fragment key={`${page.mode}:${page.sectionPageIndex}`}>
       <PreviewPage worksheet={worksheet} mode={page.mode} atoms={page.atomKeys.flatMap((key) => atomLookup.get(key) ?? [])} assetUrls={assetUrls} showHeader={page.sectionPageIndex === 0} pageNumber={pageIndex + 1} totalPages={displayedPages.length} />
     </Fragment>)}
@@ -256,14 +276,17 @@ function fallbackPages(sections: readonly PreviewSection[]): PlannedPage[] {
   }));
 }
 
-function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSection[]): PlannedPage[] {
-  return sections.flatMap((section) => {
+function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSection[]): MeasuredPagePlan {
+  const sectionPlans = sections.map((section): MeasuredPagePlan => {
     const sectionElement = measurementRoot.querySelector<HTMLElement>(`[data-pagination-section="${section.mode}"]`);
     const paper = sectionElement?.querySelector<HTMLElement>(".paper-page");
     const header = sectionElement?.querySelector<HTMLElement>(".paper-header");
     const problemList = sectionElement?.querySelector<HTMLElement>(".paper-problems");
     if (!sectionElement || !paper || !header || !problemList) {
-      return [{ mode: section.mode, sectionPageIndex: 0, atomKeys: section.atoms.map((atom) => atom.key) }];
+      return {
+        pages: [{ mode: section.mode, sectionPageIndex: 0, atomKeys: section.atoms.map((atom) => atom.key) }],
+        oversizedAtomKeys: [],
+      };
     }
 
     const paperStyle = getComputedStyle(paper);
@@ -283,15 +306,22 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
       breakBefore: atom.breakBefore,
       breakAfter: atom.breakAfter,
     }));
-    const pageKeys = paginateMeasuredItems(
+    const plan = planMeasuredPagination(
       measuredItems,
       Math.max(1, contentHeight - headerHeight - 1),
       Math.max(1, contentHeight - 1),
       problemGap,
     );
 
-    return pageKeys.map((atomKeys, sectionPageIndex) => ({ mode: section.mode, sectionPageIndex, atomKeys }));
+    return {
+      pages: plan.pages.map((atomKeys, sectionPageIndex) => ({ mode: section.mode, sectionPageIndex, atomKeys })),
+      oversizedAtomKeys: plan.oversizedItemKeys,
+    };
   });
+  return {
+    pages: sectionPlans.flatMap((plan) => plan.pages),
+    oversizedAtomKeys: sectionPlans.flatMap((plan) => plan.oversizedAtomKeys),
+  };
 }
 
 function outerHeight(element: HTMLElement | undefined): number {

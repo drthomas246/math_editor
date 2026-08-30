@@ -1,8 +1,14 @@
-import { fireEvent, render, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-pagination-guard";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { ImageDialog, MathDialog, PdfDialog, TableDialog, WorksheetSettingsDialog } from "./EditorDialogs";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("WorksheetSettingsDialog", () => {
   it("小問の番号形式だけを選択肢として表示する", () => {
@@ -21,8 +27,12 @@ describe("WorksheetSettingsDialog", () => {
 });
 
 describe("PdfDialog", () => {
-  it("PDF出力では問題＋解答を引き続き選べる", () => {
-    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+  it("ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す", async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    }));
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()} />);
 
@@ -31,9 +41,40 @@ describe("PdfDialog", () => {
       "解答付き問題色と解答色、教師用の解説を表示します。",
       "問題＋解答問題編の後、新しいページから解答編を出力します。",
     ]);
+    expect(view.getByText("ページを分割中…")).toBeInTheDocument();
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
+
+    await waitFor(() => expect(frames).toHaveLength(1));
+    act(() => { frames.shift()!(0); });
+    await waitFor(() => expect(view.getByText("ページ数: 1ページ")).toBeInTheDocument());
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeEnabled();
+
+    fireEvent.click(view.getByRole("radio", { name: /問題＋解答/u }));
+    expect(view.getByText("ページを分割中…")).toBeInTheDocument();
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
+
+    await waitFor(() => expect(frames).toHaveLength(1));
+    act(() => { frames.shift()!(0); });
+    await waitFor(() => expect(view.getByText("ページ数: 2ページ")).toBeInTheDocument());
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeEnabled();
 
     view.unmount();
     vi.unstubAllGlobals();
+  });
+
+  it("1ページに収まらないcontentがある場合はPDFダウンロードを無効化する", async () => {
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => window.setTimeout(() => callback(0), 0)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => window.clearTimeout(id)));
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function(this: HTMLElement) {
+      if (this.classList.contains("paper-page")) return rectangle(1_000);
+      if (this.classList.contains("paper-header")) return rectangle(100);
+      if (this.dataset.paginationAtom) return rectangle(1_200);
+      return rectangle(0);
+    });
+    const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()} />);
+
+    expect(await view.findByRole("alert")).toHaveTextContent(OVERSIZED_PAGINATION_MESSAGE);
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
   });
 });
 
@@ -115,6 +156,79 @@ describe("TableDialog", () => {
 });
 
 describe("ImageDialog", () => {
+  it("複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する", async () => {
+    const firstDecode = createPromiseGate<ImageBitmap>();
+    const secondDecode = createPromiseGate<ImageBitmap>();
+    const firstFile = createPngFile("first.png");
+    const secondFile = createPngFile("second.png");
+    const decode = vi.fn((blob: Blob) => (
+      (blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise
+    ));
+    vi.stubGlobal("createImageBitmap", decode);
+    const onApply = vi.fn();
+    const view = render(<ImageDialog
+      worksheetId={crypto.randomUUID()}
+      onClose={vi.fn()}
+      onApply={onApply}
+    />);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+    fireEvent.change(input, { target: { files: [firstFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.change(input, { target: { files: [secondFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(2));
+
+    const secondBitmap = createImageBitmapResult(200, 100);
+    secondDecode.resolve(secondBitmap);
+    await waitFor(() => expect(view.getByRole("button", { name: "挿入" })).toBeEnabled());
+
+    const firstClose = vi.fn();
+    const firstBitmap = createImageBitmapResult(300, 150, firstClose);
+    firstDecode.resolve(firstBitmap);
+    await waitFor(() => expect(firstClose).toHaveBeenCalledOnce());
+    fireEvent.click(view.getByRole("button", { name: "挿入" }));
+
+    const appliedAsset = onApply.mock.lastCall?.[0];
+    expect(appliedAsset?.blob).toBe(secondFile);
+    expect(appliedAsset).toMatchObject({ width: 200, height: 100 });
+  });
+
+  it("古いファイルの検証失敗で最新画像の選択状態を上書きしない", async () => {
+    const firstDecode = createPromiseGate<ImageBitmap>();
+    const secondDecode = createPromiseGate<ImageBitmap>();
+    const firstFile = createPngFile("first.png");
+    const secondFile = createPngFile("second.png");
+    const decode = vi.fn((blob: Blob) => (
+      (blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise
+    ));
+    vi.stubGlobal("createImageBitmap", decode);
+    const onApply = vi.fn();
+    const view = render(<ImageDialog
+      worksheetId={crypto.randomUUID()}
+      onClose={vi.fn()}
+      onApply={onApply}
+    />);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+    fireEvent.change(input, { target: { files: [firstFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.change(input, { target: { files: [secondFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(2));
+
+    secondDecode.resolve(createImageBitmapResult(200, 100));
+    await waitFor(() => expect(view.getByRole("button", { name: "挿入" })).toBeEnabled());
+
+    await act(async () => {
+      firstDecode.reject(new Error("古い画像のdecode失敗"));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(view.queryByText("画像を読み込めませんでした。")).not.toBeInTheDocument();
+    expect(view.getByRole("button", { name: "挿入" })).toBeEnabled();
+    fireEvent.click(view.getByRole("button", { name: "挿入" }));
+    expect(onApply.mock.lastCall?.[0].blob).toBe(secondFile);
+  });
+
   it("既存画像はファイルを選び直さず配置とサイズを変更できる", () => {
     const onApply = vi.fn();
     const view = render(<ImageDialog
@@ -136,3 +250,41 @@ describe("ImageDialog", () => {
     expect(onApply).toHaveBeenCalledWith(null, "floatRight", 50, "直角三角形");
   });
 });
+
+function rectangle(height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    width: 0,
+    height,
+    top: 0,
+    right: 0,
+    bottom: height,
+    left: 0,
+    toJSON: () => ({}),
+  };
+}
+
+function createPngFile(name: string): File {
+  return new File([
+    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  ], name, { type: "image/png" });
+}
+
+function createImageBitmapResult(width: number, height: number, close = vi.fn()): ImageBitmap {
+  return { width, height, close } as unknown as ImageBitmap;
+}
+
+function createPromiseGate<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolve: (value: T) => void = () => undefined;
+  let reject: (reason?: unknown) => void = () => undefined;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}

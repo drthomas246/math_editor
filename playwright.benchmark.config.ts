@@ -13,6 +13,7 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4175",
     headless: true,
+    launchOptions: { args: ["--enable-precise-memory-info"] },
     // Tracing continuously captures this very large page and materially skews
     // the input latency that this opt-in benchmark is intended to measure.
     trace: "off",

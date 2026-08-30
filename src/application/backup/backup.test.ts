@@ -1,8 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { AssetRecord, Worksheet } from "../../domain/worksheet/worksheet";
 import { createId, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
-import { createArchiveBackup, createSingleBackup } from "./backup";
+import {
+  assertBackupInputSize,
+  BackupSizeLimitError,
+  createArchiveBackup,
+  createSingleBackup,
+  estimateBackupOutputBytes,
+  hydrateBackup,
+  MAX_BACKUP_FILE_BYTES,
+  serializeBackup,
+} from "./backup";
 
 function createAsset(worksheet: Worksheet): AssetRecord {
   return {
@@ -57,5 +66,54 @@ describe("backup export", () => {
 
     expect(backup.worksheets.map((worksheet) => worksheet.id)).toEqual([activeWorksheet.id]);
     expect(backup.assets.map((asset) => asset.id)).toEqual([referencedAsset.id]);
+  });
+
+  it("exportとimportで同じ100MiB境界を使用する", async () => {
+    const backup = await createSingleBackup(createWorksheet(), []);
+    const serialized = serializeBackup(backup);
+    const byteLength = new TextEncoder().encode(serialized).byteLength;
+
+    expect(serializeBackup(backup, byteLength)).toBe(serialized);
+    expect(() => serializeBackup(backup, byteLength - 1)).toThrow(BackupSizeLimitError);
+    expect(() => assertBackupInputSize(MAX_BACKUP_FILE_BYTES)).not.toThrow();
+    expect(() => assertBackupInputSize(MAX_BACKUP_FILE_BYTES + 1)).toThrow(BackupSizeLimitError);
+  });
+
+  it("Base64化前の推定値が実際のUTF-8 JSONサイズと一致する", async () => {
+    const worksheet = createWorksheet();
+    worksheet.title = "日本語サイズ推定";
+    worksheet.header.title = worksheet.title;
+    const asset = createAsset(worksheet);
+    referenceAsset(worksheet, asset);
+    const backup = await createSingleBackup(worksheet, [asset]);
+    if (backup.kind !== "single") throw new Error("単一バックアップを作成できませんでした");
+    const { assets: _assets, ...metadata } = backup;
+
+    expect(estimateBackupOutputBytes(metadata, [asset])).toBe(
+      new TextEncoder().encode(serializeBackup(backup)).byteLength,
+    );
+  });
+
+  it("推定サイズが100MiBを超える単体・全体exportはBlobをBase64化する前に拒否する", async () => {
+    const worksheet = createWorksheet();
+    const asset = createAsset(worksheet);
+    referenceAsset(worksheet, asset);
+    Object.defineProperty(asset.blob, "size", { configurable: true, value: MAX_BACKUP_FILE_BYTES });
+    const arrayBuffer = vi.spyOn(asset.blob, "arrayBuffer");
+
+    await expect(createSingleBackup(worksheet, [asset])).rejects.toThrow(BackupSizeLimitError);
+    await expect(createArchiveBackup([worksheet], [asset])).rejects.toThrow(BackupSizeLimitError);
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it("画像の実体が宣言MIMEと異なるバックアップを保存前に拒否する", async () => {
+    const worksheet = createWorksheet();
+    const asset = createAsset(worksheet);
+    referenceAsset(worksheet, asset);
+    const backup = await createSingleBackup(worksheet, [asset]);
+
+    await expect(hydrateBackup(backup)).rejects.toThrow(
+      "バックアップ内の画像1を検証できませんでした。画像のMIME型とファイル内容が一致しません。",
+    );
   });
 });
