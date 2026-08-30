@@ -23,8 +23,9 @@ import {
   serializeBackup,
 } from "../../application/backup/backup";
 import { STRUCTURE_LIMITS } from "../../domain/worksheet/structure-limits";
-import type { MathWorksheetFile, Worksheet } from "../../domain/worksheet/worksheet";
+import type { AssetRecord, MathWorksheetFile, Worksheet } from "../../domain/worksheet/worksheet";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
+import { collectReferencedAssetIds } from "../../domain/worksheet/worksheet.assets";
 import { normalizeSearchKey } from "../../domain/worksheet/worksheet.search";
 import {
   localTimestamp,
@@ -268,8 +269,9 @@ function BackupModal({ worksheets, onClose, onImport, onDownloadReady }: { works
     setExporting(true);
     setError(null);
     try {
-      const ids = new Set(active.map((worksheet) => worksheet.id));
-      const assets = (await database.assets.toArray()).filter((asset) => ids.has(asset.worksheetId));
+      const referencedAssetIds = [...collectReferencedAssetIds(active)];
+      const assets = (await database.assets.bulkGet(referencedAssetIds))
+        .filter((asset): asset is AssetRecord => asset !== undefined);
       const backup = await createArchiveBackup(active, assets);
       const serialized = serializeBackup(backup);
       exportingRef.current = false;

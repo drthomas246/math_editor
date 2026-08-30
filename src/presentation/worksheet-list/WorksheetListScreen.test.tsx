@@ -48,9 +48,9 @@ describe("WorksheetListScreen", () => {
   it("全体バックアップ中は操作を無効化して多重実行を防ぐ", async () => {
     await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
     let release: (() => void) | undefined;
-    const assets = vi.spyOn(database.assets, "toArray").mockImplementation(() => new Promise((resolve) => {
+    const assets = vi.spyOn(database.assets, "bulkGet").mockImplementation(() => new Promise((resolve) => {
       release = () => resolve([]);
-    }) as ReturnType<typeof database.assets.toArray>);
+    }) as ReturnType<typeof database.assets.bulkGet>);
 
     render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
     await userEvent.click(await screen.findByRole("button", { name: "設定・バックアップ" }));
@@ -66,7 +66,7 @@ describe("WorksheetListScreen", () => {
 
   it("全体バックアップの失敗をダイアログ内に表示して再実行できる", async () => {
     await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
-    vi.spyOn(database.assets, "toArray").mockRejectedValueOnce(new Error("IndexedDB failure"));
+    vi.spyOn(database.assets, "bulkGet").mockRejectedValueOnce(new Error("IndexedDB failure"));
 
     render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
     await userEvent.click(await screen.findByRole("button", { name: "設定・バックアップ" }));
@@ -74,6 +74,30 @@ describe("WorksheetListScreen", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("IndexedDB failure");
     expect(screen.getByRole("button", { name: "全体をエクスポート" })).toBeEnabled();
+  });
+
+  it("全体バックアップは参照されるAssetだけをIndexedDBから取得する", async () => {
+    const worksheet = createWorksheet();
+    const referencedAsset: AssetRecord = {
+      id: crypto.randomUUID(),
+      worksheetId: worksheet.id,
+      mimeType: "image/png",
+      blob: new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }),
+      width: 1,
+      height: 1,
+      createdAt: worksheet.createdAt,
+    };
+    const unusedAsset = { ...referencedAsset, id: crypto.randomUUID() };
+    worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: referencedAsset.id, alt: "", placement: "block", widthPercent: 50 });
+    await worksheetRepository.create({ worksheet, assets: [referencedAsset, unusedAsset] });
+    const bulkGet = vi.spyOn(database.assets, "bulkGet").mockResolvedValue([referencedAsset]);
+
+    render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: "設定・バックアップ" }));
+    await userEvent.click(screen.getByRole("button", { name: "全体をエクスポート" }));
+
+    expect(await screen.findByRole("link", { name: "JSONをダウンロード" })).toBeInTheDocument();
+    expect(bulkGet).toHaveBeenCalledWith([referencedAsset.id]);
   });
 
   it("ゴミ箱移動の失敗を捕捉し、ダイアログから再実行できる", async () => {

@@ -165,7 +165,7 @@ node scripts/validate_math_worksheet.mjs candidate.json
 - Undo / Redo履歴は編集セッション内だけで保持し、再読み込み後は復元しません。
 - JSON形式は`format: "math-worksheet"`、`version: 1`です。
 - 画像Blobは通常データと分離してIndexedDBへ保存し、JSON出力時だけ`assets[].dataBase64`へ変換します。
-- バックアップはUTF-8・2スペースインデントで100MiB以下に制限し、同じ上限で再インポートできることを保証します。
+- バックアップはUTF-8・2スペースインデントで100MiB以下に制限し、画像のBase64化前に出力サイズを算出して超過を早期拒否します。同じ上限で再インポートできることを保証します。
 - インポートは既存データを置換せず、新しいIDを付けて追加します。
 - インポート画像も通常挿入と同じく、MIMEと実体、10MiB、各辺10,000px、40MP、デコード可否、記録寸法を保存前に検証します。
 - version 1以外や旧`dataUrl`形式の自動移行は行いません。
