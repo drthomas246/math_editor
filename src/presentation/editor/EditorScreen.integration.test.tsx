@@ -238,6 +238,49 @@ describe("EditorScreen 離脱・保存統合", () => {
 });
 
 describe("EditorScreen 画像保存の競合制御", () => {
+  it("画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する", async () => {
+    const actualPutAsset = repository.putAsset.bind(repository);
+    const putAssetFinished = createPromiseGate();
+    const assetWritten = createPromiseGate();
+    vi.spyOn(repository, "putAsset").mockImplementation(async (asset, value) => {
+      await actualPutAsset(asset, value);
+      assetWritten.release();
+      await putAssetFinished.promise;
+    });
+    const save = vi.spyOn(repository, "save");
+    renderEditor();
+    const titleInput = await editorTitleInput();
+    const asset = createAsset(worksheet, 1);
+
+    const addImage = currentProblemListProps().onAddImage(
+      worksheet.problems[0]!.id,
+      asset,
+      "block",
+      50,
+      "GCされない画像",
+    );
+    await assetWritten.promise;
+
+    fireEvent.change(titleInput, { target: { value: "画像保存中の編集" } });
+    expect(dispatchBeforeUnload()).toBe(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 900));
+
+    expect(save).not.toHaveBeenCalled();
+    expect(await database.assets.get(asset.id)).toBeDefined();
+
+    putAssetFinished.release();
+    await act(async () => { await addImage; });
+    await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
+
+    const savedWorksheet = await database.worksheets.get(worksheet.id);
+    expect(savedWorksheet).toMatchObject({ title: "画像保存中の編集" });
+    expect(savedWorksheet?.problems[0]?.contents).toContainEqual(expect.objectContaining({
+      type: "image",
+      assetId: asset.id,
+    }));
+    expect(await database.assets.get(asset.id)).toBeDefined();
+  });
+
   it("画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする", async () => {
     const actualPutAsset = repository.putAsset.bind(repository);
     const gate = createPromiseGate();
@@ -322,7 +365,7 @@ describe("EditorScreen 画像保存の競合制御", () => {
     }));
   });
 
-  it("別プリントへ移動後に完了した画像保存で現在のstoreを上書きしない", async () => {
+  it("画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ", async () => {
     const otherWorksheet = createWorksheet();
     otherWorksheet.title = "プリントB";
     otherWorksheet.header.title = otherWorksheet.title;
@@ -347,11 +390,15 @@ describe("EditorScreen 画像保存の競合制御", () => {
     );
     await waitFor(() => expect(putAsset).toHaveBeenCalledTimes(1));
 
-    await act(async () => { await view.router.navigate(`/worksheets/${otherWorksheet.id}`); });
-    expect(await editorTitleInput()).toHaveValue("プリントB");
+    let navigation: Promise<void> | undefined;
+    act(() => { navigation = view.router.navigate(`/worksheets/${otherWorksheet.id}`); });
+    await waitFor(() => expect(view.router.state.location.pathname).toBe(`/worksheets/${worksheet.id}`));
+    expect(screen.getByRole("textbox", { name: "プリント題名" })).toHaveValue(worksheet.title);
 
     gate.release();
     await act(async () => { await addImage; });
+    await act(async () => { await navigation; });
+    expect(await editorTitleInput()).toHaveValue("プリントB");
 
     expect(useEditorStore.getState().worksheet).toMatchObject({
       id: otherWorksheet.id,
