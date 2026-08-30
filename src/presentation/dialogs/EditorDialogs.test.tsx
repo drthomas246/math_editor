@@ -27,8 +27,12 @@ describe("WorksheetSettingsDialog", () => {
 });
 
 describe("PdfDialog", () => {
-  it("PDF出力では問題＋解答を引き続き選べる", () => {
-    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+  it("ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す", async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    }));
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()} />);
 
@@ -37,6 +41,22 @@ describe("PdfDialog", () => {
       "解答付き問題色と解答色、教師用の解説を表示します。",
       "問題＋解答問題編の後、新しいページから解答編を出力します。",
     ]);
+    expect(view.getByText("ページを分割中…")).toBeInTheDocument();
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
+
+    await waitFor(() => expect(frames).toHaveLength(1));
+    act(() => { frames.shift()!(0); });
+    await waitFor(() => expect(view.getByText("ページ数: 1ページ")).toBeInTheDocument());
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeEnabled();
+
+    fireEvent.click(view.getByRole("radio", { name: /問題＋解答/u }));
+    expect(view.getByText("ページを分割中…")).toBeInTheDocument();
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
+
+    await waitFor(() => expect(frames).toHaveLength(1));
+    act(() => { frames.shift()!(0); });
+    await waitFor(() => expect(view.getByText("ページ数: 2ページ")).toBeInTheDocument());
+    expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeEnabled();
 
     view.unmount();
     vi.unstubAllGlobals();

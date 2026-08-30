@@ -2,7 +2,6 @@ import { Sigma, Table2, Upload } from "lucide-react";
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 import { validateImageBlob } from "../../application/assets/image-validation";
-import { assertPreviewPaginationCanExport } from "../../application/pdf/pdf-pagination-guard";
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import type { AssetRecord, ImagePlacement, ImageWidthPercent, PageSettings, Worksheet, WorksheetHeader } from "../../domain/worksheet/worksheet";
 import { createId, createTableBlock } from "../../domain/worksheet/worksheet.defaults";
@@ -30,6 +29,7 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
   const [status, setStatus] = useState<"idle" | "running" | "failed">("idle");
   const [error, setError] = useState("");
   const [paginationError, setPaginationError] = useState<string | null>(null);
+  const [paginationReady, setPaginationReady] = useState(false);
   const [pageCount, setPageCount] = useState(initialMode === "questionsAndAnswers" ? 2 : 1);
   const previewRef = useRef<HTMLDivElement>(null);
   const modes: Array<{ value: PreviewMode; title: string; description: string }> = [
@@ -39,6 +39,7 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
   ];
   const selectMode = (nextMode: PreviewMode) => {
     setMode(nextMode);
+    setPaginationReady(false);
     setPageCount(nextMode === "questionsAndAnswers" ? 2 : 1);
     setPaginationError(null);
     setError("");
@@ -47,7 +48,6 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
     setStatus("running"); setError("");
     try {
       const { generateWorksheetPdf } = await import("../../application/pdf/generate-pdf");
-      await waitForPagination(previewRef.current);
       const pages = Array.from(previewRef.current?.querySelectorAll<HTMLElement>("[data-preview-page=\"true\"]") ?? []);
       const blob = await generateWorksheetPdf(worksheet, pages);
       const label = modes.find((item) => item.value === mode)!.title;
@@ -56,28 +56,17 @@ export function PdfDialog({ worksheet, initialMode, assetUrls, onClose, onDone }
     } catch (reason) { setStatus("failed"); setError(reason instanceof Error ? reason.message : "PDFを生成できませんでした"); }
   };
   return <>
-    <Modal title="PDF出力" onClose={onClose} footer={<><button className="secondary-button" onClick={onClose}>キャンセル</button><button className="primary-button" disabled={status === "running" || Boolean(paginationError)} onClick={download}>{status === "running" ? "PDFを生成中…" : "PDFをダウンロード"}</button></>}>
+    <Modal title="PDF出力" onClose={onClose} footer={<><button className="secondary-button" onClick={onClose}>キャンセル</button><button className="primary-button" disabled={status === "running" || !paginationReady || Boolean(paginationError)} onClick={download}>{status === "running" ? "PDFを生成中…" : "PDFをダウンロード"}</button></>}>
       <div className="radio-cards">{modes.map((item) => <label className={mode === item.value ? "radio-card selected" : "radio-card"} key={item.value}><input type="radio" checked={mode === item.value} onChange={() => selectMode(item.value)} /><span><strong>{item.title}</strong><small>{item.description}</small></span></label>)}</div>
-      <div className="pdf-meta"><span>用紙: {worksheet.pageSettings.size === "B5" ? "JIS B5" : "A4"} / 縦</span><span>ページ数: {pageCount}ページ</span></div>
+      <div className="pdf-meta"><span>用紙: {worksheet.pageSettings.size === "B5" ? "JIS B5" : "A4"} / 縦</span><span aria-live="polite">{paginationReady ? `ページ数: ${pageCount}ページ` : "ページを分割中…"}</span></div>
       <div className="notice info">ダウンロードしたPDFをChrome、EdgeまたはPDF閲覧ソフトで開き、用紙サイズをPDFと同じにして、倍率を「実際のサイズ／100%」で印刷してください。</div>
       <div className="manual-dialog-help"><ManualContextLink topic="pdf">PDF出力の詳しい使い方</ManualContextLink></div>
       {(error || paginationError) && <div className="notice danger" role="alert">{error || paginationError}</div>}
     </Modal>
     <div className="pdf-render-source" ref={previewRef} aria-hidden="true">
-      <WorksheetPreview worksheet={worksheet} mode={mode} zoom={1} assetUrls={assetUrls} onPageCountChange={setPageCount} onPaginationErrorChange={setPaginationError} />
+      <WorksheetPreview worksheet={worksheet} mode={mode} zoom={1} assetUrls={assetUrls} onPageCountChange={setPageCount} onPaginationErrorChange={setPaginationError} onPaginationReadyChange={setPaginationReady} />
     </div>
   </>;
-}
-
-async function waitForPagination(previewRoot: HTMLElement | null): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  let paginationRoot = previewRoot?.querySelector<HTMLElement>(".preview-pages") ?? null;
-  while (paginationRoot?.dataset.paginationReady !== "true") {
-    if (Date.now() >= deadline) throw new Error("PDFのページ分割を完了できませんでした");
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    paginationRoot = previewRoot?.querySelector<HTMLElement>(".preview-pages") ?? null;
-  }
-  assertPreviewPaginationCanExport(paginationRoot);
 }
 
 type MathDialogInitial = { latex: string; block: boolean; textSize: MathTextSize };

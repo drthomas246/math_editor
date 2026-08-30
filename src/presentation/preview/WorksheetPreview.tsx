@@ -16,6 +16,7 @@ type Props = {
   assetUrls: ReadonlyMap<string, string>;
   onPageCountChange?: (pageCount: number) => void;
   onPaginationErrorChange?: (error: string | null) => void;
+  onPaginationReadyChange?: (ready: boolean) => void;
 };
 
 type SectionMode = "questions" | "withAnswers";
@@ -34,7 +35,7 @@ type PreviewSection = { mode: SectionMode; atoms: RenderAtom[] };
 type PlannedPage = { mode: SectionMode; sectionPageIndex: number; atomKeys: string[] };
 type MeasuredPagePlan = { pages: PlannedPage[]; oversizedAtomKeys: string[] };
 
-export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange }: Props) {
+export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange, onPaginationReadyChange }: Props) {
   const numbers = useMemo(() => getProblemNumbers(worksheet), [worksheet]);
   const sections = useMemo<PreviewSection[]>(() => {
     const sectionModes = mode === "questionsAndAnswers"
@@ -122,6 +123,9 @@ export const WorksheetPreview = memo(function WorksheetPreview({ worksheet, mode
   const paginationError = paginationReady && pagination.oversizedAtomKeys.length > 0
     ? OVERSIZED_PAGINATION_MESSAGE
     : null;
+  useEffect(() => {
+    onPaginationReadyChange?.(paginationReady);
+  }, [onPaginationReadyChange, paginationReady]);
   useEffect(() => {
     if (!paginationReady) return;
     onPageCountChange?.(displayedPages.length);
