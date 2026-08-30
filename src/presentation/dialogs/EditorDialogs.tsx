@@ -167,18 +167,22 @@ type ImageDialogInitial = {
 
 export function ImageDialog({ worksheetId, initial, onClose, onApply }: { worksheetId: string; initial?: ImageDialogInitial; onClose: () => void; onApply: (asset: AssetRecord | null, placement: ImagePlacement, width: ImageWidthPercent, alt: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const validationSequenceRef = useRef(0);
   const [file, setFile] = useState<File | null>(null); const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [placement, setPlacement] = useState<ImagePlacement>(initial?.placement ?? "block"); const [width, setWidth] = useState<ImageWidthPercent>(initial?.widthPercent ?? 50); const [alt, setAlt] = useState(initial?.alt ?? ""); const [error, setError] = useState("");
   const replacementPreviewUrl = useMemo(() => file ? URL.createObjectURL(file) : "", [file]);
   useEffect(() => () => { if (replacementPreviewUrl) URL.revokeObjectURL(replacementPreviewUrl); }, [replacementPreviewUrl]);
   const previewUrl = replacementPreviewUrl || initial?.previewUrl || "";
   const choose = async (next?: File) => {
+    const validationSequence = ++validationSequenceRef.current;
     setError(""); setDimensions(null);
     if (!next) return;
     try {
       const nextDimensions = await validateImageBlob(next);
+      if (validationSequence !== validationSequenceRef.current) return;
       setDimensions(nextDimensions); setFile(next);
     } catch (reason) {
+      if (validationSequence !== validationSequenceRef.current) return;
       setError(reason instanceof Error ? reason.message : "画像を読み込めませんでした。");
     }
   };

@@ -1,4 +1,4 @@
-import { fireEvent, render, within } from "@testing-library/react";
+import { act, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-pagination-guard";
@@ -136,6 +136,79 @@ describe("TableDialog", () => {
 });
 
 describe("ImageDialog", () => {
+  it("複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する", async () => {
+    const firstDecode = createPromiseGate<ImageBitmap>();
+    const secondDecode = createPromiseGate<ImageBitmap>();
+    const firstFile = createPngFile("first.png");
+    const secondFile = createPngFile("second.png");
+    const decode = vi.fn((blob: Blob) => (
+      (blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise
+    ));
+    vi.stubGlobal("createImageBitmap", decode);
+    const onApply = vi.fn();
+    const view = render(<ImageDialog
+      worksheetId={crypto.randomUUID()}
+      onClose={vi.fn()}
+      onApply={onApply}
+    />);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+    fireEvent.change(input, { target: { files: [firstFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.change(input, { target: { files: [secondFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(2));
+
+    const secondBitmap = createImageBitmapResult(200, 100);
+    secondDecode.resolve(secondBitmap);
+    await waitFor(() => expect(view.getByRole("button", { name: "挿入" })).toBeEnabled());
+
+    const firstClose = vi.fn();
+    const firstBitmap = createImageBitmapResult(300, 150, firstClose);
+    firstDecode.resolve(firstBitmap);
+    await waitFor(() => expect(firstClose).toHaveBeenCalledOnce());
+    fireEvent.click(view.getByRole("button", { name: "挿入" }));
+
+    const appliedAsset = onApply.mock.lastCall?.[0];
+    expect(appliedAsset?.blob).toBe(secondFile);
+    expect(appliedAsset).toMatchObject({ width: 200, height: 100 });
+  });
+
+  it("古いファイルの検証失敗で最新画像の選択状態を上書きしない", async () => {
+    const firstDecode = createPromiseGate<ImageBitmap>();
+    const secondDecode = createPromiseGate<ImageBitmap>();
+    const firstFile = createPngFile("first.png");
+    const secondFile = createPngFile("second.png");
+    const decode = vi.fn((blob: Blob) => (
+      (blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise
+    ));
+    vi.stubGlobal("createImageBitmap", decode);
+    const onApply = vi.fn();
+    const view = render(<ImageDialog
+      worksheetId={crypto.randomUUID()}
+      onClose={vi.fn()}
+      onApply={onApply}
+    />);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+    fireEvent.change(input, { target: { files: [firstFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.change(input, { target: { files: [secondFile] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(2));
+
+    secondDecode.resolve(createImageBitmapResult(200, 100));
+    await waitFor(() => expect(view.getByRole("button", { name: "挿入" })).toBeEnabled());
+
+    await act(async () => {
+      firstDecode.reject(new Error("古い画像のdecode失敗"));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(view.queryByText("画像を読み込めませんでした。")).not.toBeInTheDocument();
+    expect(view.getByRole("button", { name: "挿入" })).toBeEnabled();
+    fireEvent.click(view.getByRole("button", { name: "挿入" }));
+    expect(onApply.mock.lastCall?.[0].blob).toBe(secondFile);
+  });
+
   it("既存画像はファイルを選び直さず配置とサイズを変更できる", () => {
     const onApply = vi.fn();
     const view = render(<ImageDialog
@@ -170,4 +243,28 @@ function rectangle(height: number): DOMRect {
     left: 0,
     toJSON: () => ({}),
   };
+}
+
+function createPngFile(name: string): File {
+  return new File([
+    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  ], name, { type: "image/png" });
+}
+
+function createImageBitmapResult(width: number, height: number, close = vi.fn()): ImageBitmap {
+  return { width, height, close } as unknown as ImageBitmap;
+}
+
+function createPromiseGate<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolve: (value: T) => void = () => undefined;
+  let reject: (reason?: unknown) => void = () => undefined;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 }
