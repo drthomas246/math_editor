@@ -2,13 +2,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { collectTypeScriptFiles } from "./comment-targets.mjs";
 
 const ROOT = process.cwd();
-const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "coverage"]);
-const SKIPPED_PROJECT_PATHS = new Set([
-  "scripts/fixtures/comment-rules",
-  "scripts/fixtures/comment-change-scope",
-]);
 const GENERIC_PATTERNS = [
   /呼び出し元で使用する処理結果/u,
   /として使用する値/u,
@@ -66,45 +62,6 @@ const TOOLING_COMMENT_PATTERNS = [
   /^sourceURL=/u,
 ];
 const COMMENTED_CODE_HINT_PATTERN = /^(?:const\s+|let\s+|var\s+|function\s+|class\s+|interface\s+|type\s+[A-Za-z_$]|enum\s+|namespace\s+|import\s+|export\s+|return(?:\s|;)|throw\s+|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|try\s*\{|catch\s*\(|finally\s*\{|await\s+|async\s+|new\s+[A-Za-z_$]|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*=|<\/?[A-Za-z][^>]*>)/u;
-
-/**
- * 検査対象ディレクトリを再帰走査し、TypeScriptソースだけを列挙する。
- *
- * @param directory 探索を開始する絶対ディレクトリ
- * @returns 除外ディレクトリを含まないTypeScriptファイルの絶対パス
- */
-function collectTypeScriptFiles(directory) {
-  const files = [];
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      const childDirectory = path.join(directory, entry.name);
-      const relativeDirectory = path.relative(ROOT, childDirectory).replaceAll("\\", "/");
-      if (
-        !SKIPPED_DIRECTORIES.has(entry.name)
-        && entry.name !== ".git"
-        && !SKIPPED_PROJECT_PATHS.has(relativeDirectory)
-      ) {
-        files.push(...collectTypeScriptFiles(childDirectory));
-      }
-      continue;
-    }
-    if (/\.(?:ts|tsx)$/u.test(entry.name)) {
-      files.push(path.join(directory, entry.name));
-    }
-  }
-  return files.sort(compareFilePaths);
-}
-
-/**
- * 検査対象ファイルを環境に依存しない順序へ並べる。
- *
- * @param left 左側のファイルパス
- * @param right 右側のファイルパス
- * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
- */
-function compareFilePaths(left, right) {
-  return left.localeCompare(right);
-}
 
 /**
  * ASTノードの開始位置を、一行目を1とするソース位置へ変換する。

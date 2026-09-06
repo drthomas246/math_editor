@@ -23,17 +23,40 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install dependencies
+        id: install
         run: npm ci
+      - name: Generate comment inspection evidence
+        run: npm run comment:evidence
       - name: Verify
-        run: npm run verify
-      - name: Verify comment-only change scope
-        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'comment-only')
-        env:
-          COMMENT_SCOPE_BASE: ${{ github.event.pull_request.base.sha }}
-        run: npm run comment:scope -- --head HEAD
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run verify:checks
       - name: Build
         run: npm run build
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Browser lifecycle E2E
         run: npm run test:e2e
+      - name: Recheck inspected worktree before upload
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run comment:evidence:verify
+      - name: Bind inspection evidence to the checkout commit
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: npm run comment:evidence:verify -- --commit "$EXPECTED_COMMIT"
+      - name: Upload comment inspection evidence
+        id: evidence_upload
+        if: ${{ always() && steps.install.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: comment-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/comment-evidence/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record artifact identity
+        if: ${{ always() && steps.evidence_upload.outcome == 'success' }}
+        env:
+          ARTIFACT_URL: ${{ steps.evidence_upload.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence_upload.outputs.artifact-digest }}
+        run: |
+          printf 'Comment inspection evidence: %s\n\nArtifact SHA-256: `%s`\n' "$ARTIFACT_URL" "$ARTIFACT_DIGEST" >> "$GITHUB_STEP_SUMMARY"

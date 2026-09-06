@@ -32,9 +32,13 @@
     "comment:check:test": "vitest run scripts/check-comment-rules.test.mjs",
     "comment:scope": "node scripts/check-comment-change-scope.mjs",
     "comment:scope:test": "vitest run scripts/check-comment-change-scope.test.mjs",
+    "comment:evidence": "node scripts/create-comment-evidence.mjs",
+    "comment:evidence:verify": "node scripts/verify-comment-evidence.mjs",
+    "comment:evidence:test": "vitest run scripts/comment-evidence.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:app": "vitest run src",
-    "verify": "npm run comment:check:test && npm run comment:scope:test && npm run comment:check && npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test:app"
+    "verify:checks": "npm run comment:check:test && npm run comment:scope:test && npm run comment:evidence:test && npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test:app",
+    "verify": "npm run comment:check && npm run verify:checks"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.6.0",
