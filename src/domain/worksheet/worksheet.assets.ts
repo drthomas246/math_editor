@@ -1,15 +1,15 @@
 /**
- * collectReferencedAssetIdsで必要な値を取得する。
+ * Referenced・アセット・Idsを入力データまたは現在の状態から取り出す。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value collect・Referenced・アセット・Idsで判定または変換する入力値
+ * @returns referenced・Idsとして得た文字列。変換できない場合は関数固有の既定値
  */
 export function collectReferencedAssetIds(value: unknown): Set<string> {
     const referencedIds = new Set<string>();
     const visit = (/**
-     * visitで定義された一連の処理を実行する。
+     * 入れ子の文書・表・問題構造を再帰走査し、対象値を漏れなく収集または検証する。
      *
-     * @param child childとして使用する値
+     * @param child 走査中の子ノード
      */
     function visitImplementation1(child: unknown): void {
         if (Array.isArray(child)) {
@@ -19,12 +19,12 @@ export function collectReferencedAssetIds(value: unknown): Set<string> {
         if (typeof child !== "object" || child === null)
             return;
         Object.entries(child).forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各保存先または要素を特定するキーとnestedの組についてaddを実行し、対応関係または検証状態を更新する。
          *
-         * @param parameter1 parameter1として使用する値
+         * @param callbackInput コールバックの呼び出し元から渡される入力情報
          */
-        function processItem2(parameter1) {
-            let [key, nested] = parameter1;
+        function processItem2(callbackInput) {
+            let [key, nested] = callbackInput;
             if (key === "assetId" && typeof nested === "string")
                 referencedIds.add(nested);
             visit(nested);

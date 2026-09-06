@@ -4,11 +4,11 @@ export const PREVIEW_ZOOM_STEP = 0.05;
 export const PREVIEW_PAGE_BASE_WIDTH_PX = 520;
 const PAGE_COUNTER_HEIGHT_PX = 24;
 /**
- * getNextPreviewZoomで必要な値を取得する。
+ * 次の値・プレビュー・倍率を入力データまたは現在の状態から取り出す。
  *
- * @param currentZoom currentZoomとして使用する値
- * @param direction directionとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param currentZoom 現在のプレビュー倍率
+ * @param direction 倍率を上げるか下げるかを示す方向
+ * @returns clamp・倍率の結果から算出した数値
  */
 export function getNextPreviewZoom(currentZoom: number, direction: -1 | 1): number {
     const currentStep = currentZoom / PREVIEW_ZOOM_STEP;
@@ -18,12 +18,12 @@ export function getNextPreviewZoom(currentZoom: number, direction: -1 | 1): numb
     return clampZoom(Number((nextStep * PREVIEW_ZOOM_STEP).toFixed(2)));
 }
 /**
- * calculateFittedPreviewZoomで必要な値を取得する。
+ * Fitted・プレビュー・倍率をレイアウトまたは性能判定の基準に沿って算出する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput let・{・モード・viewport・幅・viewport・高さ・horizontal・Padding・vertical・Padding・ページ・Aspect・Ratio・未使用の入力をまとめて受け取るコールバック入力
+ * @returns clamp・倍率の結果から算出した数値
  */
-export function calculateFittedPreviewZoom(parameter1: {
+export function calculateFittedPreviewZoom(callbackInput: {
     mode: "fitWidth" | "fitPage";
     viewportWidth: number;
     viewportHeight: number;
@@ -31,7 +31,7 @@ export function calculateFittedPreviewZoom(parameter1: {
     verticalPadding: number;
     pageAspectRatio: number;
 }): number {
-    let { mode, viewportWidth, viewportHeight, horizontalPadding, verticalPadding, pageAspectRatio, } = parameter1;
+    let { mode, viewportWidth, viewportHeight, horizontalPadding, verticalPadding, pageAspectRatio, } = callbackInput;
     const availableWidth = Math.max(1, viewportWidth - horizontalPadding);
     const widthZoom = availableWidth / PREVIEW_PAGE_BASE_WIDTH_PX;
     if (mode === "fitWidth")
@@ -41,10 +41,10 @@ export function calculateFittedPreviewZoom(parameter1: {
     return clampZoom(Math.min(widthZoom, availableHeight / pageHeight));
 }
 /**
- * clampZoomに必要な処理を実行する。
+ * clamp・倍率をminで処理し、その結果を呼び出し元へ反映する。
  *
- * @param zoom zoomとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param zoom 適用候補となるプレビュー倍率
+ * @returns minの結果から算出した数値
  */
 function clampZoom(zoom: number): number {
     return Math.min(MAX_PREVIEW_ZOOM, Math.max(MIN_PREVIEW_ZOOM, zoom));

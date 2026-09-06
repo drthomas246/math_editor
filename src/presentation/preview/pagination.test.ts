@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { paginateMeasuredItems, planMeasuredPagination, type MeasuredPaginationItem } from "./pagination";
 const item = (/**
- * itemに必要な処理を実行する。
+ * 保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクトを一つの結果へまとめる。
  *
- * @param key keyとして使用する値
- * @param height heightとして使用する値
- * @param startsProblem startsProblemとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param key 保存先または要素を特定するキー
+ * @param height 要素またはページの高さ
+ * @param startsProblem ページ先頭が問題本体かどうか
+ * @returns 保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクト
  */
 function itemImplementation1(key: string, height: number, startsProblem = true): MeasuredPaginationItem {
     return ({
@@ -18,11 +18,11 @@ function itemImplementation1(key: string, height: number, startsProblem = true):
     });
 });
 describe("paginateMeasuredItems", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「paginateMeasuredItems」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite2() {
     it("moves overflowing problems to following pages", (/**
-     * 期待する振る舞いを検証する。
+     * 「moves overflowing problems to following pages」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         expect(paginateMeasuredItems([
@@ -30,7 +30,7 @@ function defineTestSuite2() {
         ], 100, 100, 10)).toEqual([["p1", "p2"], ["p3"]]);
     }));
     it("does not add a problem gap between continuation fragments", (/**
-     * 期待する振る舞いを検証する。
+     * 「does not add a problem gap between continuation fragments」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         expect(paginateMeasuredItems([
@@ -38,7 +38,7 @@ function defineTestSuite2() {
         ], 100, 100, 10)).toEqual([["p1:a", "p1:b"], ["p2"]]);
     }));
     it("honors explicit page breaks", (/**
-     * 期待する振る舞いを検証する。
+     * 「honors explicit page breaks」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         expect(paginateMeasuredItems([
@@ -49,7 +49,7 @@ function defineTestSuite2() {
         ], 100, 100, 10)).toEqual([["p1"], ["p2", "p3"], ["p4"]]);
     }));
     it("uses the header-free capacity after the first page", (/**
-     * 期待する振る舞いを検証する。
+     * 「uses the header-free capacity after the first page」という仕様を操作結果から検証する。
      */
     function runTestCase6() {
         expect(paginateMeasuredItems([
@@ -57,7 +57,7 @@ function defineTestSuite2() {
         ], 80, 110, 10)).toEqual([["p1"], ["p2"]]);
     }));
     it("moves a first fragment to a header-free page when it fits there", (/**
-     * 期待する振る舞いを検証する。
+     * 「moves a first fragment to a header-free page when it fits there」という仕様を操作結果から検証する。
      */
     function runTestCase7() {
         expect(planMeasuredPagination([
@@ -68,7 +68,7 @@ function defineTestSuite2() {
         });
     }));
     it("reports a fragment that is taller than a header-free page", (/**
-     * 期待する振る舞いを検証する。
+     * 「reports a fragment that is taller than a header-free page」という仕様を操作結果から検証する。
      */
     function runTestCase8() {
         expect(planMeasuredPagination([

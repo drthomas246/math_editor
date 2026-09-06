@@ -7,27 +7,27 @@ import { DexieWorksheetRepository, WorksheetLimitError } from "./dexie-worksheet
 let db: MathWorksheetDatabase;
 let repository: DexieWorksheetRepository;
 beforeEach((/**
- * 各テストケースに必要な前提条件を準備する。
+ * 各テストが互いに影響しない初期状態とモックを準備する。
  */
 function prepareTestCase1() {
     db = new MathWorksheetDatabase(`test-${crypto.randomUUID()}`);
     repository = new DexieWorksheetRepository(db);
 }));
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 非同期処理の結果
+ * @returns 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する処理の完了時に解決するPromise
  */
 async function cleanUpTestCase2() {
     vi.unstubAllGlobals();
     await db.delete();
 }));
 describe("DexieWorksheetRepository", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「DexieWorksheetRepository」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite3() {
     it("プリント数の上限エラーに画面表示用のメッセージを持たせる", (/**
-     * 期待する振る舞いを検証する。
+     * 「プリント数の上限エラーに画面表示用のメッセージを持たせる」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         const error = new WorksheetLimitError();
@@ -35,9 +35,9 @@ function defineTestSuite3() {
         expect(error.code).toBe("WORKSHEET_LIMIT_EXCEEDED");
     }));
     it("作成・保存・ゴミ箱・復元・完全削除を往復する", (/**
-     * 期待する振る舞いを検証する。
+     * 「作成・保存・ゴミ箱・復元・完全削除を往復する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase5() {
         const worksheet = createWorksheet();
@@ -51,9 +51,9 @@ function defineTestSuite3() {
         expect(await repository.get(worksheet.id)).toBeNull();
     }));
     it("完全削除で関連Assetも削除する", (/**
-     * 期待する振る舞いを検証する。
+     * 「完全削除で関連Assetも削除する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         const worksheet = createWorksheet();
@@ -63,9 +63,9 @@ function defineTestSuite3() {
         expect(await db.assets.count()).toBe(0);
     }));
     it("保存時に現在参照中またはUndo/Redoで保持中のAsset以外を削除する", (/**
-     * 期待する振る舞いを検証する。
+     * 「保存時に現在参照中またはUndo/Redoで保持中のAsset以外を削除する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase7() {
         const worksheet = createWorksheet();
@@ -79,10 +79,10 @@ function defineTestSuite3() {
             retainedAssetIds: new Set([historyAsset.id]),
         });
         expect(new Set((await db.assets.toArray()).map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットの対象を一意に特定する識別子
          */
         function mapItem8(asset) {
             return asset.id;
@@ -95,19 +95,19 @@ function defineTestSuite3() {
             retainedAssetIds: new Set(),
         });
         expect((await db.assets.toArray()).map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットの対象を一意に特定する識別子
          */
         function mapItem9(asset) {
             return asset.id;
         }))).toEqual([referencedAsset.id]);
     }));
     it("単一JSONを別IDとして復元し画像バイト列を維持する", (/**
-     * 期待する振る舞いを検証する。
+     * 「単一JSONを別IDとして復元し画像バイト列を維持する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase10() {
         const worksheet = createWorksheet();
@@ -117,9 +117,9 @@ function defineTestSuite3() {
         const backup = await createSingleBackup(worksheet, [asset]);
         const parsed = parseBackup(JSON.stringify(backup));
         vi.stubGlobal("createImageBitmap", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「単一JSONを別IDとして復元し画像バイト列を維持する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @returns 非同期処理の結果
+         * @returns 「単一JSONを別IDとして復元し画像バイト列を維持する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback11() {
             return ({ width: 2, height: 3, close: vi.fn() });

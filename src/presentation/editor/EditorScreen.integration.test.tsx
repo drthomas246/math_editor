@@ -9,25 +9,25 @@ import { createSaveRequest, useEditorStore } from "./editor-store";
 import { EditorScreen } from "./EditorScreen";
 import type { ProblemListProps } from "./ProblemList";
 const problemListHarness = vi.hoisted((/**
- * hoistedへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すコンポーネントへ渡す表示情報と操作を持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns コンポーネントへ渡す表示情報と操作を持つオブジェクト
  */
 function hoistedCallback1() {
     return ({ props: null as ProblemListProps | null });
 }));
 vi.mock("./ProblemList", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返す問題・一覧を持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 問題・一覧を持つオブジェクト
  */
 function mockCallback2() {
     return ({
         ProblemList: (/**
-         * ProblemListコンポーネントを表示する。
+         * プリント内の問題を採番順に並べ、選択中の問題だけを編集可能なカードとして表示する。
          *
-         * @param props 表示や操作に必要な設定
-         * @returns 呼び出し元で使用する処理結果
+         * @param props 問題・一覧へ渡す表示情報と操作
+         * @returns 問題・一覧を表示するReact要素
          */
         function ProblemListCallback3(props: ProblemListProps) {
             problemListHarness.props = props;
@@ -36,16 +36,16 @@ function mockCallback2() {
     });
 }));
 vi.mock("../preview/WorksheetPreview", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すプリント・プレビューを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns プリント・プレビューを持つオブジェクト
  */
 function mockCallback4() {
     return ({
         WorksheetPreview: (/**
-         * WorksheetPreviewコンポーネントを表示する。
+         * プリントを用紙寸法へ改ページし、問題と解答の表示モードに応じたページ群を表示する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns プリント・プレビューを表示するReact要素
          */
         function WorksheetPreviewCallback5() {
             return <div data-testid="worksheet-preview"/>;
@@ -53,24 +53,24 @@ function mockCallback4() {
     });
 }));
 vi.mock("../dialogs/EditorDialogs", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すPDF・ダイアログ・プリント・設定・ダイアログを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns PDF・ダイアログ・プリント・設定・ダイアログを持つオブジェクト
  */
 function mockCallback6() {
     return ({
         PdfDialog: (/**
-         * PdfDialogコンポーネントを表示する。
+         * 問題・解答の出力範囲を選び、改ページ検証後にPDFを生成するダイアログを表示する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns PDF・ダイアログを表示するReact要素
          */
         function PdfDialogCallback7() {
             return <div role="dialog" aria-label="PDF出力"/>;
         }),
         WorksheetSettingsDialog: (/**
-         * WorksheetSettingsDialogコンポーネントを表示する。
+         * 用紙・余白・フォント・採番・ヘッダーを編集し、まとめてプリントへ適用するダイアログを表示する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns プリント・設定・ダイアログを表示するReact要素
          */
         function WorksheetSettingsDialogCallback8() {
             return <div role="dialog" aria-label="プリント設定"/>;
@@ -83,9 +83,9 @@ let repository: DexieWorksheetRepository;
 let worksheet: Worksheet;
 let activeViews: RenderResult[];
 beforeEach((/**
- * 各テストケースに必要な前提条件を準備する。
+ * 各テストが互いに影響しない初期状態とモックを準備する。
  *
- * @returns 非同期処理の結果
+ * @returns 各テストが互いに影響しない初期状態とモックを準備する処理の完了時に解決するPromise
  */
 async function prepareTestCase9() {
     database = new MathWorksheetDatabase(`editor-integration-${crypto.randomUUID()}`);
@@ -97,27 +97,25 @@ async function prepareTestCase9() {
     activeViews = [];
 }));
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 非同期処理の結果
+ * @returns 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する処理の完了時に解決するPromise
  */
 async function cleanUpTestCase10() {
     activeViews.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各テストで操作するレンダリング結果についてunmountを実行し、対応関係または検証状態を更新する。
      *
-     * @param view viewとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param view テストで操作するレンダリング結果
      */
     function processItem11(view) {
         return view.unmount();
     }));
     await new Promise((/**
-     * 呼び出し元から要求された処理を実行する。
+     * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param resolve 非同期処理を正常完了させるPromise関数
      */
-    function commentRuleCallback12(resolve) {
+    function settlePromise12(resolve) {
         return window.setTimeout(resolve, 0);
     }));
     useEditorStore.getState().clear();
@@ -125,13 +123,13 @@ async function cleanUpTestCase10() {
     await database.delete();
 }));
 describe("EditorScreen 離脱・保存統合", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「EditorScreen 離脱・保存統合」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite13() {
     it("dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する", (/**
-     * 期待する振る舞いを検証する。
+     * 「dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase14() {
         renderEditor();
@@ -139,9 +137,8 @@ function defineTestSuite13() {
         fireEvent.change(titleInput, { target: { value: "未保存の変更" } });
         expect(screen.getByText("未保存")).toBeInTheDocument();
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback15() {
             return expect(dispatchBeforeUnload()).toBe(true);
@@ -149,27 +146,26 @@ function defineTestSuite13() {
         const request = createSaveRequest(useEditorStore.getState());
         expect(request).not.toBeNull();
         act((/**
-         * actへ渡す処理を実行する。
+         * 「dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 文字装飾・Savingの結果
          */
         function actCallback16() {
             return useEditorStore.getState().markSaving(request!);
         }));
         expect(screen.getByText("保存中…")).toBeInTheDocument();
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback17() {
             return expect(dispatchBeforeUnload()).toBe(true);
         }));
     }));
     it("savedではbeforeunloadを阻止しない", (/**
-     * 期待する振る舞いを検証する。
+     * 「savedではbeforeunloadを阻止しない」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase18() {
         renderEditor();
@@ -178,28 +174,28 @@ function defineTestSuite13() {
         expect(dispatchBeforeUnload()).toBe(false);
     }));
     it("通常プレビューは問題のみと解答付きだけを選べる", (/**
-     * 期待する振る舞いを検証する。
+     * 「通常プレビューは問題のみと解答付きだけを選べる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase19() {
         renderEditor();
         await editorTitleInput();
         const mode = screen.getByRole("combobox", { name: "プレビューモード" }) as HTMLSelectElement;
         expect(Array.from(mode.options, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに検証対象の選択肢要素のテキスト・内容を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param option optionとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param option 検証対象の選択肢要素
+         * @returns 検証対象の選択肢要素のテキスト・内容
          */
         function fromCallback20(option) {
             return option.textContent;
         }))).toEqual(["問題のみ", "解答付き"]);
     }));
     it("編集後にdebounce保存を行いIndexedDBと表示をsavedへ更新する", (/**
-     * 期待する振る舞いを検証する。
+     * 「編集後にdebounce保存を行いIndexedDBと表示をsavedへ更新する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase21() {
         const save = vi.spyOn(repository, "save");
@@ -215,9 +211,9 @@ function defineTestSuite13() {
         expect((await repository.get(worksheet.id))?.worksheet.title).toBe("自動保存されたプリント");
     }));
     it("Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする", (/**
-     * 期待する振る舞いを検証する。
+     * 「Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase22() {
         renderEditor();
@@ -234,9 +230,8 @@ function defineTestSuite13() {
             }];
         await repository.putAsset(originalAsset, source);
         act((/**
-         * actへ渡す処理を実行する。
+         * 「Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function actCallback23() {
             return useEditorStore.getState().commit("画像を挿入", source);
@@ -250,9 +245,8 @@ function defineTestSuite13() {
         await repository.putAsset(replacementAsset, replacement);
         const save = vi.spyOn(repository, "save");
         act((/**
-         * actへ渡す処理を実行する。
+         * 「Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function actCallback24() {
             return useEditorStore.getState().commit("画像を差し替え", replacement);
@@ -264,10 +258,10 @@ function defineTestSuite13() {
             retainedAssetIds: new Set([replacementAsset.id, originalAsset.id]),
         });
         expect(new Set((await database.assets.toArray()).map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットの対象を一意に特定する識別子
          */
         function mapItem25(asset) {
             return asset.id;
@@ -276,14 +270,14 @@ function defineTestSuite13() {
             replacementAsset.id,
         ]));
         act((/**
-         * actへ渡す処理を実行する。
+         * 「Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする」で発生するReactの状態更新と副作用をまとめて完了させる。
          */
         function actCallback26() {
             for (let index = 0; index < 100; index += 1) {
                 useEditorStore.getState().mutate(`履歴を追加 ${index}`, (/**
-                 * mutateへ渡す処理を実行する。
+                 * Immerが提供する更新中の状態の題名を値を埋め込んだ表示文字列へ更新する。
                  *
-                 * @param draft draftとして使用する値
+                 * @param draft Immerが提供する更新中の状態
                  */
                 function mutateCallback27(draft) {
                     draft.title = `履歴 ${index}`;
@@ -294,16 +288,16 @@ function defineTestSuite13() {
         expect(screen.getByText("未保存")).toBeInTheDocument();
         await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「Undo履歴から外れた差し替え前Assetを通常の自動保存でGCする」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 非同期処理の結果
+         * @returns 非同期の画面更新が検証可能な状態へ到達したことを確認する処理の完了時に解決するPromise
          */
         async function waitForCallback28() {
             expect((await database.assets.toArray()).map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
              *
-             * @param asset assetとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param asset 処理対象の画像アセット
+             * @returns 処理対象の画像アセットの対象を一意に特定する識別子
              */
             function mapItem29(asset) {
                 return asset.id;
@@ -315,9 +309,9 @@ function defineTestSuite13() {
         });
     }));
     it("保存失敗をfailedで表示し、再試行でIndexedDBへ保存する", (/**
-     * 期待する振る舞いを検証する。
+     * 「保存失敗をfailedで表示し、再試行でIndexedDBへ保存する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase30() {
         const actualSave = repository.save.bind(repository);
@@ -334,26 +328,26 @@ function defineTestSuite13() {
         expect((await repository.get(worksheet.id))?.worksheet.title).toBe("再試行対象");
     }));
     it("一覧へ戻る前にGC付き保存の完了を待つ", (/**
-     * 期待する振る舞いを検証する。
+     * 「一覧へ戻る前にGC付き保存の完了を待つ」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase31() {
         const actualSave = repository.save.bind(repository);
         let releaseSave: (() => void) | undefined;
         const saveGate = new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
          */
-        function commentRuleCallback32(resolve) { releaseSave = resolve; }));
+        function settlePromise32(resolve) { releaseSave = resolve; }));
         let firstSave = true;
         const save = vi.spyOn(repository, "save").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「一覧へ戻る前にGC付き保存の完了を待つ」で外部依存から返す処理済みの要素を固定し、検証を決定的にする。
          *
-         * @param value 処理対象の値
-         * @param options optionsとして使用する値
-         * @returns 非同期処理の結果
+         * @param value mock・Implementationで判定または変換する入力値
+         * @param options 処理方法を指定するオプション
+         * @returns 「一覧へ戻る前にGC付き保存の完了を待つ」で外部依存から返す処理済みの要素を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback33(value, options) {
             if (firstSave) {
@@ -367,9 +361,8 @@ function defineTestSuite13() {
         fireEvent.change(titleInput, { target: { value: "離脱前保存" } });
         fireEvent.click(screen.getAllByRole("button", { name: "一覧" })[0]!);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「一覧へ戻る前にGC付き保存の完了を待つ」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback34() {
             return expect(save).toHaveBeenCalledTimes(1);
@@ -381,9 +374,9 @@ function defineTestSuite13() {
         expect((await repository.get(worksheet.id))?.worksheet.title).toBe("離脱前保存");
     }));
     it("ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する", (/**
-     * 期待する振る舞いを検証する。
+     * 「ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase35() {
         const actualSave = repository.save.bind(repository);
@@ -394,9 +387,9 @@ function defineTestSuite13() {
         const titleInput = await editorTitleInput();
         fireEvent.change(titleInput, { target: { value: "戻る失敗でも保持" } });
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback36() { await view.router.navigate(-1); }));
         await screen.findByText("保存できませんでした", {}, { timeout: TEST_TIMEOUT_MS });
@@ -408,9 +401,9 @@ function defineTestSuite13() {
         });
         expect((await repository.get(worksheet.id))?.worksheet.title).not.toBe("戻る失敗でも保持");
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「ブラウザの戻るで保存に失敗したら編集画面と未保存データを保持する」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback37() { await view.router.navigate(-1); }));
         await screen.findByText("一覧画面", {}, { timeout: TEST_TIMEOUT_MS });
@@ -420,24 +413,24 @@ function defineTestSuite13() {
     }));
 }));
 describe("EditorScreen 画像保存の競合制御", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「EditorScreen 画像保存の競合制御」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite38() {
     it("画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase39() {
         const actualPutAsset = repository.putAsset.bind(repository);
         const putAssetFinished = createPromiseGate();
         const assetWritten = createPromiseGate();
         vi.spyOn(repository, "putAsset").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する」で外部依存から返す処理済みの要素を固定し、検証を決定的にする。
          *
-         * @param asset assetとして使用する値
-         * @param value 処理対象の値
-         * @returns 非同期処理の結果
+         * @param asset 処理対象の画像アセット
+         * @param value mock・Implementationで判定または変換する入力値
+         * @returns 「画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する」で外部依存から返す処理済みの要素を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback40(asset, value) {
             await actualPutAsset(asset, value);
@@ -453,21 +446,20 @@ function defineTestSuite38() {
         fireEvent.change(titleInput, { target: { value: "画像保存中の編集" } });
         expect(dispatchBeforeUnload()).toBe(true);
         await new Promise((/**
-         * 呼び出し元から要求された処理を実行する。
+         * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param resolve 非同期処理を正常完了させるPromise関数
          */
-        function commentRuleCallback41(resolve) {
+        function settlePromise41(resolve) {
             return window.setTimeout(resolve, 900);
         }));
         expect(save).not.toHaveBeenCalled();
         expect(await database.assets.get(asset.id)).toBeDefined();
         putAssetFinished.release();
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像Asset操作中はautosaveとGCを保留し、完了後に最新Worksheetを保存する」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback42() { await addImage; }));
         await screen.findByText("保存済み", {}, { timeout: TEST_TIMEOUT_MS });
@@ -480,19 +472,19 @@ function defineTestSuite38() {
         expect(await database.assets.get(asset.id)).toBeDefined();
     }));
     it("画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase43() {
         const actualPutAsset = repository.putAsset.bind(repository);
         const gate = createPromiseGate();
         const putAsset = vi.spyOn(repository, "putAsset").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」で外部依存から返す処理済みの要素を固定し、検証を決定的にする。
          *
-         * @param asset assetとして使用する値
-         * @param value 処理対象の値
-         * @returns 非同期処理の結果
+         * @param asset 処理対象の画像アセット
+         * @param value mock・Implementationで判定または変換する入力値
+         * @returns 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」で外部依存から返す処理済みの要素を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback44(asset, value) {
             await gate.promise;
@@ -504,9 +496,8 @@ function defineTestSuite38() {
         const props = currentProblemListProps();
         const addImage = props.onAddImage(worksheet.problems[0]!.id, asset, "block", 50, "追加画像");
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback45() {
             return expect(putAsset).toHaveBeenCalledTimes(1);
@@ -514,9 +505,9 @@ function defineTestSuite38() {
         fireEvent.change(titleInput, { target: { value: "ABC" } });
         gate.release();
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像保存中の同一プリント編集を保持し、最新Worksheetへ画像挿入をrebaseする」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback46() { await addImage; }));
         const latest = useEditorStore.getState().worksheet;
@@ -528,9 +519,9 @@ function defineTestSuite38() {
         }));
     }));
     it("画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase47() {
         const originalAsset = createAsset(worksheet, 1);
@@ -547,9 +538,8 @@ function defineTestSuite38() {
         renderEditor();
         const titleInput = await editorTitleInput();
         act((/**
-         * actへ渡す処理を実行する。
+         * 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function actCallback48() {
             return useEditorStore.getState().commit("画像を挿入", source);
@@ -557,11 +547,11 @@ function defineTestSuite38() {
         const actualPutAsset = repository.putAsset.bind(repository);
         const gate = createPromiseGate();
         const putAsset = vi.spyOn(repository, "putAsset").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」で外部依存から返す処理済みの要素を固定し、検証を決定的にする。
          *
-         * @param asset assetとして使用する値
-         * @param value 処理対象の値
-         * @returns 非同期処理の結果
+         * @param asset 処理対象の画像アセット
+         * @param value mock・Implementationで判定または変換する入力値
+         * @returns 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」で外部依存から返す処理済みの要素を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback49(asset, value) {
             await gate.promise;
@@ -571,9 +561,8 @@ function defineTestSuite38() {
         const props = currentProblemListProps();
         const updateImage = props.onUpdateImage(worksheet.problems[0]!.id, imageId, replacementAsset, "floatRight", 33, "差し替え後");
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback50() {
             return expect(putAsset).toHaveBeenCalledTimes(1);
@@ -581,9 +570,9 @@ function defineTestSuite38() {
         fireEvent.change(titleInput, { target: { value: "差し替え中の編集" } });
         gate.release();
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像差し替え保存中の同一プリント編集を保持し、最新Worksheetへ差し替えをrebaseする」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback51() { await updateImage; }));
         const latest = useEditorStore.getState().worksheet;
@@ -598,9 +587,9 @@ function defineTestSuite38() {
         }));
     }));
     it("画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase52() {
         const otherWorksheet = createWorksheet();
@@ -610,11 +599,11 @@ function defineTestSuite38() {
         const actualPutAsset = repository.putAsset.bind(repository);
         const gate = createPromiseGate();
         const putAsset = vi.spyOn(repository, "putAsset").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で外部依存から返す処理済みの要素を固定し、検証を決定的にする。
          *
-         * @param asset assetとして使用する値
-         * @param value 処理対象の値
-         * @returns 非同期処理の結果
+         * @param asset 処理対象の画像アセット
+         * @param value mock・Implementationで判定または変換する入力値
+         * @returns 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で外部依存から返す処理済みの要素を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback53(asset, value) {
             await gate.promise;
@@ -626,22 +615,20 @@ function defineTestSuite38() {
         const props = currentProblemListProps();
         const addImage = props.onAddImage(worksheet.problems[0]!.id, asset, "block", 50, "Aの画像");
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback54() {
             return expect(putAsset).toHaveBeenCalledTimes(1);
         }));
         let navigation: Promise<void> | undefined;
         act((/**
-         * actへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で発生するReactの状態更新と副作用をまとめて完了させる。
          */
         function actCallback55() { navigation = view.router.navigate(`/worksheets/${otherWorksheet.id}`); }));
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback56() {
             return expect(view.router.state.location.pathname).toBe(`/worksheets/${worksheet.id}`);
@@ -649,15 +636,15 @@ function defineTestSuite38() {
         expect(screen.getByRole("textbox", { name: "プリント題名" })).toHaveValue(worksheet.title);
         gate.release();
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback57() { await addImage; }));
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像保存完了まで別プリントへの移動を保留し、移動先のstoreを保つ」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback58() { await navigation; }));
         expect(await editorTitleInput()).toHaveValue("プリントB");
@@ -669,13 +656,13 @@ function defineTestSuite38() {
     }));
 }));
 describe("EditorScreen 読み込み状態", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「EditorScreen 読み込み状態」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite59() {
     it("存在しないプリントはNot Foundとして表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「存在しないプリントはNot Foundとして表示する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase60() {
         renderEditor([`/worksheets/${crypto.randomUUID()}`]);
@@ -683,9 +670,9 @@ function defineTestSuite59() {
         expect(screen.queryByRole("heading", { name: "プリントを読み込めませんでした" })).not.toBeInTheDocument();
     }));
     it("repositoryの読み込み失敗をNot Foundと区別し、再読み込みできる", (/**
-     * 期待する振る舞いを検証する。
+     * 「repositoryの読み込み失敗をNot Foundと区別し、再読み込みできる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase61() {
         const actualGet = repository.get.bind(repository);
@@ -699,25 +686,25 @@ function defineTestSuite59() {
         expect(get).toHaveBeenCalledTimes(2);
     }));
     it("worksheetId変更時に以前のNot Found状態をloadingへリセットする", (/**
-     * 期待する振る舞いを検証する。
+     * 「worksheetId変更時に以前のNot Found状態をloadingへリセットする」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase62() {
         const missingId = crypto.randomUUID();
         const actualGet = repository.get.bind(repository);
         let releaseLoad: (() => void) | undefined;
         const loadGate = new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
          */
-        function commentRuleCallback63(resolve) { releaseLoad = resolve; }));
+        function settlePromise63(resolve) { releaseLoad = resolve; }));
         vi.spyOn(repository, "get").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「worksheetId変更時に以前のNot Found状態をloadingへリセットする」で外部依存から返すactual・Getの結果を固定し、検証を決定的にする。
          *
          * @param id 対象を識別するID
-         * @returns 非同期処理の結果
+         * @returns 「worksheetId変更時に以前のNot Found状態をloadingへリセットする」で外部依存から返すactual・Getの結果を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function mockImplementationCallback64(id) {
             if (id === worksheet.id)
@@ -727,9 +714,9 @@ function defineTestSuite59() {
         const view = renderEditor([`/worksheets/${missingId}`]);
         await screen.findByRole("heading", { name: "プリントが見つかりません" });
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「worksheetId変更時に以前のNot Found状態をloadingへリセットする」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「worksheetId変更時に以前のNot Found状態をloadingへリセットする」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback65() { await view.router.navigate(`/worksheets/${worksheet.id}`); }));
         expect(screen.getByText("プリントを読み込んでいます")).toBeInTheDocument();
@@ -742,11 +729,11 @@ type EditorRenderResult = RenderResult & {
     router: ReturnType<typeof createMemoryRouter>;
 };
 /**
- * renderEditorに対応する画面表示を更新する。
+ * エディタの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param initialEntries initialEntriesとして使用する値
- * @param initialIndex initialIndexとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param initialEntries テスト用ルーターの初期URL一覧
+ * @param initialIndex テスト用ルーターで最初に表示するURL位置
+ * @returns テストで操作するレンダリング結果
  */
 function renderEditor(initialEntries: string[] = [`/worksheets/${worksheet.id}`], initialIndex?: number): EditorRenderResult {
     const router = createMemoryRouter([
@@ -761,17 +748,17 @@ function renderEditor(initialEntries: string[] = [`/worksheets/${worksheet.id}`]
     return view;
 }
 /**
- * editorTitleInputに必要な処理を実行する。
+ * エディタ・題名・Inputをfind・By・Roleで処理し、その結果を呼び出し元へ反映する。
  *
- * @returns 非同期処理の結果
+ * @returns エディタ・題名・Inputをfind・By・Roleで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 async function editorTitleInput(): Promise<HTMLInputElement> {
     return screen.findByRole("textbox", { name: "プリント題名" }, { timeout: TEST_TIMEOUT_MS }) as Promise<HTMLInputElement>;
 }
 /**
- * dispatchBeforeUnloadに必要な処理を実行する。
+ * dispatch・Before・Unloadをdispatch・イベントで処理し、その結果を呼び出し元へ反映する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns イベントの既定・Preventedが真になる場合はtrue
  */
 function dispatchBeforeUnload(): boolean {
     const event = new Event("beforeunload", { cancelable: true }) as BeforeUnloadEvent;
@@ -779,11 +766,11 @@ function dispatchBeforeUnload(): boolean {
     return event.defaultPrevented;
 }
 /**
- * createAssetで必要な値を作成する。
+ * アセットを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param owner ownerとして使用する値
- * @param byte byteとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param owner イベントの登録主体となるオブジェクト
+ * @param byte 検証対象の1バイト
+ * @returns 対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・検証または保存するバイナリデータ・要素または列へ適用する幅を持つオブジェクト
  */
 function createAsset(owner: Worksheet, byte: number): AssetRecord {
     return {
@@ -797,9 +784,9 @@ function createAsset(owner: Worksheet, byte: number): AssetRecord {
     };
 }
 /**
- * currentProblemListPropsに必要な処理を実行する。
+ * 現在の状態を基に現在・問題・一覧・Propsを導出する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 問題・一覧・Harnessのコンポーネントへ渡す表示情報と操作
  */
 function currentProblemListProps(): ProblemListProps {
     if (!problemListHarness.props)
@@ -807,27 +794,25 @@ function currentProblemListProps(): ProblemListProps {
     return problemListHarness.props;
 }
 /**
- * createPromiseGateで必要な値を作成する。
+ * Promise・Gateを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns Promise・Gateを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
  */
 function createPromiseGate(): {
     promise: Promise<void>;
     release: () => void;
 } {
     let release: () => void = (/**
-     * releaseに必要な処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 現在の状態を基にreleaseを導出する。
      */
     function releaseImplementation66() {
         return undefined;
     });
     const promise = new Promise<void>((/**
-     * 呼び出し元から要求された処理を実行する。
+     * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
+     * @param resolve 非同期処理を正常完了させるPromise関数
      */
-    function commentRuleCallback67(resolve) { release = resolve; }));
+    function settlePromise67(resolve) { release = resolve; }));
     return { promise, release };
 }

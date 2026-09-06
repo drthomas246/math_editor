@@ -1,10 +1,10 @@
 import type { FullConfig } from "@playwright/test";
 import { createServer } from "vite";
 /**
- * startViteに必要な処理を実行する。
+ * Playwright専用のViteサーバーを起動し、終了時に確実に停止できる後始末を返す。
  *
- * @param _config _configとして使用する値
- * @returns 非同期処理の結果
+ * @param _config コールバックの契約上受け取るが、この処理では参照しないconfig
+ * @returns Playwright専用のViteサーバーを起動し、終了時に確実に停止できる後始末を返す処理の完了時に解決するPromise
  */
 export default async function startVite(_config: FullConfig): Promise<() => Promise<void>> {
     const server = await createServer({
@@ -17,11 +17,11 @@ export default async function startVite(_config: FullConfig): Promise<() => Prom
     });
     await server.listen();
     return (/**
-     * 呼び出し元から要求された処理を実行する。
+     * 不要になったイベント購読またはブラウザーリソースを解放し、後続画面への影響を防ぐ。
      *
-     * @returns 非同期処理の結果
+     * @returns 不要になったイベント購読またはブラウザーリソースを解放し、後続画面への影響を防ぐ処理の完了時に解決するPromise
      */
-    async function commentRuleCallback1() {
+    async function applyDeferredOperation1() {
         return server.close();
     });
 }

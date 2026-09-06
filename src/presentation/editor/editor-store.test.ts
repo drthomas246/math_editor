@@ -3,27 +3,25 @@ import { createProblem, createWorksheet } from "../../domain/worksheet/worksheet
 import { setWorksheetTitle } from "../../domain/worksheet/worksheet.commands";
 import { createSaveRequest, useEditorStore } from "./editor-store";
 describe("editor store", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「editor store」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     beforeEach((/**
-     * 各テストケースに必要な前提条件を準備する。
+     * 各テストが互いに影響しない初期状態とモックを準備する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function prepareTestCase2() {
         return useEditorStore.getState().clear();
     }));
     afterEach((/**
-     * 各テストケースで使用した状態を後片付けする。
+     * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function cleanUpTestCase3() {
         return vi.useRealTimers();
     }));
     it("CommandをUndo/Redoしrevisionを更新する", (/**
-     * 期待する振る舞いを検証する。
+     * 「CommandをUndo/Redoしrevisionを更新する」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         const source = createWorksheet();
@@ -38,7 +36,7 @@ function defineTestSuite1() {
         expect(useEditorStore.getState().revision).toBe(3);
     }));
     it("Undo/Redo後のupdatedAtを操作時刻へ更新する", (/**
-     * 期待する振る舞いを検証する。
+     * 「Undo/Redo後のupdatedAtを操作時刻へ更新する」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         vi.useFakeTimers();
@@ -62,7 +60,7 @@ function defineTestSuite1() {
         });
     }));
     it("別プリントの古い保存完了・失敗を現在の保存状態へ反映しない", (/**
-     * 期待する振る舞いを検証する。
+     * 「別プリントの古い保存完了・失敗を現在の保存状態へ反映しない」という仕様を操作結果から検証する。
      */
     function runTestCase6() {
         const worksheetA = createWorksheet();
@@ -83,7 +81,7 @@ function defineTestSuite1() {
         expect(useEditorStore.getState().saveStatus).toBe("dirty");
     }));
     it("同じプリントを開き直した後は前セッションの保存通知を無視する", (/**
-     * 期待する振る舞いを検証する。
+     * 「同じプリントを開き直した後は前セッションの保存通知を無視する」という仕様を操作結果から検証する。
      */
     function runTestCase7() {
         const worksheet = createWorksheet();
@@ -99,7 +97,7 @@ function defineTestSuite1() {
         expect(useEditorStore.getState().saveStatus).toBe("dirty");
     }));
     it("現在の保存要求だけを保存済みへ反映する", (/**
-     * 期待する振る舞いを検証する。
+     * 「現在の保存要求だけを保存済みへ反映する」という仕様を操作結果から検証する。
      */
     function runTestCase8() {
         const worksheet = createWorksheet();
@@ -113,7 +111,7 @@ function defineTestSuite1() {
         expect(useEditorStore.getState()).toMatchObject({ saveStatus: "saved", savedRevision: 1 });
     }));
     it("部分更新では対象Problemだけをコピーして他のProblemを共有する", (/**
-     * 期待する振る舞いを検証する。
+     * 「部分更新では対象Problemだけをコピーして他のProblemを共有する」という仕様を操作結果から検証する。
      */
     function runTestCase9() {
         const worksheet = createWorksheet();
@@ -121,16 +119,16 @@ function defineTestSuite1() {
         const targetId = worksheet.problems[50]!.id;
         useEditorStore.getState().initialize(worksheet);
         useEditorStore.getState().mutate("本文を編集", (/**
-         * mutateへ渡す処理を実行する。
+         * 処理対象の問題本文または解説の処理対象のリッチテキスト文書の内容を順序を保った要素一覧へ更新する。
          *
-         * @param draft draftとして使用する値
+         * @param draft Immerが提供する更新中の状態
          */
         function mutateCallback10(draft) {
             const problem = draft.problems.find((/**
-             * 検索条件に一致する要素か判定する。
+             * 要素の対象を一意に特定する識別子が対象・Idと一致する最初の要素を検索する。
              *
-             * @param item 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param item 配列処理で現在参照している要素
+             * @returns 要素の対象を一意に特定する識別子が対象・Idと一致する場合はtrue
              */
             function findItem11(item) {
                 return item.id === targetId;
@@ -146,17 +144,17 @@ function defineTestSuite1() {
         expect(updated.problems[50]).not.toBe(worksheet.problems[50]);
         expect(updated.problems[99]).toBe(worksheet.problems[99]);
         expect(useEditorStore.getState().undoStack[0]?.patches.some((/**
-         * 条件に一致する要素か判定する。
+         * いずれかの履歴またはアセット参照を調べるImmerパッチが要求条件を満たすか判定する。
          *
-         * @param patch patchとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param patch 履歴またはアセット参照を調べるImmerパッチ
+         * @returns 履歴またはアセット参照を調べるImmerパッチの検証エラーが指すデータ位置内の指定位置の値が「problems」と一致するかつ履歴またはアセット参照を調べるImmerパッチの検証エラーが指すデータ位置内の指定位置の値が50と一致する場合はtrue
          */
         function hasMatchingItem12(patch) {
             return patch.path[0] === "problems" && patch.path[1] === 50;
         }))).toBe(true);
     }));
     it("同じRichTextへの連続入力を1件のUndo履歴へまとめる", (/**
-     * 期待する振る舞いを検証する。
+     * 「同じRichTextへの連続入力を1件のUndo履歴へまとめる」という仕様を操作結果から検証する。
      */
     function runTestCase13() {
         vi.useFakeTimers();
@@ -166,32 +164,31 @@ function defineTestSuite1() {
         const contentId = worksheet.problems[0]!.contents[0]!.id;
         useEditorStore.getState().initialize(worksheet);
         const typeText = (/**
-         * typeTextに必要な処理を実行する。
+         * 種別・テキストをmutateで処理し、その結果を呼び出し元へ反映する。
          *
-         * @param text textとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param text 文書または画面へ設定する文字列
          */
         function typeTextImplementation14(text: string) {
             return useEditorStore.getState().mutate("本文を編集", (/**
-             * mutateへ渡す処理を実行する。
+             * 処理対象の問題本文または解説の処理対象のリッチテキスト文書の内容を順序を保った要素一覧へ更新する。
              *
-             * @param draft draftとして使用する値
+             * @param draft Immerが提供する更新中の状態
              */
             function mutateCallback15(draft) {
                 const problem = draft.problems.find((/**
-                 * 検索条件に一致する要素か判定する。
+                 * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
                  *
-                 * @param item 処理対象の値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param item 配列処理で現在参照している要素
+                 * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
                  */
                 function findItem16(item) {
                     return item.id === problemId;
                 }));
                 const content = problem?.contents.find((/**
-                 * 検索条件に一致する要素か判定する。
+                 * 要素の対象を一意に特定する識別子が内容・Idと一致する最初の要素を検索する。
                  *
-                 * @param item 処理対象の値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param item 配列処理で現在参照している要素
+                 * @returns 要素の対象を一意に特定する識別子が内容・Idと一致する場合はtrue
                  */
                 function findItem17(item) {
                     return item.id === contentId;
@@ -218,7 +215,7 @@ function defineTestSuite1() {
         expect(redoneBlock?.type === "paragraph" ? redoneBlock.content[0] : null).toMatchObject({ text: "abc" });
     }));
     it("入力間隔または編集対象が変わると別のUndo履歴にする", (/**
-     * 期待する振る舞いを検証する。
+     * 「入力間隔または編集対象が変わると別のUndo履歴にする」という仕様を操作結果から検証する。
      */
     function runTestCase18() {
         vi.useFakeTimers();
@@ -226,17 +223,16 @@ function defineTestSuite1() {
         const worksheet = createWorksheet();
         useEditorStore.getState().initialize(worksheet);
         const mutateTitle = (/**
-         * mutateTitleの対象となる状態を更新する。
+         * mutate・題名をmutateで処理し、その結果を呼び出し元へ反映する。
          *
-         * @param value 処理対象の値
-         * @param historyGroup historyGroupとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param value mutate・題名で判定または変換する入力値
+         * @param historyGroup 同じUndo履歴へまとめる操作種別
          */
         function mutateTitleImplementation19(value: string, historyGroup: string) {
             return useEditorStore.getState().mutate("題名を変更", (/**
-             * mutateへ渡す処理を実行する。
+             * Immerが提供する更新中の状態の題名を変換・検証・保存の対象となる値へ更新する。
              *
-             * @param draft draftとして使用する値
+             * @param draft Immerが提供する更新中の状態
              */
             function mutateCallback20(draft) {
                 draft.title = value;
@@ -250,7 +246,7 @@ function defineTestSuite1() {
         expect(useEditorStore.getState().undoStack).toHaveLength(3);
     }));
     it("実データが変わらない部分更新では履歴とrevisionを増やさない", (/**
-     * 期待する振る舞いを検証する。
+     * 「実データが変わらない部分更新では履歴とrevisionを増やさない」という仕様を操作結果から検証する。
      */
     function runTestCase21() {
         const worksheet = createWorksheet();
@@ -258,9 +254,9 @@ function defineTestSuite1() {
         const sameDocument = sourceContent?.type === "richText" ? structuredClone(sourceContent.document) : null;
         useEditorStore.getState().initialize(worksheet);
         useEditorStore.getState().mutate("同じ文書を設定", (/**
-         * mutateへ渡す処理を実行する。
+         * 処理対象の問題本文または解説の処理対象のリッチテキスト文書をsame・文書へ更新する。
          *
-         * @param draft draftとして使用する値
+         * @param draft Immerが提供する更新中の状態
          */
         function mutateCallback22(draft) {
             const content = draft.problems[0]?.contents[0];

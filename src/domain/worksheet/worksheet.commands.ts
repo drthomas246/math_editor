@@ -32,28 +32,28 @@ export type ImageReferenceUpdate = {
     widthPercent: ImageWidthPercent;
 };
 const clone = (/**
- * cloneで必要な値を作成する。
+ * cloneを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value cloneで判定または変換する入力値
+ * @returns structured・Cloneの結果
  */
 function cloneImplementation1<T>(value: T): T {
     return structuredClone(value);
 });
 /**
- * touchの対象となる状態を更新する。
+ * touchをto・ISO・Stringで処理し、その結果を呼び出し元へ反映する。
  *
- * @param worksheet worksheetとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @returns 処理対象となるプリント
  */
 function touch(worksheet: Worksheet): Worksheet {
     worksheet.updatedAt = new Date().toISOString();
     return worksheet;
 }
 /**
- * replaceEntityIdsの対象となる状態を更新する。
+ * replace・Entity・Idsをis・Arrayで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
+ * @param value replace・Entity・Idsで判定または変換する入力値
  */
 function replaceEntityIds(value: unknown): void {
     if (Array.isArray(value)) {
@@ -71,11 +71,11 @@ function replaceEntityIds(value: unknown): void {
     }
 }
 /**
- * setWorksheetTitleの対象となる状態を更新する。
+ * 処理対象となるプリントの題名をsliceの結果へ更新する。
  *
- * @param source sourceとして使用する値
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param source 複製・変換・更新の起点となる値
+ * @param value set・プリント・題名で判定または変換する入力値
+ * @returns touchの結果
  */
 export function setWorksheetTitle(source: Worksheet, value: string): Worksheet {
     const worksheet = clone(source);
@@ -85,12 +85,12 @@ export function setWorksheetTitle(source: Worksheet, value: string): Worksheet {
     return touch(worksheet);
 }
 /**
- * applyWorksheetSettingsの対象となる状態を更新する。
+ * 処理対象となるプリントの用紙サイズと余白を含むページ設定をcloneの結果へ更新する。
  *
- * @param source sourceとして使用する値
- * @param pageSettings pageSettingsとして使用する値
- * @param header headerとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param source 複製・変換・更新の起点となる値
+ * @param pageSettings 用紙サイズと余白を含むページ設定
+ * @param header プリントへ適用するヘッダー設定
+ * @returns touchの結果
  */
 export function applyWorksheetSettings(source: Worksheet, pageSettings: PageSettings, header: Omit<WorksheetHeader, "title">): Worksheet {
     const worksheet = clone(source);
@@ -99,11 +99,11 @@ export function applyWorksheetSettings(source: Worksheet, pageSettings: PageSett
     return touch(worksheet);
 }
 /**
- * addProblemの対象となる要素を追加する。
+ * 処理が成功したかどうか・処理対象となるプリント・コードを持つオブジェクトを一つの結果へまとめる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param afterProblemId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function addProblem(source: Worksheet, afterProblemId?: string | null): WorksheetCommandResult {
     if (source.problems.length >= STRUCTURE_LIMITS.problemsPerWorksheet) {
@@ -112,10 +112,10 @@ export function addProblem(source: Worksheet, afterProblemId?: string | null): W
     const worksheet = clone(source);
     const afterIndex = afterProblemId
         ? worksheet.problems.findIndex((/**
-         * 検索条件に一致する要素か判定する。
+         * 各処理対象の問題または例題が探している位置の要素か判定する。
          *
-         * @param problem problemとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param problem 処理対象の問題または例題
+         * @returns 処理対象の問題または例題の対象を一意に特定する識別子がafter・問題・Idと一致する場合はtrue
          */
         function findItemIndex2(problem) {
             return problem.id === afterProblemId;
@@ -126,19 +126,19 @@ export function addProblem(source: Worksheet, afterProblemId?: string | null): W
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * deleteProblemの対象となる要素を削除または解放する。
+ * 問題と不要になった関連データを安全に取り除く。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function deleteProblem(source: Worksheet, problemId: string): WorksheetCommandResult {
     const worksheet = clone(source);
     const index = worksheet.problems.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題または例題が探している位置の要素か判定する。
      *
-     * @param problem problemとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param problem 処理対象の問題または例題
+     * @returns 処理対象の問題または例題の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItemIndex3(problem) {
         return problem.id === problemId;
@@ -151,19 +151,19 @@ export function deleteProblem(source: Worksheet, problemId: string): WorksheetCo
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * duplicateProblemで必要な値を作成する。
+ * 問題を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function duplicateProblem(source: Worksheet, problemId: string): WorksheetCommandResult {
     const worksheet = clone(source);
     const index = worksheet.problems.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題または例題が探している位置の要素か判定する。
      *
-     * @param problem problemとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param problem 処理対象の問題または例題
+     * @returns 処理対象の問題または例題の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItemIndex4(problem) {
         return problem.id === problemId;
@@ -179,20 +179,20 @@ export function duplicateProblem(source: Worksheet, problemId: string): Workshee
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * moveProblemに必要な処理を実行する。
+ * 処理が成功したかどうか・処理対象となるプリント・コードを持つオブジェクトを一つの結果へまとめる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @param toIndex toIndexとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param toIndex to・位置を0始まりで示す位置
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function moveProblem(source: Worksheet, problemId: string, toIndex: number): WorksheetCommandResult {
     const worksheet = clone(source);
     const fromIndex = worksheet.problems.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題または例題が探している位置の要素か判定する。
      *
-     * @param problem problemとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param problem 処理対象の問題または例題
+     * @returns 処理対象の問題または例題の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItemIndex5(problem) {
         return problem.id === problemId;
@@ -204,20 +204,20 @@ export function moveProblem(source: Worksheet, problemId: string, toIndex: numbe
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * updateProblemの対象となる状態を更新する。
+ * 問題を現在の編集結果へ反映する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @param change changeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param change 適用する編集内容
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function updateProblem(source: Worksheet, problemId: string, change: (problem: ProblemBlock) => void): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem6(item) {
         return item.id === problemId;
@@ -228,21 +228,21 @@ export function updateProblem(source: Worksheet, problemId: string, change: (pro
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * addContentの対象となる要素を追加する。
+ * 処理が成功したかどうか・処理対象となるプリント・コードを持つオブジェクトを一つの結果へまとめる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @param content contentとして使用する値
+ * @param content 処理対象の問題本文または解説
  * @param afterContentId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function addContent(source: Worksheet, problemId: string, content: ContentBlock, afterContentId?: string | null): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem7(item) {
         return item.id === problemId;
@@ -254,10 +254,10 @@ export function addContent(source: Worksheet, problemId: string, content: Conten
     }
     const afterIndex = afterContentId
         ? problem.contents.findIndex((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子がafter・内容・Idと一致する最初の配列位置を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子がafter・内容・Idと一致する場合はtrue
          */
         function findItemIndex8(item) {
             return item.id === afterContentId;
@@ -267,30 +267,30 @@ export function addContent(source: Worksheet, problemId: string, content: Conten
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * updateContentの対象となる状態を更新する。
+ * 内容を現在の編集結果へ反映する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param contentId 対象を識別するID
- * @param change changeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param change 適用する編集内容
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function updateContent(source: Worksheet, problemId: string, contentId: string, change: (content: ContentBlock) => void): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem9(item) {
         return item.id === problemId;
     }));
     const content = problem?.contents.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が内容・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が内容・Idと一致する場合はtrue
      */
     function findItem10(item) {
         return item.id === contentId;
@@ -301,21 +301,21 @@ export function updateContent(source: Worksheet, problemId: string, contentId: s
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * updateRichTextDocumentの対象となる状態を更新する。
+ * リッチ・テキスト・文書を現在の編集結果へ反映する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @param target targetとして使用する値
- * @param change changeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param target 編集操作を適用する対象
+ * @param change 適用する編集内容
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function updateRichTextDocument<T extends RichTextDocumentTarget>(source: Worksheet, problemId: string, target: T, change: (document: RichTextDocumentForTarget<T>) => void): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem11(item) {
         return item.id === problemId;
@@ -328,10 +328,10 @@ export function updateRichTextDocument<T extends RichTextDocumentTarget>(source:
     }
     else if (target.kind === "content") {
         const content = problem.contents.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が編集操作を適用する対象の内容・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が編集操作を適用する対象の内容・Idと一致する場合はtrue
          */
         function findItem12(item) {
             return item.id === target.contentId;
@@ -353,10 +353,10 @@ export function updateRichTextDocument<T extends RichTextDocumentTarget>(source:
     }
     else {
         const group = problem.contents.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が編集操作を適用する対象のグループ・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が編集操作を適用する対象のグループ・Idと一致する場合はtrue
          */
         function findItem13(item) {
             return item.id === target.groupId;
@@ -365,10 +365,10 @@ export function updateRichTextDocument<T extends RichTextDocumentTarget>(source:
             return { ok: false, worksheet: source, code: "NOT_FOUND" };
         }
         const item = group.items.find((/**
-         * 検索条件に一致する要素か判定する。
+         * キーと値の組の対象を一意に特定する識別子が編集操作を適用する対象のsub・Question・Idと一致する最初の要素を検索する。
          *
-         * @param entry 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param entry キーと値の組
+         * @returns キーと値の組の対象を一意に特定する識別子が編集操作を適用する対象のsub・Question・Idと一致する場合はtrue
          */
         function findItem14(entry) {
             return entry.id === target.subQuestionId;
@@ -400,16 +400,16 @@ export function updateImageReference(source: Worksheet, problemId: string, image
     if (target) {
         let found = false;
         const result = updateRichTextDocument(source, problemId, target, (/**
-         * updateRichTextDocumentへ渡す処理を実行する。
+         * 処理対象のリッチテキスト文書の内容内の指定位置の値をcreate・Updated・画像・Refの結果へ更新する。
          *
-         * @param document documentとして使用する値
+         * @param document 処理対象のリッチテキスト文書
          */
         function updateRichTextDocumentCallback15(document) {
             const index = document.content.findIndex((/**
-             * 検索条件に一致する要素か判定する。
+             * 各ノードが探している位置の要素か判定する。
              *
-             * @param node 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param node 走査または変換するリッチテキストノード
+             * @returns ノードの作成または検証する要素種別が「imageRef」と一致するかつノードのノードへ設定する属性の対象を一意に特定する識別子が画像・Idと一致する場合はtrue
              */
             function findItemIndex16(node) {
                 return node.type === "imageRef" && node.attrs.id === imageId;
@@ -431,10 +431,10 @@ export function updateImageReference(source: Worksheet, problemId: string, image
     }
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem17(item) {
         return item.id === problemId;
@@ -442,10 +442,10 @@ export function updateImageReference(source: Worksheet, problemId: string, image
     if (!problem)
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     const index = problem.contents.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題本文または解説が探している位置の要素か判定する。
      *
-     * @param content contentとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param content 処理対象の問題本文または解説
+     * @returns 処理対象の問題本文または解説の作成または検証する要素種別が「image」と一致するかつ処理対象の問題本文または解説の対象を一意に特定する識別子が画像・Idと一致する場合はtrue
      */
     function findItemIndex18(content) {
         return content.type === "image" && content.id === imageId;
@@ -458,24 +458,24 @@ export function updateImageReference(source: Worksheet, problemId: string, image
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * updateLegacyAnswerImageReferenceの対象となる状態を更新する。
+ * 処理対象のリッチテキスト文書を処理対象の問題本文または解説の解答・文書へ更新する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param imageId 対象を識別するID
- * @param target targetとして使用する値
- * @param update updateとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param target 編集操作を適用する対象
+ * @param update 対象データへ適用する更新処理
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 function updateLegacyAnswerImageReference(source: Worksheet, problemId: string, imageId: string, target: Exclude<RichTextDocumentTarget, {
     kind: "solution";
 }>, update: ImageReferenceUpdate): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem19(item) {
         return item.id === problemId;
@@ -485,10 +485,10 @@ function updateLegacyAnswerImageReference(source: Worksheet, problemId: string, 
     let document: BasicRichTextDocument | null = null;
     if (target.kind === "content") {
         const content = problem.contents.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が編集操作を適用する対象の内容・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が編集操作を適用する対象の内容・Idと一致する場合はtrue
          */
         function findItem20(item) {
             return item.id === target.contentId;
@@ -500,20 +500,20 @@ function updateLegacyAnswerImageReference(source: Worksheet, problemId: string, 
     }
     else {
         const group = problem.contents.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が編集操作を適用する対象のグループ・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が編集操作を適用する対象のグループ・Idと一致する場合はtrue
          */
         function findItem21(item) {
             return item.id === target.groupId;
         }));
         const item = group?.type === "subQuestionGroup"
             ? group.items.find((/**
-             * 検索条件に一致する要素か判定する。
+             * キーと値の組の対象を一意に特定する識別子が編集操作を適用する対象のsub・Question・Idと一致する最初の要素を検索する。
              *
-             * @param entry 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param entry キーと値の組
+             * @returns キーと値の組の対象を一意に特定する識別子が編集操作を適用する対象のsub・Question・Idと一致する場合はtrue
              */
             function findItem22(entry) {
                 return entry.id === target.subQuestionId;
@@ -526,10 +526,10 @@ function updateLegacyAnswerImageReference(source: Worksheet, problemId: string, 
     if (!document)
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     const index = document.content.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各ノードが探している位置の要素か判定する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns ノードの作成または検証する要素種別が「imageRef」と一致するかつノードのノードへ設定する属性の対象を一意に特定する識別子が画像・Idと一致する場合はtrue
      */
     function findItemIndex23(node) {
         return node.type === "imageRef" && node.attrs.id === imageId;
@@ -542,11 +542,11 @@ function updateLegacyAnswerImageReference(source: Worksheet, problemId: string, 
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * createUpdatedImageBlockで必要な値を作成する。
+ * Updated・画像・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
  * @param current 更新前または現在の状態
- * @param update updateとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param update 対象データへ適用する更新処理
+ * @returns 値・画像を本文の前後どちらへ置くかの指定・表全体に対する列幅の割合を持つオブジェクト
  */
 function createUpdatedImageBlock(current: ImageBlock, update: ImageReferenceUpdate): ImageBlock {
     const base = {
@@ -564,11 +564,11 @@ function createUpdatedImageBlock(current: ImageBlock, update: ImageReferenceUpda
         : { ...base, placement: "floatRight", widthPercent };
 }
 /**
- * createUpdatedImageRefで必要な値を作成する。
+ * Updated・画像・Refを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
  * @param current 更新前または現在の状態
- * @param update updateとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param update 対象データへ適用する更新処理
+ * @returns 作成または検証する要素種別・ノードへ設定する属性を持つオブジェクト
  */
 function createUpdatedImageRef(current: Extract<RichTextNode, {
     type: "imageRef";
@@ -590,20 +590,20 @@ function createUpdatedImageRef(current: Extract<RichTextNode, {
         : { type: "imageRef", attrs: { ...base, placement: "floatRight", widthPercent } };
 }
 /**
- * deleteContentの対象となる要素を削除または解放する。
+ * 内容と不要になった関連データを安全に取り除く。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param contentId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function deleteContent(source: Worksheet, problemId: string, contentId: string): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem24(item) {
         return item.id === problemId;
@@ -611,10 +611,10 @@ export function deleteContent(source: Worksheet, problemId: string, contentId: s
     if (!problem)
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     const index = problem.contents.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題本文または解説が探している位置の要素か判定する。
      *
-     * @param content contentとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param content 処理対象の問題本文または解説
+     * @returns 処理対象の問題本文または解説の対象を一意に特定する識別子が内容・Idと一致する場合はtrue
      */
     function findItemIndex25(content) {
         return content.id === contentId;
@@ -625,21 +625,21 @@ export function deleteContent(source: Worksheet, problemId: string, contentId: s
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * moveContentに必要な処理を実行する。
+ * 処理が成功したかどうか・処理対象となるプリント・コードを持つオブジェクトを一つの結果へまとめる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param contentId 対象を識別するID
- * @param delta deltaとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param delta 現在値へ加える増減量
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function moveContent(source: Worksheet, problemId: string, contentId: string, delta: -1 | 1): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem26(item) {
         return item.id === problemId;
@@ -647,10 +647,10 @@ export function moveContent(source: Worksheet, problemId: string, contentId: str
     if (!problem)
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     const from = problem.contents.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 各処理対象の問題本文または解説が探している位置の要素か判定する。
      *
-     * @param content contentとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param content 処理対象の問題本文または解説
+     * @returns 処理対象の問題本文または解説の対象を一意に特定する識別子が内容・Idと一致する場合はtrue
      */
     function findItemIndex27(content) {
         return content.id === contentId;
@@ -665,47 +665,47 @@ export function moveContent(source: Worksheet, problemId: string, contentId: str
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * setProblemSolutionの対象となる状態を更新する。
+ * 問題・Solutionを現在の編集結果へ反映する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns 更新・問題の結果
  */
 export function setProblemSolution(source: Worksheet, problemId: string, document: SolutionRichTextDocument | null): WorksheetCommandResult {
     return updateProblem(source, problemId, (/**
-     * updateProblemへ渡す処理を実行する。
+     * 処理対象の問題または例題のsolutionを条件に応じて選択した値へ更新する。
      *
-     * @param problem problemとして使用する値
+     * @param problem 処理対象の問題または例題
      */
     function updateProblemCallback28(problem) {
         problem.solution = document ? clone(document) : null;
     }));
 }
 /**
- * addSubQuestionの対象となる要素を追加する。
+ * 処理が成功したかどうか・処理対象となるプリント・コードを持つオブジェクトを一つの結果へまとめる。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param groupId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function addSubQuestion(source: Worksheet, problemId: string, groupId: string): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem29(item) {
         return item.id === problemId;
     }));
     const group = problem?.contents.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子がグループ・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子がグループ・Idと一致する場合はtrue
      */
     function findItem30(item) {
         return item.id === groupId;
@@ -720,31 +720,31 @@ export function addSubQuestion(source: Worksheet, problemId: string, groupId: st
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * updateSubQuestionの対象となる状態を更新する。
+ * Sub・Questionを現在の編集結果へ反映する。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param groupId 対象を識別するID
  * @param subQuestionId 対象を識別するID
- * @param change changeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param change 適用する編集内容
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function updateSubQuestion(source: Worksheet, problemId: string, groupId: string, subQuestionId: string, change: (item: SubQuestion) => void): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem31(item) {
         return item.id === problemId;
     }));
     const group = problem?.contents.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子がグループ・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子がグループ・Idと一致する場合はtrue
      */
     function findItem32(item) {
         return item.id === groupId;
@@ -753,10 +753,10 @@ export function updateSubQuestion(source: Worksheet, problemId: string, groupId:
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     }
     const item = group.items.find((/**
-     * 検索条件に一致する要素か判定する。
+     * キーと値の組の対象を一意に特定する識別子がsub・Question・Idと一致する最初の要素を検索する。
      *
-     * @param entry 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param entry キーと値の組
+     * @returns キーと値の組の対象を一意に特定する識別子がsub・Question・Idと一致する場合はtrue
      */
     function findItem33(entry) {
         return entry.id === subQuestionId;
@@ -767,30 +767,30 @@ export function updateSubQuestion(source: Worksheet, problemId: string, groupId:
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * deleteSubQuestionの対象となる要素を削除または解放する。
+ * Sub・Questionと不要になった関連データを安全に取り除く。
  *
- * @param source sourceとして使用する値
+ * @param source 複製・変換・更新の起点となる値
  * @param problemId 対象を識別するID
  * @param groupId 対象を識別するID
  * @param subQuestionId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理が成功したかどうか・処理対象となるプリント・結果理由を持つオブジェクト
  */
 export function deleteSubQuestion(source: Worksheet, problemId: string, groupId: string, subQuestionId: string): WorksheetCommandResult {
     const worksheet = clone(source);
     const problem = worksheet.problems.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子が問題・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子が問題・Idと一致する場合はtrue
      */
     function findItem34(item) {
         return item.id === problemId;
     }));
     const group = problem?.contents.find((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子がグループ・Idと一致する最初の要素を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子がグループ・Idと一致する場合はtrue
      */
     function findItem35(item) {
         return item.id === groupId;
@@ -798,10 +798,10 @@ export function deleteSubQuestion(source: Worksheet, problemId: string, groupId:
     if (!group || group.type !== "subQuestionGroup")
         return { ok: false, worksheet: source, code: "NOT_FOUND" };
     const index = group.items.findIndex((/**
-     * 検索条件に一致する要素か判定する。
+     * 要素の対象を一意に特定する識別子がsub・Question・Idと一致する最初の配列位置を検索する。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素の対象を一意に特定する識別子がsub・Question・Idと一致する場合はtrue
      */
     function findItemIndex36(item) {
         return item.id === subQuestionId;
@@ -814,11 +814,11 @@ export function deleteSubQuestion(source: Worksheet, problemId: string, groupId:
     return { ok: true, worksheet: touch(worksheet) };
 }
 /**
- * cloneWorksheetWithNewIdsで必要な値を作成する。
+ * プリント・With・New・Idsを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param source sourceとして使用する値
- * @param now nowとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param source 複製・変換・更新の起点となる値
+ * @param now 作成日時と更新日時へ記録する基準時刻
+ * @returns 処理対象となるプリント
  */
 export function cloneWorksheetWithNewIds(source: Worksheet, now = new Date()): Worksheet {
     const worksheet = clone(source);

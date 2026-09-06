@@ -20,9 +20,9 @@ export function createEditorStressFixture(problemCount = EDITOR_STRESS_PROBLEM_C
     const createdAt = "2026-08-28T00:00:00.000Z";
     const worksheet = createWorksheet(new Date(createdAt));
     const assetIds = Array.from({ length: EDITOR_STRESS_ASSET_COUNT }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとにcreate・Idの結果を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns create・識別子の結果
      */
     function fromCallback1() {
         return createId();
@@ -30,11 +30,11 @@ export function createEditorStressFixture(problemCount = EDITOR_STRESS_PROBLEM_C
     worksheet.title = `${problemCount}問・複合コンテンツ入力性能テスト`;
     worksheet.header.title = worksheet.title;
     worksheet.problems = Array.from({ length: problemCount }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとにcreate・負荷・問題の結果を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param problemIndex problemIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param problemIndex プリント内での問題位置
+     * @returns create・負荷・問題の結果
      */
     function fromCallback2(_, problemIndex) {
         return (createStressProblem(problemIndex, assetIds[problemIndex % assetIds.length]!));
@@ -42,10 +42,10 @@ export function createEditorStressFixture(problemCount = EDITOR_STRESS_PROBLEM_C
     return {
         worksheet: WorksheetSchema.parse(worksheet),
         assets: assetIds.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各対象を一意に特定する識別子を対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・要素または列へ適用する幅・要素またはページの高さを持つオブジェクトへ変換する。
          *
          * @param id 対象を識別するID
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・要素または列へ適用する幅・要素またはページの高さを持つオブジェクト
          */
         function mapItem3(id): EditorStressAsset {
             return ({
@@ -60,11 +60,11 @@ export function createEditorStressFixture(problemCount = EDITOR_STRESS_PROBLEM_C
     };
 }
 /**
- * createStressProblemで必要な値を作成する。
+ * 負荷・問題を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param problemIndex problemIndexとして使用する値
+ * @param problemIndex プリント内での問題位置
  * @param assetId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理対象の問題または例題
  */
 function createStressProblem(problemIndex: number, assetId: string) {
     const number = problemIndex + 1;
@@ -85,11 +85,11 @@ function createStressProblem(problemIndex: number, assetId: string) {
     };
     const subQuestions = createSubQuestionGroup();
     subQuestions.items = Array.from({ length: EDITOR_STRESS_SUBQUESTIONS_PER_GROUP }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに要素を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param subQuestionIndex subQuestionIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param subQuestionIndex 問題グループ内での小問位置
+     * @returns 要素
      */
     function fromCallback4(_, subQuestionIndex) {
         const item = createSubQuestion();
@@ -116,11 +116,11 @@ function createStressProblem(problemIndex: number, assetId: string) {
     return problem;
 }
 /**
- * createMixedDocumentで必要な値を作成する。
+ * Mixed・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param problemNumber problemNumberとして使用する値
+ * @param problemNumber 表示またはfixture生成に使う問題番号
  * @param assetId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function createMixedDocument(problemNumber: number, assetId: string): BasicRichTextDocument {
     return {
@@ -153,11 +153,11 @@ function createMixedDocument(problemNumber: number, assetId: string): BasicRichT
     };
 }
 /**
- * createMathDocumentで必要な値を作成する。
+ * 数式・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param label labelとして使用する値
- * @param latex latexとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param label 画面表示やテスト識別に使う名称
+ * @param latex 描画または保存するLaTeX式
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function createMathDocument(label: string, latex: string): TableCellRichTextDocument {
     return {
@@ -173,10 +173,10 @@ function createMathDocument(label: string, latex: string): TableCellRichTextDocu
     };
 }
 /**
- * createTableCellDocumentで必要な値を作成する。
+ * 表・セル・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param text textとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function createTableCellDocument(text: string): TableCellRichTextDocument {
     return {
@@ -189,11 +189,11 @@ function createTableCellDocument(text: string): TableCellRichTextDocument {
     };
 }
 /**
- * createTextDocumentで必要な値を作成する。
+ * テキスト・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param text textとして使用する値
- * @param answerColor answerColorとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @param answerColor 解答へ適用する文字色
+ * @returns 処理対象のリッチテキスト文書
  */
 function createTextDocument(text: string, answerColor = false): BasicRichTextDocument {
     const document = emptyDocument();
@@ -209,12 +209,12 @@ function createTextDocument(text: string, answerColor = false): BasicRichTextDoc
     return document;
 }
 /**
- * createSolutionDocumentで必要な値を作成する。
+ * Solution・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param label labelとして使用する値
+ * @param label 画面表示やテスト識別に使う名称
  * @param assetId 対象を識別するID
- * @param problemNumber problemNumberとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param problemNumber 表示またはfixture生成に使う問題番号
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function createSolutionDocument(label: string, assetId: string, problemNumber: number): SolutionRichTextDocument {
     return {
@@ -256,28 +256,28 @@ function createSolutionDocument(label: string, assetId: string, problemNumber: n
     };
 }
 /**
- * createPopulatedTableで必要な値を作成する。
+ * Populated・表を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param problemNumber problemNumberとして使用する値
- * @param rows rowsとして使用する値
- * @param columns columnsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param problemNumber 表示またはfixture生成に使う問題番号
+ * @param rows 作成または検証する表の行数・行一覧
+ * @param columns 作成する表の列数
+ * @returns 編集または検証の対象となる表
  */
 function createPopulatedTable(problemNumber: number, rows: number, columns: number): TableBlock {
     const table = createTableBlock(rows, columns);
     table.headerRow = true;
     table.rows.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の表の行についてfor・Eachを実行し、対応関係または検証状態を更新する。
      *
-     * @param row rowとして使用する値
-     * @param rowIndex rowIndexとして使用する値
+     * @param row 処理対象の表の行
+     * @param rowIndex 表内での行位置
      */
     function processItem5(row, rowIndex) {
         row.cells.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の表セルについてcreate・表・セル・文書を実行し、対応関係または検証状態を更新する。
          *
-         * @param cell cellとして使用する値
-         * @param columnIndex columnIndexとして使用する値
+         * @param cell 処理対象の表セル
+         * @param columnIndex 表内での列位置
          */
         function processItem6(cell, columnIndex) {
             cell.document = createTableCellDocument(`${problemNumber}-${rowIndex + 1}-${columnIndex + 1}`);

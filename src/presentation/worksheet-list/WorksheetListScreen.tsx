@@ -14,6 +14,11 @@ import { Modal } from "../components/Modal";
 import { ManualContextLink } from "../components/ManualContextLink";
 import { Toast } from "../components/Toast";
 import { useOutsidePointerDown } from "../components/useOutsidePointerDown";
+
+// --------------------
+// 定数と型定義
+// --------------------
+
 const PAGE_SIZE = 50;
 type ListError = {
     kind: "load" | "operation";
@@ -28,12 +33,17 @@ type PendingListOperation = {
     worksheetId: string;
 };
 /**
- * WorksheetListScreenコンポーネントを表示する。
+ * 保存済みプリントの検索・ページ切替・作成・複製・削除・バックアップ操作を提供する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns プリント・一覧・画面を表示するReact要素
  */
 export function WorksheetListScreen() {
     const navigate = useNavigate();
+
+    // --------------------
+    // 状態と参照
+    // --------------------
+
     const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
     const [invalidCount, setInvalidCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -53,17 +63,19 @@ export function WorksheetListScreen() {
     const [pendingOperation, setPendingOperation] = useState<PendingListOperation | null>(null);
     const openMenuRef = useRef<HTMLDivElement>(null);
     useOutsidePointerDown(openMenuRef, openMenu !== null, (/**
-     * useOutsidePointerDownへ渡す処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Open・Menuをユーザー操作または非同期処理の結果に合わせて更新する。
      */
     function useOutsidePointerDownCallback1() {
         return setOpenMenu(null);
     }));
+    // --------------------
+    // 読み込み処理
+    // --------------------
+
     const load = useCallback((/**
-     * 依存値に応じて再利用する操作を作成する。
+     * 保存済みプリントを読み込み、一覧・件数・エラー状態を同じ応答から更新する。
      *
-     * @returns 非同期処理の結果
+     * @returns 保存済みプリントを読み込み、一覧・件数・エラー状態を同じ応答から更新する処理の完了時に解決するPromise
      */
     async function createMemoizedCallback2() {
         setLoading(true);
@@ -81,7 +93,7 @@ export function WorksheetListScreen() {
         }
     }), []);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * 読み込みとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
      */
     function synchronizeEffect3() {
         // 初期表示時に画面の状態をIndexedDBの内容と同期する。
@@ -89,65 +101,68 @@ export function WorksheetListScreen() {
         void load();
     }), [load]);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * set・TimeoutとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 次回のEffect実行前またはコンポーネント破棄時に呼び出すクリーンアップ関数
      */
     function synchronizeEffect4() {
         const timer = window.setTimeout((/**
-         * 指定時間後に必要な処理を実行する。
+         * 連続操作が落ち着いてからDebounced・検索語を最新値へ更新する。
          */
         function handleScheduledTask5() { setDebouncedQuery(query); setPage(1); }), 150);
         return (/**
-         * 呼び出し元から要求された処理を実行する。
+         * 再実行時に古い予約処理が残らないよう、保留中のタイマーを解除する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
-        function commentRuleCallback6() {
+        function applyDeferredOperation6() {
             return window.clearTimeout(timer);
         });
     }), [query]);
+    // --------------------
+    // 検索とページング
+    // --------------------
+
     const active = useMemo((/**
-     * 依存値から再利用する計算結果を作成する。
+     * sortの結果を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue7() {
         return worksheets
             .filter((/**
-         * 対象要素を結果へ残すか判定する。
+         * 処理対象となるプリントのごみ箱へ移した日時がnullと一致する要素だけを後続処理へ残す。
          *
-         * @param worksheet worksheetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param worksheet 処理対象となるプリント
+         * @returns 処理対象となるプリントのごみ箱へ移した日時がnullと一致する場合はtrue
          */
         function filterItem8(worksheet) {
             return worksheet.deletedAt === null;
         }))
             .filter((/**
-         * 対象要素を結果へ残すか判定する。
+         * normalize・検索・キーの結果にnormalize・検索・キーの結果が含まれる要素だけを後続処理へ残す。
          *
-         * @param worksheet worksheetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param worksheet 処理対象となるプリント
+         * @returns normalize・検索・キーの結果にnormalize・検索・キーの結果が含まれる場合はtrue
          */
         function filterItem9(worksheet) {
             return normalizeSearchKey(worksheet.title).includes(normalizeSearchKey(debouncedQuery));
         }))
             .sort((/**
-         * 表示順を決めるため二つの要素を比較する。
+         * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
          *
-         * @param a aとして使用する値
-         * @param b bとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param a 左側の要素
+         * @param b 右側の要素
+         * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
          */
         function compareItems10(a, b) {
             return b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
         }));
     }), [worksheets, debouncedQuery]);
     const trashCount = worksheets.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 処理対象となるプリントのごみ箱へ移した日時がnullと異なる要素だけを後続処理へ残す。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 処理対象となるプリントのごみ箱へ移した日時がnullと異なる場合はtrue
      */
     function filterItem11(worksheet) {
         return worksheet.deletedAt !== null;
@@ -156,10 +171,14 @@ export function WorksheetListScreen() {
     const currentPage = Math.min(page, totalPages);
     const visible = active.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const atLimit = worksheets.length >= STRUCTURE_LIMITS.worksheetsPerArchive;
+    // --------------------
+    // プリント操作
+    // --------------------
+
     const createNew = (/**
-     * createNewで必要な値を作成する。
+     * Newを識別子・初期値・関連データが揃った新しい値として組み立てる。
      *
-     * @returns 非同期処理の結果
+     * @returns Newを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
      */
     async function createNewImplementation12() {
         const worksheet = createWorksheet();
@@ -172,10 +191,10 @@ export function WorksheetListScreen() {
         }
     });
     const duplicate = (/**
-     * duplicateで必要な値を作成する。
+     * Open・Menuをユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 非同期処理の結果
+     * @param worksheet 処理対象となるプリント
+     * @returns Open・Menuをユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function duplicateImplementation13(worksheet: Worksheet) {
         setOpenMenu(null);
@@ -189,10 +208,10 @@ export function WorksheetListScreen() {
         }
     });
     const exportSingle = (/**
-     * exportSingleの対象となるデータを保存または出力する。
+     * Open・Menuをユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 非同期処理の結果
+     * @param worksheet 処理対象となるプリント
+     * @returns Open・Menuをユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function exportSingleImplementation14(worksheet: Worksheet) {
         setOpenMenu(null);
@@ -210,14 +229,14 @@ export function WorksheetListScreen() {
         }
     });
     const closePreparedDownload = (/**
-     * closePreparedDownloadに対応する画面表示を更新する。
+     * Prepared・ダウンロードをrevokeで処理し、その結果を呼び出し元へ反映する。
      */
     function closePreparedDownloadImplementation15() {
         preparedDownload?.revoke();
         setPreparedDownload(null);
     });
     const completePreparedDownload = (/**
-     * completePreparedDownloadに必要な処理を実行する。
+     * Prepared・ダウンロードをユーザー操作または非同期処理の結果に合わせて更新する。
      */
     function completePreparedDownloadImplementation16() {
         if (!preparedDownload)
@@ -228,9 +247,9 @@ export function WorksheetListScreen() {
         setToast({ message: "JSONのダウンロードを開始しました" });
     });
     const trash = (/**
-     * trashに必要な処理を実行する。
+     * 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @returns 非同期処理の結果
+     * @returns 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function trashImplementation17() {
         if (!deleteTarget || pendingOperation)
@@ -252,9 +271,9 @@ export function WorksheetListScreen() {
         }
     });
     const undoTrash = (/**
-     * undoTrashに必要な処理を実行する。
+     * 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @returns 非同期処理の結果
+     * @returns 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function undoTrashImplementation18() {
         if (!toast?.worksheet || pendingOperation)
@@ -275,12 +294,16 @@ export function WorksheetListScreen() {
         }
     });
     const operationPending = pendingOperation !== null;
+
+    // --------------------
+    // 画面表示
+    // --------------------
+
     return (<div className="app-shell">
       <header className="app-header">
         <button className="brand" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「プリント一覧」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick19() {
         return navigate("/");
@@ -289,9 +312,7 @@ export function WorksheetListScreen() {
           <span>数学プリント作成</span>
         </button>
         <div className="header-actions"><ManualContextLink topic="overview"><BookOpen size={16}/>使い方</ManualContextLink><button className="secondary-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「設定・バックアップ」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick20() {
         return setSettingsOpen(true);
@@ -305,34 +326,28 @@ export function WorksheetListScreen() {
 
         <section className="list-tools">
           <label className="search-field"><Search size={17}/><input value={query} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「題名で検索」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange21(event) {
         return setQuery(event.target.value);
     })} placeholder="題名で検索" aria-label="題名で検索"/>{query && <button className="clear-search" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「クリア」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick22() {
         return setQuery("");
     })}>クリア</button>}</label>
           <div className="tool-actions">
             <button className="secondary-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「インポート」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick23() {
         return setImportOpen(true);
     })}><FileUp size={16}/>インポート</button>
             <button className="secondary-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「0 &&」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick24() {
         return navigate("/trash");
@@ -347,17 +362,16 @@ export function WorksheetListScreen() {
           <div className="section-heading"><h2>最近のプリント</h2><span>更新日時の新しい順</span></div>
           {loading ? <ListSkeleton /> : visible.length > 0 ? (<div className="worksheet-list">
               {visible.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各処理対象となるプリントを画面表示用のReact要素へ変換する。
                  *
-                 * @param worksheet worksheetとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param worksheet 処理対象となるプリント
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem25(worksheet) {
                     return (<article className="worksheet-row" key={worksheet.id}>
                   <button className="worksheet-title-button" onClick={(/**
-                     * onClickで発生した画面イベントを処理する。
+                     * ボタンからクリック操作を受け、navigateを実行する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
                      */
                     function handleClick26() {
                         return navigate(`/worksheets/${worksheet.id}`);
@@ -366,41 +380,36 @@ export function WorksheetListScreen() {
                   <time dateTime={worksheet.updatedAt}>{formatDate(worksheet.updatedAt)}</time>
                   <div className="row-menu-wrap" ref={openMenu === worksheet.id ? openMenuRef : undefined}>
                     <button className="icon-button" aria-label={`${worksheet.title}のメニュー`} onClick={(/**
-                     * onClickで発生した画面イベントを処理する。
-                     *
-                     * @returns 呼び出し元で使用する処理結果
+                     * ボタンからクリック操作を受け、Open・Menuを操作内容に合う状態へ更新する。
                      */
                     function handleClick27() {
                         return setOpenMenu(openMenu === worksheet.id ? null : worksheet.id);
                     })}><MoreHorizontal size={19}/></button>
                     {openMenu === worksheet.id && <div className="row-menu">
                       <button onClick={(/**
-                         * onClickで発生した画面イベントを処理する。
+                         * 「開く」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleClick28() {
                             return navigate(`/worksheets/${worksheet.id}`);
                         })}>開く</button>
                       <button disabled={atLimit} onClick={(/**
-                         * onClickで発生した画面イベントを処理する。
+                         * 「複製」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleClick29() {
                             return duplicate(worksheet);
                         })}>複製</button>
                       <button onClick={(/**
-                         * onClickで発生した画面イベントを処理する。
+                         * 「JSONエクスポート」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleClick30() {
                             return exportSingle(worksheet);
                         })}>JSONエクスポート</button>
                       <hr />
                       <button className="danger-text" onClick={(/**
-                         * onClickで発生した画面イベントを処理する。
+                         * 「ゴミ箱へ移動」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
                          */
                         function handleClick31() { setError(null); setDeleteTarget(worksheet); setOpenMenu(null); })}>ゴミ箱へ移動</button>
                     </div>}
@@ -408,16 +417,12 @@ export function WorksheetListScreen() {
                 </article>);
                 }))}
             </div>) : debouncedQuery ? (<EmptyState icon={<Search />} title={`「${debouncedQuery}」に一致するプリントはありません`} description="別の語句で検索するか、検索条件を解除してください。"><button className="secondary-button" onClick={(/**
-             * onClickで発生した画面イベントを処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * 「検索をクリア」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
              */
             function handleClick32() {
                 return setQuery("");
             })}>検索をクリア</button></EmptyState>) : (<EmptyState icon={<ArchiveRestore />} title="まだプリントがありません" description="新しいプリントを作成するか、JSONからインポートしてください。"><button className="primary-button" onClick={createNew}><Plus size={17}/>新しいプリント</button><button className="secondary-button" onClick={(/**
-             * onClickで発生した画面イベントを処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * 「インポート」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
              */
             function handleClick33() {
                 return setImportOpen(true);
@@ -427,70 +432,64 @@ export function WorksheetListScreen() {
       </main>
 
       {deleteTarget && <Modal title="プリントをゴミ箱へ移動しますか？" size="small" onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
+     * 「プリントをゴミ箱へ移動しますか？」要素のon・閉じる操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClose34() { if (!operationPending)
         setDeleteTarget(null); })} footer={<><button className="secondary-button" autoFocus disabled={operationPending} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「キャンセル」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick35() {
         return setDeleteTarget(null);
     })}>キャンセル</button><button className="danger-button" disabled={operationPending} onClick={trash}>{pendingOperation?.kind === "trash" ? "移動中…" : "移動する"}</button></>}><p>「{deleteTarget.title}」はゴミ箱から復元できます。</p>{error && <div className="notice danger" role="alert"><strong>{error.title}</strong><p>{error.message}</p></div>}</Modal>}
       {settingsOpen && <BackupModal worksheets={worksheets} onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Backup・Modal要素から終了要求を受け、設定・Openを操作内容に合う状態へ更新する。
      */
     function handleClose36() {
         return setSettingsOpen(false);
     })} onImport={(/**
-     * onImportで発生した画面イベントを処理する。
+     * Backup・Modal要素から画面操作を受け、設定・Openを操作内容に合う状態へ更新する。
      */
     function handleImport37() { setSettingsOpen(false); setImportOpen(true); })} onDownloadReady={(/**
-     * onDownloadReadyで発生した画面イベントを処理する。
+     * Backup・Modal要素から画面操作を受け、revokeを実行する。
      *
-     * @param download downloadとして使用する値
+     * @param download 完了待ちのブラウザーダウンロード
      */
     function handleDownloadReady38(download) { preparedDownload?.revoke(); setPreparedDownload(download); })}/>}
       {importOpen && <ImportModal onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Import・Modal要素から終了要求を受け、Import・Openを操作内容に合う状態へ更新する。
      */
     function handleClose39() {
         return setImportOpen(false);
     })} onImported={(/**
-     * onImportedで発生した画面イベントを処理する。
+     * Import・Modal要素から画面操作を受け、Import・Openを操作内容に合う状態へ更新する。
      *
-     * @param count countとして使用する値
-     * @returns 非同期処理の結果
+     * @param count 生成または検査する要素数
      */
     async function handleImported40(count) { setImportOpen(false); await load(); setToast({ message: `${count}件をインポートしました` }); })}/>}
       {preparedDownload && <Modal title="JSONを書き出す" size="small" onClose={closePreparedDownload} footer={<><button className="secondary-button" onClick={closePreparedDownload}>キャンセル</button><a className="primary-button" href={preparedDownload.url} download={preparedDownload.fileName} onClick={completePreparedDownload}><FileDown size={16}/>JSONをダウンロード</a></>}><p>JSONファイルの準備ができました。ダウンロードをクリックして保存してください。</p><div className="import-summary"><span>ファイル: {preparedDownload.fileName}</span></div></Modal>}
       {toast && <Toast message={toast.message} {...(toast.worksheet ? { action: pendingOperation?.kind === "restore" ? "復元中…" : "元に戻す", onAction: (/**
-         * onActionに対応するイベントまたは通知を処理する。
+         * Actionの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function onActionCallback41() {
             return void undoTrash();
         }) } : {})} disabled={operationPending} onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Toast要素から終了要求を受け、Toastを操作内容に合う状態へ更新する。
      */
     function handleClose42() {
         return setToast(null);
     })}/>}
     </div>);
 }
+// --------------------
+// バックアップ
+// --------------------
+
 /**
- * BackupModalコンポーネントを表示する。
+ * 選択プリントまたは全プリントを画像込みのJSONバックアップとして書き出す。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Backup・Modalへ渡す表示情報と操作
+ * @returns Backup・Modalを表示するReact要素
  */
 function BackupModal(props: {
     worksheets: Worksheet[];
@@ -500,10 +499,10 @@ function BackupModal(props: {
 }) {
     let { worksheets, onClose, onImport, onDownloadReady } = props;
     const active = worksheets.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 処理対象となるプリントのごみ箱へ移した日時がnullと一致する要素だけを後続処理へ残す。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 処理対象となるプリントのごみ箱へ移した日時がnullと一致する場合はtrue
      */
     function filterItem43(worksheet) {
         return worksheet.deletedAt === null;
@@ -512,9 +511,9 @@ function BackupModal(props: {
     const [exporting, setExporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const exportAll = (/**
-     * exportAllの対象となるデータを保存または出力する。
+     * Exportingを有効または表示中の状態へ切り替える。
      *
-     * @returns 非同期処理の結果
+     * @returns Exportingを有効または表示中の状態へ切り替える処理の完了時に解決するPromise
      */
     async function exportAllImplementation44() {
         if (active.length === 0 || exportingRef.current)
@@ -526,10 +525,10 @@ function BackupModal(props: {
             const referencedAssetIds = [...collectReferencedAssetIds(active)];
             const assets = (await database.assets.bulkGet(referencedAssetIds))
                 .filter((/**
-             * 対象要素を結果へ残すか判定する。
+             * 処理対象の画像アセットがundefinedと異なる要素だけを後続処理へ残す。
              *
-             * @param asset assetとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param asset 処理対象の画像アセット
+             * @returns 処理対象の画像アセットがundefinedと異なる場合はtrue
              */
             function filterItem45(asset): asset is AssetRecord {
                 return asset !== undefined;
@@ -552,7 +551,7 @@ function BackupModal(props: {
         }
     });
     return <Modal title="設定・バックアップ" onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
+     * 「設定・バックアップ」要素のon・閉じる操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClose46() { if (!exporting)
         onClose(); })}>
@@ -562,11 +561,15 @@ function BackupModal(props: {
     <div className="data-note"><strong>データについて</strong><span>保存先: このブラウザ内</span><span>スキーマバージョン: 1</span><p>クラウド保存やアカウント機能はありません。</p><ManualContextLink topic="backup">バックアップの詳しい使い方</ManualContextLink></div>
   </Modal>;
 }
+// --------------------
+// インポート
+// --------------------
+
 /**
- * ImportModalコンポーネントを表示する。
+ * JSONバックアップを事前検証し、競合を避けた識別子でプリントと画像を復元する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Import・Modalへ渡す表示情報と操作
+ * @returns Import・Modalを表示するReact要素
  */
 function ImportModal(props: {
     onClose: () => void;
@@ -580,10 +583,10 @@ function ImportModal(props: {
     const executingRef = useRef(false);
     const [executing, setExecuting] = useState(false);
     const choose = (/**
-     * chooseに必要な処理を実行する。
+     * ファイル・名前をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param file fileとして使用する値
-     * @returns 非同期処理の結果
+     * @param file 読み込みまたは検証の対象ファイル
+     * @returns ファイル・名前をユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function chooseImplementation47(file?: File) {
         if (!file || executingRef.current)
@@ -602,7 +605,7 @@ function ImportModal(props: {
     const execute = (/**
      * executeで定義された一連の処理を実行する。
      *
-     * @returns 非同期処理の結果
+     * @returns Executingを有効または表示中の状態へ切り替える処理の完了時に解決するPromise
      */
     async function executeImplementation48() {
         if (!backup || executingRef.current)
@@ -629,33 +632,31 @@ function ImportModal(props: {
     });
     const count = backup ? (backup.kind === "single" ? 1 : backup.worksheets.length) : 0;
     return <Modal title="JSONインポート" onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
+     * 「JSONインポート」要素のon・閉じる操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClose49() { if (!executing)
         onClose(); })} footer={<><button className="secondary-button" disabled={executing} onClick={onClose}>キャンセル</button><button className="primary-button" disabled={!backup || executing} onClick={execute}>{executing ? "インポート中…" : "インポート実行"}</button></>}>
     <div className="drop-zone" aria-disabled={executing} onDragOver={(/**
-     * onDragOverで発生した画面イベントを処理する。
+     * div要素から画面操作を受け、prevent・既定を実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleDragOver50(event) {
         return event.preventDefault();
     })} onDrop={(/**
-     * onDropで発生した画面イベントを処理する。
+     * div要素から画面操作を受け、prevent・既定を実行する。
      *
      * @param event 発生したイベント
      */
     function handleDrop51(event) { event.preventDefault(); if (!executing)
         void choose(event.dataTransfer.files[0]); })} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * div要素からクリック操作を受け、clickを実行する。
      */
     function handleClick52() { if (!executing)
         inputRef.current?.click(); })}><FileUp size={28}/><strong>JSONファイルを選択</strong><span>またはここへドロップ</span><input ref={inputRef} hidden disabled={executing} type="file" accept="application/json,.json" onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 入力欄から入力変更を受け、chooseを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange53(event) {
         return void choose(event.target.files?.[0]);
@@ -666,11 +667,15 @@ function ImportModal(props: {
     <ManualContextLink topic="backup">インポートの詳しい使い方</ManualContextLink>
   </Modal>;
 }
+// --------------------
+// 補助表示
+// --------------------
+
 /**
- * EmptyStateコンポーネントを表示する。
+ * 一覧が空または検索結果がない理由と、次に実行できる操作を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Empty・状態へ渡す表示情報と操作
+ * @returns Empty・状態を表示するReact要素
  */
 function EmptyState(props: {
     icon: React.ReactNode;
@@ -682,24 +687,24 @@ function EmptyState(props: {
     return <div className="empty-state"><div className="empty-icon">{icon}</div><h3>{title}</h3><p>{description}</p><div className="empty-actions">{children}</div></div>;
 }
 /**
- * ListSkeletonコンポーネントを表示する。
+ * プリント一覧の読み込み中に行レイアウトを保つプレースホルダーを表示する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 一覧・Skeletonを表示するReact要素
  */
 function ListSkeleton() { return <div className="worksheet-list">{[1, 2, 3].map((/**
- * 各要素を画面表示または別形式へ変換する。
+ * 各要素を画面表示用のReact要素へ変換する。
  *
- * @param item 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param item 配列処理で現在参照している要素
+ * @returns 画面表示用のReact要素
  */
 function mapItem54(item) {
     return <div className="worksheet-row skeleton" key={item}><span /><span /><span /></div>;
 }))}</div>; }
 /**
- * Paginationコンポーネントを表示する。
+ * 一覧の表示範囲と前後ページへの移動操作を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Paginationへ渡す表示情報と操作
+ * @returns Paginationを表示するReact要素
  */
 function Pagination(props: {
     page: number;
@@ -711,26 +716,28 @@ function Pagination(props: {
     const start = (page - 1) * PAGE_SIZE + 1;
     const end = Math.min(page * PAGE_SIZE, total);
     return <nav className="pagination" aria-label="ページ切り替え"><span>{start}～{end} / {total}件</span><button className="secondary-button" disabled={page <= 1} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「前へ」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick55() {
         return onChange(page - 1);
     })}><ChevronLeft size={16}/>前へ</button><strong>{page} / {totalPages}</strong><button className="secondary-button" disabled={page >= totalPages} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「次へ」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick56() {
         return onChange(page + 1);
     })}>次へ<ChevronRight size={16}/></button></nav>;
 }
+// --------------------
+// 補助関数
+// --------------------
+
 /**
- * formatDateの入力値を必要な形式へ変換する。
+ * Dateを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・Dateで判定または変換する入力値
+ * @returns 値を埋め込んだ表示文字列として得た文字列。変換できない場合は関数固有の既定値
  */
 function formatDate(value: string): string {
     const date = new Date(value);
@@ -741,11 +748,11 @@ function formatDate(value: string): string {
     return `${new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date)} ${time}`;
 }
 /**
- * failureMessageに必要な処理を実行する。
+ * 未知の例外値を利用者へ表示できる失敗理由の文字列へ変換する。
  *
  * @param reason 処理中に発生したエラー
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function failureMessage(reason: unknown, fallback: string): string {
     return reason instanceof Error && reason.message ? reason.message : fallback;

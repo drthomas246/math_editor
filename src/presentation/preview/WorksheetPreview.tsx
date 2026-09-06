@@ -7,6 +7,11 @@ import { formatProblemHeading, getProblemNumbers, getSubQuestionNumbers } from "
 import type { PreviewMode } from "../../application/pdf/generate-pdf";
 import { MathFormula } from "../components/MathFormula";
 import { planMeasuredPagination } from "./pagination";
+
+// --------------------
+// 型定義
+// --------------------
+
 type Props = {
     worksheet: Worksheet;
     mode: PreviewMode;
@@ -42,35 +47,40 @@ type MeasuredPagePlan = {
     oversizedAtomKeys: string[];
 };
 export const WorksheetPreview = memo((/**
- * WorksheetPreviewコンポーネントを表示する。
+ * プリントを用紙寸法へ改ページし、問題と解答の表示モードに応じたページ群を表示する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput let・{・プリント・表示または改ページの動作モード・倍率・アセット識別子と表示URLの対応表・on・ページ・Count・Change・on・Pagination・エラー・Change・on・Pagination・Ready・Changeをまとめて受け取るコールバック入力
+ * @returns プリント・プレビューを表示するReact要素
  */
-function WorksheetPreview(parameter1: Props) {
-    let { worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange, onPaginationReadyChange } = parameter1;
+function WorksheetPreview(callbackInput: Props) {
+    let { worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange, onPaginationReadyChange } = callbackInput;
+
+    // --------------------
+    // 改ページ状態と計算値
+    // --------------------
+
     const numbers = useMemo((/**
-     * 依存値から再利用する計算結果を作成する。
+     * get・問題・Numbersの結果を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue2() {
         return getProblemNumbers(worksheet);
     }), [worksheet]);
     const sections = useMemo<PreviewSection[]>((/**
-     * 依存値から再利用する計算結果を作成する。
+     * 各要素を変換した配列を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue3() {
         const sectionModes = mode === "questionsAndAnswers"
             ? (["questions", "withAnswers"] as const)
             : ([mode] as const);
         return sectionModes.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各区画単位の改ページ方式を表示または改ページの動作モード・atomsを持つオブジェクトへ変換する。
          *
-         * @param sectionMode sectionModeとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param sectionMode 区画単位の改ページ方式
+         * @returns 表示または改ページの動作モード・atomsを持つオブジェクト
          */
         function mapItem4(sectionMode) {
             return ({
@@ -80,25 +90,25 @@ function WorksheetPreview(parameter1: Props) {
         }));
     }), [mode, numbers, worksheet]);
     const sectionStructureKey = useMemo((/**
-     * 依存値から再利用する計算結果を作成する。
+     * JSON文字列を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue5() {
         return JSON.stringify(sections.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各改ページまたは表示の対象となる問題区画を順序を保った要素一覧へ変換する。
          *
-         * @param section sectionとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param section 改ページまたは表示の対象となる問題区画
+         * @returns 順序を保った要素一覧
          */
         function mapItem6(section) {
             return [
                 section.mode,
                 ...section.atoms.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各改ページ計算で扱う最小の描画単位を改ページ計算で扱う最小の描画単位の保存先または要素を特定するキーへ変換する。
                  *
-                 * @param atom atomとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param atom 改ページ計算で扱う最小の描画単位
+                 * @returns 改ページ計算で扱う最小の描画単位の保存先または要素を特定するキー
                  */
                 function mapItem7(atom) {
                     return atom.key;
@@ -117,9 +127,9 @@ function WorksheetPreview(parameter1: Props) {
     const needsMeasurement = pagination.measuredWorksheet !== worksheet
         || pagination.sectionStructureKey !== sectionStructureKey;
     useLayoutEffect((/**
-     * 描画前にレイアウト依存の状態を同期する。
+     * 編集・プレビュー領域の幅変更を監視し、用紙が収まる倍率を再計算する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 次回のEffect実行前またはコンポーネント破棄時に呼び出すクリーンアップ関数
      */
     function synchronizeLayoutEffect8() {
         let cancelled = false;
@@ -130,16 +140,16 @@ function WorksheetPreview(parameter1: Props) {
         if (!measurementRoot)
             return;
         setPagination((/**
-         * setPaginationへ渡す処理を実行する。
+         * Paginationを現在の編集結果へ反映する。
          *
          * @param current 更新前または現在の状態
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 値・readyを持つオブジェクト
          */
         function setPaginationCallback9(current) {
             return ({ ...current, ready: false });
         }));
         const measure = (/**
-         * measureで必要な値を取得する。
+         * 非表示プレビューの実寸から改ページ計画を作り、計測完了状態へ反映する。
          */
         function measureImplementation10() {
             if (cancelled || !measurementRoot.isConnected)
@@ -158,7 +168,7 @@ function WorksheetPreview(parameter1: Props) {
             });
         });
         const scheduleMeasure = (/**
-         * scheduleMeasureに必要な処理を実行する。
+         * schedule・Measureをcancel・Animation・Frameで処理し、その結果を呼び出し元へ反映する。
          */
         function scheduleMeasureImplementation11() {
             if (!assetsReady)
@@ -167,9 +177,9 @@ function WorksheetPreview(parameter1: Props) {
             animationFrame = window.requestAnimationFrame(measure);
         });
         const prepare = (/**
-         * prepareに必要な処理を実行する。
+         * prepareをallで処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 非同期処理の結果
+         * @returns prepareをallで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
          */
         async function prepareImplementation12() {
             await document.fonts?.ready;
@@ -180,18 +190,17 @@ function WorksheetPreview(parameter1: Props) {
         void prepare();
         resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
         measurementRoot.querySelectorAll(".paper-header, [data-pagination-atom]").forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の要素についてobserveを実行し、対応関係または検証状態を更新する。
          *
-         * @param element 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param element 走査または監視の対象となる要素
          */
         function processItem13(element) {
             return resizeObserver?.observe(element);
         }));
         return (/**
-         * 呼び出し元から要求された処理を実行する。
+         * 登録したイベント購読・Object URL・一時状態を処理終了時に解放する。
          */
-        function commentRuleCallback14() {
+        function releaseResources14() {
             cancelled = true;
             window.cancelAnimationFrame(animationFrame);
             resizeObserver?.disconnect();
@@ -210,13 +219,13 @@ function WorksheetPreview(parameter1: Props) {
         ? OVERSIZED_PAGINATION_MESSAGE
         : null;
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * 実寸DOMの計測結果から改ページ計画を更新し、画像読み込み後の寸法変化も反映する。
      */
     function synchronizeEffect15() {
         onPaginationReadyChange?.(paginationReady);
     }), [onPaginationReadyChange, paginationReady]);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * 実寸DOMの計測結果から改ページ計画を更新し、画像読み込み後の寸法変化も反映する。
      */
     function synchronizeEffect16() {
         if (!paginationReady)
@@ -225,38 +234,42 @@ function WorksheetPreview(parameter1: Props) {
         onPaginationErrorChange?.(paginationError);
     }), [displayedPages.length, onPageCountChange, onPaginationErrorChange, paginationError, paginationReady]);
     const atomLookup = new Map(sections.flatMap((/**
-     * 各要素を変換しながら一つの配列へ展開する。
+     * 各改ページまたは表示の対象となる問題区画を0件以上の結果へ変換し、一つの配列へ展開する。
      *
-     * @param section sectionとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param section 改ページまたは表示の対象となる問題区画
+     * @returns 改ページまたは表示の対象となる問題区画のatoms
      */
     function expandItem17(section) {
         return section.atoms;
     })).map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各改ページ計算で扱う最小の描画単位を順序を保った要素一覧へ変換する。
      *
-     * @param atom atomとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param atom 改ページ計算で扱う最小の描画単位
+     * @returns 順序を保った要素一覧
      */
     function mapItem18(atom) {
         return [atom.key, atom];
     })));
+    // --------------------
+    // 画面表示
+    // --------------------
+
     return <div className="preview-pages" data-pagination-ready={paginationReady ? "true" : "false"} data-pagination-error={paginationError ? OVERSIZED_PAGINATION_ERROR : undefined} style={{ "--preview-zoom": zoom } as React.CSSProperties}>
     {paginationError && <div className="notice danger preview-pagination-error" role="alert">{paginationError}</div>}
     {displayedPages.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各ブラウザー操作と描画確認に使うPlaywrightページを画面表示用のReact要素へ変換する。
          *
-         * @param page pageとして使用する値
-         * @param pageIndex pageIndexとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+         * @param pageIndex プレビュー全体でのページ位置
+         * @returns 画面表示用のReact要素
          */
         function mapItem19(page, pageIndex) {
             return <Fragment key={`${page.mode}:${page.sectionPageIndex}`}>
       <PreviewPage worksheet={worksheet} mode={page.mode} atoms={page.atomKeys.flatMap((/**
-             * 各要素を変換しながら一つの配列へ展開する。
+             * ページ計画に記録された断片キーを、対応する描画単位一覧へ展開する。
              *
-             * @param key keyとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param key 改ページ計画に記録された描画単位キー
+             * @returns キーに対応する描画単位一覧。未登録の場合は空配列
              */
             function expandItem20(key) {
                 return atomLookup.get(key) ?? [];
@@ -265,10 +278,10 @@ function WorksheetPreview(parameter1: Props) {
         }))}
     {needsMeasurement && <div className="preview-measurement" ref={measurementRef} aria-hidden="true">
       {sections.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各改ページまたは表示の対象となる問題区画を画面表示用のReact要素へ変換する。
          *
-         * @param section sectionとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param section 改ページまたは表示の対象となる問題区画
+         * @returns 画面表示用のReact要素
          */
         function mapItem21(section) {
             return <MeasurementPage key={section.mode} worksheet={worksheet} section={section} assetUrls={assetUrls}/>;
@@ -276,11 +289,15 @@ function WorksheetPreview(parameter1: Props) {
     </div>}
   </div>;
 }));
+// --------------------
+// ページ表示
+// --------------------
+
 /**
- * PreviewPageコンポーネントを表示する。
+ * 改ページ計画の描画単位を一枚の用紙上へ配置し、ヘッダーとページ番号を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props プレビュー・ページへ渡す表示情報と操作
+ * @returns プレビュー・ページを表示するReact要素
  */
 function PreviewPage(props: {
     worksheet: Worksheet;
@@ -299,10 +316,10 @@ function PreviewPage(props: {
       {showHeader && <WorksheetHeader worksheet={worksheet}/>}
       <div className="paper-problems">
         {atoms.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各改ページ計算で扱う最小の描画単位を画面表示用のReact要素へ変換する。
      *
-     * @param atom atomとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param atom 改ページ計算で扱う最小の描画単位
+     * @returns 画面表示用のReact要素
      */
     function mapItem22(atom) {
         return <PreviewProblemFragment key={atom.key} atom={atom} mode={mode} subQuestionNumberFormat={worksheet.pageSettings.subQuestionNumberFormat} assetUrls={assetUrls} scrollAnchor={atom.startsProblem}/>;
@@ -313,10 +330,10 @@ function PreviewPage(props: {
   </div>;
 }
 /**
- * MeasurementPageコンポーネントを表示する。
+ * 改ページ前の各描画単位を実寸で配置し、DOM寸法を計測できる非表示ページを作る。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Measurement・ページへ渡す表示情報と操作
+ * @returns Measurement・ページを表示するReact要素
  */
 function MeasurementPage(props: {
     worksheet: Worksheet;
@@ -331,10 +348,10 @@ function MeasurementPage(props: {
       <WorksheetHeader worksheet={worksheet}/>
       <div className="paper-problems">
         {section.atoms.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各改ページ計算で扱う最小の描画単位を画面表示用のReact要素へ変換する。
      *
-     * @param atom atomとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param atom 改ページ計算で扱う最小の描画単位
+     * @returns 画面表示用のReact要素
      */
     function mapItem23(atom) {
         return <div data-pagination-atom={atom.key} key={atom.key}><PreviewProblemFragment atom={atom} mode={section.mode} subQuestionNumberFormat={worksheet.pageSettings.subQuestionNumberFormat} assetUrls={assetUrls}/></div>;
@@ -344,10 +361,10 @@ function MeasurementPage(props: {
   </div>;
 }
 /**
- * WorksheetHeaderコンポーネントを表示する。
+ * 設定された学年・組・番号・氏名欄を含むプリント見出しを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props プリント・ヘッダーへ渡す表示情報と操作
+ * @returns プリント・ヘッダーを表示するReact要素
  */
 function WorksheetHeader(props: {
     worksheet: Worksheet;
@@ -356,10 +373,10 @@ function WorksheetHeader(props: {
     return <header className="paper-header"><h2>{worksheet.title}</h2><div className="paper-fields">{worksheet.header.gradeField && <span className="grade-field"><i />年</span>}{worksheet.header.classField && <span className="class-field"><i />組</span>}{worksheet.header.numberField && <span className="number-field"><i />番</span>}{worksheet.header.nameField && <span className="name-field">名前<i /></span>}</div></header>;
 }
 /**
- * PreviewProblemFragmentコンポーネントを表示する。
+ * 改ページで分割された問題断片を、継続位置と解答表示モードに応じて描画する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props プレビュー・問題・Fragmentへ渡す表示情報と操作
+ * @returns プレビュー・問題・Fragmentを表示するReact要素
  */
 function PreviewProblemFragment(props: {
     atom: RenderAtom;
@@ -377,13 +394,17 @@ function PreviewProblemFragment(props: {
     </div>
   </section>;
 }
+// --------------------
+// 描画単位の構築
+// --------------------
+
 /**
- * createRenderAtomsで必要な値を作成する。
+ * Render・Atomsを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param worksheet worksheetとして使用する値
- * @param mode modeとして使用する値
- * @param numbers numbersとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @param mode 表示または改ページの動作モード
+ * @param numbers 表示対象ごとの問題番号一覧
+ * @returns atomsとして得た要素一覧
  */
 function createRenderAtoms(worksheet: Worksheet, mode: SectionMode, numbers: Map<string, string | null>): RenderAtom[] {
     const atoms: RenderAtom[] = [];
@@ -448,12 +469,12 @@ function createRenderAtoms(worksheet: Worksheet, mode: SectionMode, numbers: Map
     return atoms;
 }
 /**
- * getProblemHeadingで必要な値を取得する。
+ * 問題・Headingを入力データまたは現在の状態から取り出す。
  *
- * @param worksheet worksheetとして使用する値
- * @param problem problemとして使用する値
- * @param numbers numbersとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @param problem 処理対象の問題または例題
+ * @param numbers 表示対象ごとの問題番号一覧
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function getProblemHeading(worksheet: Worksheet, problem: ProblemBlock, numbers: Map<string, string | null>): string | null {
     const number = numbers.get(problem.id) ?? null;
@@ -462,27 +483,27 @@ function getProblemHeading(worksheet: Worksheet, problem: ProblemBlock, numbers:
         : formatProblemHeading(problem.kind, number, worksheet.pageSettings.problemNumberFormat);
 }
 /**
- * fallbackPagesに必要な処理を実行する。
+ * fallback・Pagesをmapで処理し、その結果を呼び出し元へ反映する。
  *
- * @param sections sectionsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param sections 改ページ対象となる問題区画一覧
+ * @returns 各要素を変換した配列として得た要素一覧
  */
 function fallbackPages(sections: readonly PreviewSection[]): PlannedPage[] {
     return sections.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各改ページまたは表示の対象となる問題区画を表示または改ページの動作モード・区画内でのページ位置・改ページ結果と照合する描画単位の識別子一覧を持つオブジェクトへ変換する。
      *
-     * @param section sectionとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param section 改ページまたは表示の対象となる問題区画
+     * @returns 表示または改ページの動作モード・区画内でのページ位置・改ページ結果と照合する描画単位の識別子一覧を持つオブジェクト
      */
     function mapItem24(section) {
         return ({
             mode: section.mode,
             sectionPageIndex: 0,
             atomKeys: section.atoms.map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各改ページ計算で扱う最小の描画単位を改ページ計算で扱う最小の描画単位の保存先または要素を特定するキーへ変換する。
              *
-             * @param atom atomとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param atom 改ページ計算で扱う最小の描画単位
+             * @returns 改ページ計算で扱う最小の描画単位の保存先または要素を特定するキー
              */
             function mapItem25(atom) {
                 return atom.key;
@@ -490,19 +511,23 @@ function fallbackPages(sections: readonly PreviewSection[]): PlannedPage[] {
         });
     }));
 }
+// --------------------
+// 改ページ計測
+// --------------------
+
 /**
- * measurePagesで必要な値を取得する。
+ * pages・oversized・Atom・Keysを持つオブジェクトを一つの結果へまとめる。
  *
- * @param measurementRoot measurementRootとして使用する値
- * @param sections sectionsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param measurementRoot 寸法計測専用のプレビュールート要素
+ * @param sections 改ページ対象となる問題区画一覧
+ * @returns pages・oversized・Atom・Keysを持つオブジェクト
  */
 function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSection[]): MeasuredPagePlan {
     const sectionPlans = sections.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各改ページまたは表示の対象となる問題区画をpages・oversized・Atom・Keysを持つオブジェクトへ変換する。
      *
-     * @param section sectionとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param section 改ページまたは表示の対象となる問題区画
+     * @returns pages・oversized・Atom・Keysを持つオブジェクト
      */
     function mapItem26(section): MeasuredPagePlan {
         const sectionElement = measurementRoot.querySelector<HTMLElement>(`[data-pagination-section="${section.mode}"]`);
@@ -512,10 +537,10 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
         if (!sectionElement || !paper || !header || !problemList) {
             return {
                 pages: [{ mode: section.mode, sectionPageIndex: 0, atomKeys: section.atoms.map((/**
-                         * 各要素を画面表示または別形式へ変換する。
+                         * 各改ページ計算で扱う最小の描画単位を改ページ計算で扱う最小の描画単位の保存先または要素を特定するキーへ変換する。
                          *
-                         * @param atom atomとして使用する値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param atom 改ページ計算で扱う最小の描画単位
+                         * @returns 改ページ計算で扱う最小の描画単位の保存先または要素を特定するキー
                          */
                         function mapItem27(atom) {
                             return atom.key;
@@ -531,19 +556,19 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
         const problemGap = toPixels(getComputedStyle(problemList).rowGap);
         const measuredElements = new Map(Array.from(sectionElement.querySelectorAll<HTMLElement>("[data-pagination-atom]"))
             .map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の要素を順序を保った要素一覧へ変換する。
          *
-         * @param element 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param element 走査または監視の対象となる要素
+         * @returns 順序を保った要素一覧
          */
         function mapItem28(element) {
             return [element.dataset.paginationAtom!, element];
         })));
         const measuredItems = section.atoms.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各改ページ計算で扱う最小の描画単位を保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクトへ変換する。
          *
-         * @param atom atomとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param atom 改ページ計算で扱う最小の描画単位
+         * @returns 保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクト
          */
         function mapItem29(atom) {
             return ({
@@ -557,11 +582,11 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
         const plan = planMeasuredPagination(measuredItems, Math.max(1, contentHeight - headerHeight - 1), Math.max(1, contentHeight - 1), problemGap);
         return {
             pages: plan.pages.map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各改ページ結果と照合する描画単位の識別子一覧を表示または改ページの動作モード・区画内でのページ位置・改ページ結果と照合する描画単位の識別子一覧を持つオブジェクトへ変換する。
              *
-             * @param atomKeys atomKeysとして使用する値
-             * @param sectionPageIndex sectionPageIndexとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param atomKeys 改ページ結果と照合する描画単位の識別子一覧
+             * @param sectionPageIndex 区画内でのページ位置
+             * @returns 表示または改ページの動作モード・区画内でのページ位置・改ページ結果と照合する描画単位の識別子一覧を持つオブジェクト
              */
             function mapItem30(atomKeys, sectionPageIndex) {
                 return ({ mode: section.mode, sectionPageIndex, atomKeys });
@@ -571,19 +596,19 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
     }));
     return {
         pages: sectionPlans.flatMap((/**
-         * 各要素を変換しながら一つの配列へ展開する。
+         * 各改ページ計算で得たページ構成を0件以上の結果へ変換し、一つの配列へ展開する。
          *
-         * @param plan planとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param plan 改ページ計算で得たページ構成
+         * @returns 改ページ計算で得たページ構成のpages
          */
         function expandItem31(plan) {
             return plan.pages;
         })),
         oversizedAtomKeys: sectionPlans.flatMap((/**
-         * 各要素を変換しながら一つの配列へ展開する。
+         * 各改ページ計算で得たページ構成を0件以上の結果へ変換し、一つの配列へ展開する。
          *
-         * @param plan planとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param plan 改ページ計算で得たページ構成
+         * @returns 改ページ計算で得たページ構成のoversized・Atom・Keys
          */
         function expandItem32(plan) {
             return plan.oversizedAtomKeys;
@@ -591,10 +616,10 @@ function measurePages(measurementRoot: HTMLElement, sections: readonly PreviewSe
     };
 }
 /**
- * outerHeightに必要な処理を実行する。
+ * outer・高さをget・Computed・Styleで処理し、その結果を呼び出し元へ反映する。
  *
- * @param element 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param element 走査または監視の対象となる要素
+ * @returns 0から算出した数値
  */
 function outerHeight(element: HTMLElement | undefined): number {
     if (!element)
@@ -603,61 +628,63 @@ function outerHeight(element: HTMLElement | undefined): number {
     return element.getBoundingClientRect().height + toPixels(style.marginTop) + toPixels(style.marginBottom);
 }
 /**
- * toPixelsの入力値を必要な形式へ変換する。
+ * CSSの寸法文字列をレイアウト計算で扱えるピクセル数へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value to・Pixelsで判定または変換する入力値
+ * @returns 条件に応じて選択した値から算出した数値
  */
 function toPixels(value: string): number {
     const parsed = Number.parseFloat(value);
     return Number.isFinite(parsed) ? parsed : 0;
 }
 /**
- * waitForImageに必要な処理を実行する。
+ * wait・For・画像を非同期処理を正常完了させるPromise関数で処理し、その結果を呼び出し元へ反映する。
  *
- * @param image imageとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param image 表示または編集する画像
+ * @returns wait・For・画像を非同期処理を正常完了させるPromise関数で処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 function waitForImage(image: HTMLImageElement): Promise<void> {
     if (image.complete)
         return Promise.resolve();
     return new Promise((/**
-     * 呼び出し元から要求された処理を実行する。
+     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
+     * @param resolve 非同期処理を正常完了させるPromise関数
      */
-    function commentRuleCallback33(resolve) {
+    function settlePromise33(resolve) {
         image.addEventListener("load", (/**
-         * DOMから通知されたイベントを処理する。
+         * 「load」イベントを受け、現在のDOMまたは編集状態へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleDomEvent34() {
             return resolve();
         }), { once: true });
         image.addEventListener("error", (/**
-         * DOMから通知されたイベントを処理する。
+         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleDomEvent35() {
             return resolve();
         }), { once: true });
     }));
 }
+// --------------------
+// 文書表示
+// --------------------
+
 export const WorksheetContentPreview = memo((/**
- * WorksheetContentPreviewコンポーネントを表示する。
+ * 問題本文の文書をプレビュー用の静的要素として描画する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput let・{・内容・解答をプレビューへ含めるかどうか・sub・Question・番号・表示形式・アセット識別子と表示URLの対応表をまとめて受け取るコールバック入力
+ * @returns プリント・内容・プレビューを表示するReact要素
  */
-function WorksheetContentPreview(parameter1: {
+function WorksheetContentPreview(callbackInput: {
     content: ContentBlock;
     showAnswers: boolean;
     subQuestionNumberFormat: SubQuestionNumberFormat;
     assetUrls: ReadonlyMap<string, string>;
 }) {
-    let { content, showAnswers, subQuestionNumberFormat, assetUrls } = parameter1;
+    let { content, showAnswers, subQuestionNumberFormat, assetUrls } = callbackInput;
     switch (content.type) {
         case "richText": return <RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers}/>;
         case "box": return <div className={`paper-box box-${content.preset}`}>{content.title && <strong>{content.title}</strong>}<RichDocument document={mergeColoredDocuments(content.document, content.answerDocument)} assetUrls={assetUrls} showAnswers={showAnswers}/></div>;
@@ -673,10 +700,10 @@ function WorksheetContentPreview(parameter1: {
         case "subQuestionGroup": {
             const numbers = getSubQuestionNumbers(content, subQuestionNumberFormat);
             return <div className="paper-subquestions">{content.items.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各要素を画面表示用のReact要素へ変換する。
                  *
-                 * @param item 処理対象の値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param item 配列処理で現在参照している要素
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem37(item) {
                     return <div className={item.width === "full" ? "paper-subquestion full" : "paper-subquestion"} key={item.id}>
@@ -689,10 +716,10 @@ function WorksheetContentPreview(parameter1: {
     }
 }));
 /**
- * WorksheetSolutionPreviewコンポーネントを表示する。
+ * 教師用解説の文書を解答色を含む静的要素として描画する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props プリント・Solution・プレビューへ渡す表示情報と操作
+ * @returns プリント・Solution・プレビューを表示するReact要素
  */
 export function WorksheetSolutionPreview(props: {
     document: SolutionRichTextDocument;
@@ -702,10 +729,10 @@ export function WorksheetSolutionPreview(props: {
     return <RichDocument document={document} assetUrls={assetUrls} showAnswers/>;
 }
 /**
- * RichDocumentコンポーネントを表示する。
+ * 保存済みリッチテキスト文書の段落・リスト・表をプレビュー要素へ変換する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props リッチ・文書へ渡す表示情報と操作
+ * @returns リッチ・文書を表示するReact要素
  */
 function RichDocument(props: {
     document: {
@@ -716,21 +743,21 @@ function RichDocument(props: {
 }) {
     let { document, assetUrls, showAnswers } = props;
     return <div className="paper-rich-text">{document.content.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各ノードを画面表示用のReact要素へ変換する。
      *
-     * @param node 処理対象の値
+     * @param node 走査または変換するリッチテキストノード
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 画面表示用のReact要素
      */
     function mapItem38(node, index) {
         return <RichNode key={index} node={node} assetUrls={assetUrls} showAnswers={showAnswers}/>;
     }))}</div>;
 }
 /**
- * RichNodeコンポーネントを表示する。
+ * リッチ・ノードの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props リッチ・ノードへ渡す表示情報と操作
+ * @returns リッチ・ノードを表示するReact要素
  */
 function RichNode(props: {
     node: unknown;
@@ -756,11 +783,11 @@ function RichNode(props: {
         content?: readonly unknown[];
     };
     const children = value.content?.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各走査中の子ノードを画面表示用のReact要素へ変換する。
      *
-     * @param child childとして使用する値
+     * @param child 走査中の子ノード
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 画面表示用のReact要素
      */
     function mapItem39(child, index) {
         return <RichNode key={index} node={child} assetUrls={assetUrls} showAnswers={showAnswers}/>;
@@ -803,11 +830,11 @@ function RichNode(props: {
     }
 }
 /**
- * isNodeVisibleInModeで表される条件を判定する。
+ * ノード・Visible・In・モードが仕様上の条件を満たすか判定する。
  *
- * @param node 処理対象の値
- * @param showAnswers showAnswersとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @param showAnswers 解答をプレビューへ含めるかどうか
+ * @returns この実装では常にfalse
  */
 function isNodeVisibleInMode(node: unknown, showAnswers: boolean): boolean {
     if (!node || typeof node !== "object")
@@ -826,20 +853,20 @@ function isNodeVisibleInMode(node: unknown, showAnswers: boolean): boolean {
     if (!Array.isArray(value.content) || value.content.length === 0)
         return value.type === "paragraph";
     return value.content.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかの走査中の子ノードが要求条件を満たすか判定する。
      *
-     * @param child childとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param child 走査中の子ノード
+     * @returns is・ノード・Visible・In・モードの結果が真になる場合はtrue
      */
     function hasMatchingItem40(child) {
         return isNodeVisibleInMode(child, showAnswers);
     }));
 }
 /**
- * isUnderlinedAnswerTextで表される条件を判定する。
+ * Underlined・解答・テキストが仕様上の条件を満たすか判定する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns この実装では常にfalse
  */
 function isUnderlinedAnswerText(node: unknown): boolean {
     if (!node || typeof node !== "object")
@@ -855,20 +882,20 @@ function isUnderlinedAnswerText(node: unknown): boolean {
         && Boolean(value.text)
         && nodeUsesAnswerColor(node)
         && value.marks?.some((/**
-         * 条件に一致する要素か判定する。
+         * いずれかの処理対象の文字装飾が要求条件を満たすか判定する。
          *
-         * @param mark markとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param mark 処理対象の文字装飾
+         * @returns 処理対象の文字装飾の作成または検証する要素種別が「underline」と一致する場合はtrue
          */
         function hasMatchingItem41(mark) {
             return mark.type === "underline";
         })) === true;
 }
 /**
- * isAnswerOnlyNodeで表される条件を判定する。
+ * 解答・Only・ノードが仕様上の条件を満たすか判定する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns この実装では常にfalse
  */
 function isAnswerOnlyNode(node: unknown): boolean {
     if (!node || typeof node !== "object")
@@ -881,21 +908,25 @@ function isAnswerOnlyNode(node: unknown): boolean {
     if (!Array.isArray(content))
         return false;
     const visibleChildren = content.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * is・ノード・Visible・In・モードの結果が真になる要素だけを後続処理へ残す。
      *
-     * @param child childとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param child 走査中の子ノード
+     * @returns is・ノード・Visible・In・モードの結果が真になる場合はtrue
      */
     function filterItem42(child) {
         return isNodeVisibleInMode(child, true);
     }));
     return visibleChildren.length > 0 && visibleChildren.every(isAnswerOnlyNode);
 }
+// --------------------
+// 表表示
+// --------------------
+
 /**
- * PreviewTableコンポーネントを表示する。
+ * 保存済みの列幅・行高・セル文書を反映した表をプレビューへ描画する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props プレビュー・表へ渡す表示情報と操作
+ * @returns プレビュー・表を表示するReact要素
  */
 function PreviewTable(props: {
     rows: TableRow[];
@@ -906,27 +937,27 @@ function PreviewTable(props: {
 }) {
     let { rows, headerRow, columnWidthsPercent, assetUrls, showAnswers } = props;
     return <table className="paper-table"><colgroup>{columnWidthsPercent.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各要素または列へ適用する幅を画面表示用のReact要素へ変換する。
      *
-     * @param width widthとして使用する値
+     * @param width 要素または列へ適用する幅
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 画面表示用のReact要素
      */
     function mapItem43(width, index) {
         return <col key={index} style={{ width: `${width}%` }}/>;
     }))}</colgroup><tbody>{rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を画面表示用のReact要素へ変換する。
          *
-         * @param row rowとして使用する値
-         * @param rowIndex rowIndexとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @param rowIndex 表内での行位置
+         * @returns 画面表示用のReact要素
          */
         function mapItem44(row, rowIndex) {
             return <tr key={row.id} style={row.heightMm ? { height: `${row.heightMm}mm` } : undefined}>{row.cells.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各処理対象の表セルを画面表示用のReact要素へ変換する。
                  *
-                 * @param cell cellとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param cell 処理対象の表セル
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem45(cell) {
                     const Cell = headerRow && rowIndex === 0 ? "th" : "td";
@@ -934,47 +965,51 @@ function PreviewTable(props: {
                 }))}</tr>;
         }))}</tbody></table>;
 }
+// --------------------
+// 補助関数
+// --------------------
+
 /**
- * toMathTextSizeの入力値を必要な形式へ変換する。
+ * to・数式・テキスト・寸法を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value to・数式・テキスト・寸法で判定または変換する入力値
+ * @returns 条件に応じて選択した値
  */
 function toMathTextSize(value: unknown): "small" | "normal" | "large" | "xLarge" {
     return value === "small" || value === "large" || value === "xLarge" ? value : "normal";
 }
 /**
- * readStringAttributeで必要な値を取得する。
+ * String・Attributeを入力データまたは現在の状態から取り出す。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・String・Attributeで判定または変換する入力値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function readStringAttribute(value: unknown): string {
     return typeof value === "string" ? value : "";
 }
 /**
- * toTextAlignの入力値を必要な形式へ変換する。
+ * to・テキスト・Alignを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value to・テキスト・Alignで判定または変換する入力値
+ * @returns 条件に応じて選択した値
  */
 function toTextAlign(value: unknown): React.CSSProperties["textAlign"] {
     return value === "center" || value === "right" ? value : "left";
 }
 /**
- * toImagePlacementの入力値を必要な形式へ変換する。
+ * to・画像・配置を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value to・画像・配置で判定または変換する入力値
+ * @returns 条件に応じて選択した値
  */
 function toImagePlacement(value: unknown): "block" | "floatLeft" | "floatRight" {
     return value === "floatLeft" || value === "floatRight" ? value : "block";
 }
 /**
- * StudentAnswerAreaコンポーネントを表示する。
+ * 罫線・方眼・空白など設定された形式の生徒用解答欄を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Student・解答・Areaへ渡す表示情報と操作
+ * @returns Student・解答・Areaを表示するReact要素
  */
 function StudentAnswerArea(props: {
     answerArea: AnswerAreaValue;
@@ -989,10 +1024,10 @@ function StudentAnswerArea(props: {
   </div>;
 }
 /**
- * hasVisibleAnswerAreaContentで表される条件を判定する。
+ * Visible・解答・Area・内容が仕様上の条件を満たすか判定する。
  *
- * @param answerArea answerAreaとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param answerArea 解答欄の表示領域
+ * @returns has・Visible・文書の結果が真になるまたはhas・Visible・文書の結果が真になる場合はtrue
  */
 function hasVisibleAnswerAreaContent(answerArea: AnswerAreaValue): boolean {
     return hasVisibleDocument(answerArea.document) || hasVisibleDocument(answerArea.answerDocument);

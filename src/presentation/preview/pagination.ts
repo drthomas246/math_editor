@@ -36,17 +36,17 @@ export function planMeasuredPagination(items: readonly MeasuredPaginationItem[],
     let current: string[] = [];
     let used = 0;
     const capacity = (/**
-     * capacityに必要な処理を実行する。
+     * 現在の状態を基にcapacityを導出する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 条件に応じて選択した値
      */
     function capacityImplementation1() {
         return pages.length === 0 ? firstPageCapacity : followingPageCapacity;
     });
     const finishPage = (/**
-     * finishPageに必要な処理を実行する。
+     * finish・ページをpushで処理し、その結果を呼び出し元へ反映する。
      *
-     * @param allowEmpty allowEmptyとして使用する値
+     * @param allowEmpty 空ページを許可する設定
      */
     function finishPageImplementation2(allowEmpty = false) {
         if (current.length > 0 || allowEmpty)

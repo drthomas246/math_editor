@@ -1,36 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { getAdjacentManualChapters, getManualChapter, MANUAL_CHAPTERS } from "./manual-chapters";
 describe("manual chapters", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「manual chapters」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("13章を定義順かつ空でない本文で提供する", (/**
-     * 期待する振る舞いを検証する。
+     * 「13章を定義順かつ空でない本文で提供する」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         expect(MANUAL_CHAPTERS).toHaveLength(13);
         expect(new Set(MANUAL_CHAPTERS.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各検索または表示の対象となるマニュアル章を検索または表示の対象となるマニュアル章のマニュアル章をURL上で特定する識別子へ変換する。
          *
-         * @param chapter chapterとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param chapter 検索または表示の対象となるマニュアル章
+         * @returns 検索または表示の対象となるマニュアル章のマニュアル章をURL上で特定する識別子
          */
         function mapItem3(chapter) {
             return chapter.slug;
         })))).toHaveProperty("size", 13);
         expect(MANUAL_CHAPTERS.every((/**
-         * すべての要素に求める条件を満たすか判定する。
+         * すべての検索または表示の対象となるマニュアル章に共通して要求する条件を検証する。
          *
-         * @param chapter chapterとして使用する値
+         * @param chapter 検索または表示の対象となるマニュアル章
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * すべての検索または表示の対象となるマニュアル章について、検索または表示の対象となるマニュアル章のorderが位置と1を加算した値と一致するかつtrimの結果のlengthが0より大きいか検証する。
+          * @returns 検索または表示の対象となるマニュアル章のorderが位置と1を加算した値と一致するかつtrimの結果のlengthが0より大きい場合はtrue
          */
         function isMatchingItem4(chapter, index) {
             return chapter.order === index + 1 && chapter.markdown.trim().length > 0;
         }))).toBe(true);
     }));
     it("章を解決して前後章を返す", (/**
-     * 期待する振る舞いを検証する。
+     * 「章を解決して前後章を返す」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         expect(getManualChapter("formulas")?.title).toBe("数式");

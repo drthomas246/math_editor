@@ -2,19 +2,19 @@ import type { BasicRichTextDocument, RichTextDocument, RichTextNode } from "./wo
 type AnyDocument = BasicRichTextDocument | RichTextDocument;
 export type ContentColor = "problem" | "answer";
 /**
- * documentToPlainTextに必要な処理を実行する。
+ * 文書・To・Plain・テキストをtrim・Endで処理し、その結果を呼び出し元へ反映する。
  *
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns 「」として得た文字列。変換できない場合は関数固有の既定値
  */
 export function documentToPlainText(document: AnyDocument | null): string {
     if (!document)
         return "";
     const visit = (/**
-     * visitで定義された一連の処理を実行する。
+     * 入れ子の文書・表・問題構造を再帰走査し、対象値を漏れなく収集または検証する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns Stringの結果として得た文字列。変換できない場合は関数固有の既定値
      */
     function visitImplementation1(node: RichTextNode | {
         type: string;
@@ -40,40 +40,40 @@ export function documentToPlainText(document: AnyDocument | null): string {
         const content: unknown[] = Array.isArray(value.content) ? value.content : [];
         const separator = ["paragraph", "listItem", "bulletList", "orderedList"].includes(node.type) ? "\n" : "";
         return content.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各走査中の子ノードをvisitの結果へ変換する。
          *
-         * @param child childとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param child 走査中の子ノード
+         * @returns visitの結果
          */
         function mapItem2(child: unknown) {
             return visit(child as never);
         })).join(separator);
     });
     return document.content.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各ノードをvisitの結果へ変換する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns visitの結果
      */
     function mapItem3(node) {
         return visit(node as never);
     })).join("\n").trimEnd();
 }
 /**
- * plainTextToDocumentに必要な処理を実行する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value plain・テキスト・To・文書で判定または変換する入力値
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 export function plainTextToDocument(value: string): BasicRichTextDocument {
     const lines = value.split(/\r?\n/u);
     return {
         type: "doc",
         content: lines.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各正規化または検査する一行を作成または検証する要素種別・ノードへ設定する属性・処理対象の問題本文または解説を持つオブジェクトへ変換する。
          *
-         * @param line lineとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param line 正規化または検査する一行
+         * @returns 作成または検証する要素種別・ノードへ設定する属性・処理対象の問題本文または解説を持つオブジェクト
          */
         function mapItem4(line) {
             return ({
@@ -85,19 +85,19 @@ export function plainTextToDocument(value: string): BasicRichTextDocument {
     };
 }
 /**
- * hasVisibleDocumentで表される条件を判定する。
+ * Visible・文書が仕様上の条件を満たすか判定する。
  *
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns この実装では常にfalse
  */
 export function hasVisibleDocument(document: RichTextDocument | null): boolean {
     if (!document)
         return false;
     const visit = (/**
-     * visitで定義された一連の処理を実行する。
+     * 入れ子の文書・表・問題構造を再帰走査し、対象値を漏れなく収集または検証する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns この実装では常にfalse
      */
     function visitImplementation5(node: unknown): boolean {
         if (!node || typeof node !== "object")
@@ -137,10 +137,10 @@ export function mergeColoredDocuments(problemDocument: BasicRichTextDocument, an
     };
 }
 /**
- * colorDocumentAsAnswerに必要な処理を実行する。
+ * 色・文書・As・解答をstructured・Cloneで処理し、その結果を呼び出し元へ反映する。
  *
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns cloned
  */
 export function colorDocumentAsAnswer(document: BasicRichTextDocument): BasicRichTextDocument {
     const cloned = structuredClone(document) as unknown as {
@@ -151,10 +151,10 @@ export function colorDocumentAsAnswer(document: BasicRichTextDocument): BasicRic
     return cloned as BasicRichTextDocument;
 }
 /**
- * colorNodeAsAnswerに必要な処理を実行する。
+ * 色・ノード・As・解答をsomeで処理し、その結果を呼び出し元へ反映する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns ノード
  */
 function colorNodeAsAnswer(node: unknown): unknown {
     if (!node || typeof node !== "object")
@@ -169,10 +169,10 @@ function colorNodeAsAnswer(node: unknown): unknown {
     if (value.type === "text") {
         const marks = [...(value.marks ?? [])];
         if (!marks.some((/**
-         * 条件に一致する要素か判定する。
+         * いずれかの処理対象の文字装飾が要求条件を満たすか判定する。
          *
-         * @param mark markとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param mark 処理対象の文字装飾
+         * @returns 処理対象の文字装飾の作成または検証する要素種別が「answerColor」と一致する場合はtrue
          */
         function hasMatchingItem6(mark) {
             return mark.type === "answerColor";
@@ -188,10 +188,10 @@ function colorNodeAsAnswer(node: unknown): unknown {
     return next;
 }
 /**
- * nodeUsesAnswerColorに必要な処理を実行する。
+ * ノード・Uses・解答・色をsomeで処理し、その結果を呼び出し元へ反映する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns この実装では常にfalse
  */
 export function nodeUsesAnswerColor(node: unknown): boolean {
     if (!node || typeof node !== "object")
@@ -205,10 +205,10 @@ export function nodeUsesAnswerColor(node: unknown): boolean {
         }>;
     };
     return value.attrs?.answerColor === true || value.marks?.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかの処理対象の文字装飾が要求条件を満たすか判定する。
      *
-     * @param mark markとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param mark 処理対象の文字装飾
+     * @returns 処理対象の文字装飾の作成または検証する要素種別が「answerColor」と一致する場合はtrue
      */
     function hasMatchingItem7(mark) {
         return mark.type === "answerColor";

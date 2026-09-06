@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { WorksheetSchema } from "../../domain/worksheet/worksheet";
 import { createComplexPdfBenchmarkFixture, createWorksheetListFixtures, summarizeWorksheetComplexity, } from "./performance-benchmark-fixtures";
 describe("performance benchmark fixtures", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「performance benchmark fixtures」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("一覧用のminimal・typical・heavyを段階的に複雑化する", (/**
-     * 期待する振る舞いを検証する。
+     * 「一覧用のminimal・typical・heavyを段階的に複雑化する」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         const minimal = createWorksheetListFixtures("minimal", 2)[0]!;
@@ -26,7 +26,7 @@ function defineTestSuite1() {
         expect(heavyComplexity.subQuestions).toBeGreaterThan(0);
     }));
     it("complex PDF fixtureへ数式・表・画像と実Assetを含める", (/**
-     * 期待する振る舞いを検証する。
+     * 「complex PDF fixtureへ数式・表・画像と実Assetを含める」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const fixture = createComplexPdfBenchmarkFixture(3);
@@ -34,10 +34,10 @@ function defineTestSuite1() {
         expect(WorksheetSchema.safeParse(fixture.worksheet).success).toBe(true);
         expect(fixture.worksheet.problems).toHaveLength(3);
         expect(fixture.worksheet.problems.slice(1).every((/**
-         * すべての要素に求める条件を満たすか判定する。
+         * すべての処理対象の問題または例題に共通して要求する条件を検証する。
          *
-         * @param problem problemとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param problem 処理対象の問題または例題
+         * @returns 処理対象の問題または例題のページ・Break・Beforeが真になる場合はtrue
          */
         function isMatchingItem4(problem) {
             return problem.pageBreakBefore;
@@ -46,17 +46,17 @@ function defineTestSuite1() {
         expect(serialized).toContain("blockMath");
         expect(serialized).toContain("imageRef");
         expect(fixture.worksheet.problems.every((/**
-         * すべての要素に求める条件を満たすか判定する。
+         * すべての処理対象の問題または例題に共通して要求する条件を検証する。
          *
-         * @param problem problemとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param problem 処理対象の問題または例題
+         * @returns someの結果が真になる場合はtrue
          */
         function isMatchingItem5(problem) {
             return problem.contents.some((/**
-             * 条件に一致する要素か判定する。
+             * いずれかの処理対象の問題本文または解説が要求条件を満たすか判定する。
              *
-             * @param content contentとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param content 処理対象の問題本文または解説
+             * @returns 処理対象の問題本文または解説の作成または検証する要素種別が「table」と一致する場合はtrue
              */
             function hasMatchingItem6(content) {
                 return content.type === "table";

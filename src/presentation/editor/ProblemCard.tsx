@@ -15,6 +15,11 @@ import type { EditableImageRef } from "../components/rich-text-editor-extensions
 import { ImageDialog, TableDialog } from "../dialogs/EditorDialogs";
 import { WorksheetContentPreview, WorksheetSolutionPreview } from "../preview/WorksheetPreview";
 import type { MutationOptions, WorksheetMutation } from "./editor-store";
+
+// --------------------
+// 型定義と定数
+// --------------------
+
 type MutateWorksheet = (label: string, change: WorksheetMutation, options?: MutationOptions) => void;
 type Props = {
     worksheet: Worksheet;
@@ -46,11 +51,16 @@ const ADD_CONTENT_OPTIONS: ReadonlyArray<readonly [
     ["spacer", "スペーサー"],
     ["pageBreak", "改ページ"],
 ];
+
+// --------------------
+// キーボード操作
+// --------------------
+
 /**
- * activateOnKeyboardに必要な処理を実行する。
+ * EnterまたはSpace操作をクリックと同じ編集開始操作へ変換する。
  *
  * @param event 発生したイベント
- * @param action actionとして使用する値
+ * @param action 実行する編集操作
  */
 function activateOnKeyboard(event: KeyboardEvent<HTMLElement>, action: () => void) {
     if (event.key !== "Enter" && event.key !== " ")
@@ -60,17 +70,22 @@ function activateOnKeyboard(event: KeyboardEvent<HTMLElement>, action: () => voi
     action();
 }
 /**
- * ProblemCardコンポーネントを表示する。
+ * 一問分の種類・本文・解説・画像・表・小問を編集し、並べ替えや複製操作も提供する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 問題・カードへ渡す表示情報と操作
+ * @returns 問題・カードを表示するReact要素
  */
 export function ProblemCard(props: Props) {
     const { worksheet, getWorksheet, problem, index, displayNumber, selected, selectedContentId, onSelect, onSelectContent, onCommit, onMutate, onAddImage, onUpdateImage, assetUrls, onToast } = props;
+
+    // --------------------
+    // 状態と参照
+    // --------------------
+
     const readWorksheet = (/**
-     * readWorksheetで必要な値を取得する。
+     * プリントを入力データまたは現在の状態から取り出す。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 二つの値を比較した結果
      */
     function readWorksheetImplementation1() {
         return getWorksheet?.() ?? worksheet;
@@ -83,25 +98,25 @@ export function ProblemCard(props: Props) {
     const problemMenuRef = useRef<HTMLDivElement>(null);
     const addMenuRef = useRef<HTMLDivElement>(null);
     useOutsidePointerDown(problemMenuRef, problemMenu, (/**
-     * useOutsidePointerDownへ渡す処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 問題・Menuを無効または非表示の状態へ戻す。
      */
     function useOutsidePointerDownCallback2() {
         return setProblemMenu(false);
     }));
     useOutsidePointerDown(addMenuRef, addMenu, (/**
-     * useOutsidePointerDownへ渡す処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Add・Menuを無効または非表示の状態へ戻す。
      */
     function useOutsidePointerDownCallback3() {
         return setAddMenu(false);
     }));
+    // --------------------
+    // 問題操作
+    // --------------------
+
     const commit = (/**
-     * commitの対象となる状態を更新する。
+     * commitを現在の編集結果へ反映する。
      *
-     * @param label labelとして使用する値
+     * @param label 画面表示やテスト識別に使う名称
      * @param result 処理によって得られた結果
      */
     function commitImplementation4(label: string, result: WorksheetCommandResult) {
@@ -113,9 +128,9 @@ export function ProblemCard(props: Props) {
             onToast("追加できる件数の上限に達しています");
     });
     const addBlock = (/**
-     * addBlockの対象となる要素を追加する。
+     * ブロックを現在の編集結果へ反映する。
      *
-     * @param type typeとして使用する値
+     * @param type 作成または検証する要素種別
      */
     function addBlockImplementation5(type: AddContentType) {
         const content = createContentBlock(type);
@@ -125,7 +140,7 @@ export function ProblemCard(props: Props) {
     });
     const solutionSelected = selected && selectedContentId === null;
     const toggleSolution = (/**
-     * toggleSolutionに対応する画面表示を更新する。
+     * Solution・Openを無効または非表示の状態へ戻す。
      */
     function toggleSolutionImplementation6() {
         if (solutionOpen) {
@@ -139,50 +154,50 @@ export function ProblemCard(props: Props) {
         setSolutionOpen(true);
     });
     const selectSolution = (/**
-     * selectSolutionで必要な値を取得する。
+     * Solutionを入力データまたは現在の状態から取り出す。
      */
     function selectSolutionImplementation7() {
         onSelect();
         onSelectContent(null);
     });
+    // --------------------
+    // 画面表示
+    // --------------------
+
     return <article className={selected ? "problem-card selected" : "problem-card"} data-editor-problem-id={problem.id} onClick={onSelect}>
     <header className="problem-card-header">
       <div className="problem-title"><span className="drag-handle" aria-hidden="true"><GripVertical size={18}/></span><select className="problem-kind-select" aria-label="問題の種類" value={problem.kind} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「問題の種類」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick8(event) {
         return event.stopPropagation();
     })} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「問題の種類」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange9(event) {
         return commit("問題の種類を変更", updateProblem(readWorksheet(), problem.id, (/**
-         * updateProblemへ渡す処理を実行する。
+         * 要素の種別をイベントの編集操作を適用する対象の値へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateProblemCallback10(item) { item.kind = event.target.value as typeof item.kind; })));
     })}><option value="problem">問題</option><option value="example">例題</option></select><span>{displayNumber ? displayNumber.replace(/[^0-9]/gu, "") || displayNumber : "番号なし"}</span>{problem.numbering.restartAt && <span className="status-chip">{problem.numbering.restartAt}から再開</span>}</div>
       <div className="problem-actions"><button className="small-button" disabled={worksheet.problems.length >= 200} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「複製」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */
     function handleClick11(event) { event.stopPropagation(); commit("問題を複製", duplicateProblem(readWorksheet(), problem.id)); })}><Copy size={14}/>複製</button><div className="relative" ref={problemMenuRef}><button className="icon-button" aria-label="問題設定" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「問題設定」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */
     function handleClick12(event) { event.stopPropagation(); setProblemMenu(!problemMenu); })}><MoreHorizontal size={18}/></button>{problemMenu && <ProblemMenu worksheet={worksheet} getWorksheet={readWorksheet} problem={problem} index={index} commit={commit} close={(/**
-     * closeで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 問題・Menuを無効または非表示の状態へ戻す。
      */
     function closeCallback13() {
         return setProblemMenu(false);
@@ -191,29 +206,27 @@ export function ProblemCard(props: Props) {
     <div className="content-list">
       {problem.contents.length === 0 && <div className="empty-problem"><p>{problem.kind === "example" ? "例題" : "問題"}{displayNumber ?? ""}には内容がありません。</p><span>「内容を追加」から編集を再開できます。</span></div>}
       {problem.contents.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各処理対象の問題本文または解説を画面表示用のReact要素へ変換する。
      *
-     * @param content contentとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param content 処理対象の問題本文または解説
+     * @returns 画面表示用のReact要素
      */
     function mapItem14(content) {
         return <ContentEditor key={content.id} worksheet={worksheet} getWorksheet={readWorksheet} problem={problem} content={content} selected={selected && selectedContentId === content.id} onSelect={(/**
-         * onSelectで発生した画面イベントを処理する。
+         * 画面要素から選択操作を受け、対応する編集状態と画面表示を更新する。
          */
         function handleSelect15() { onSelect(); onSelectContent(content.id); })} commit={commit} mutate={onMutate} assetUrls={assetUrls} onImage={(/**
-         * onImageで発生した画面イベントを処理する。
+         * 画面要素から画像挿入要求を受け、対応する編集状態と画面表示を更新する。
          *
-         * @param target targetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param target 編集操作を適用する対象
          */
         function handleImage16(target) {
             return setImageDialog({ mode: "insert", target });
         })} onEditImage={(/**
-         * onEditImageで発生した画面イベントを処理する。
+         * 画面要素から画像編集要求を受け、対応する編集状態と画面表示を更新する。
          *
-         * @param target targetとして使用する値
-         * @param image imageとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param target 編集操作を適用する対象
+         * @param image 表示または編集する画像
          */
         function handleEditImage17(target, image) {
             return setImageDialog({ mode: "edit", target, image });
@@ -222,30 +235,29 @@ export function ProblemCard(props: Props) {
     </div>
     <div className="solution-section">
       <button className="solution-toggle" aria-expanded={solutionOpen} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「:」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */
     function handleClick18(event) { event.stopPropagation(); toggleSolution(); })}>{solutionOpen ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}教師用の解説{problem.solution && <span className="status-chip">入力済み</span>}</button>
       {solutionOpen && (solutionSelected
             ? <div className="solution-editor"><label>解説</label><RichTextEditor document={(problem.solution ?? emptySolutionDocument()) as never} assetUrls={assetUrls} onChange={(/**
-                 * onChangeで発生した画面イベントを処理する。
+                 * 「解説」リッチ・テキスト・エディタ要素から入力変更を受け、on・Mutateとして親コンポーネントへ通知する。
                  *
-                 * @param document documentとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param document 処理対象のリッチテキスト文書
                  */
                 function handleChange19(document) {
                     return onMutate("教師用の解説を編集", (/**
-                     * onMutateへ渡す処理を実行する。
+                     * Mutateの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
                      *
-                     * @param draft draftとして使用する値
+                     * @param draft Immerが提供する更新中の状態
                      */
                     function onMutateCallback20(draft) {
                         const target = draft.problems.find((/**
-                         * 検索条件に一致する要素か判定する。
+                         * 要素の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する最初の要素を検索する。
                          *
-                         * @param item 処理対象の値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param item 配列処理で現在参照している要素
+                         * @returns 要素の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する場合はtrue
                          */
                         function findItem21(item) {
                             return item.id === problem.id;
@@ -254,38 +266,32 @@ export function ProblemCard(props: Props) {
                             target.solution = document as never;
                     }), { historyGroup: `richText:${problem.id}:solution` });
                 })} enableMath showColorSelector={false} onImage={(/**
-             * onImageで発生した画面イベントを処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * 「解説」画面要素から画像挿入要求を受け、対応する編集状態と画面表示を更新する。
              */
             function handleImage22() {
                 return setImageDialog({ mode: "insert", target: { kind: "solution" } });
             })} onEditImage={(/**
-             * onEditImageで発生した画面イベントを処理する。
+             * 「解説」画面要素から画像編集要求を受け、対応する編集状態と画面表示を更新する。
              *
-             * @param image imageとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param image 表示または編集する画像
              */
             function handleEditImage23(image) {
                 return setImageDialog({ mode: "edit", target: { kind: "solution" }, image });
             })} onTable={(/**
-             * onTableで発生した画面イベントを処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * 「解説」画面要素から表挿入要求を受け、対応する編集状態と画面表示を更新する。
              */
             function handleTable24() {
                 return setTableTarget({ kind: "solution" });
             })}/></div>
             : <div className="solution-editor solution-editor-static" role="button" tabIndex={0} aria-label="教師用の解説を編集" onKeyDown={(/**
-             * onKeyDownで発生した画面イベントを処理する。
+             * 「教師用の解説を編集」要素のon・キー・Downを受け、対応する編集状態と画面表示を更新する。
              *
              * @param event 発生したイベント
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleKeyDown25(event) {
                 return activateOnKeyboard(event, selectSolution);
             })} onClick={(/**
-             * onClickで発生した画面イベントを処理する。
+             * 「教師用の解説を編集」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
              *
              * @param event 発生したイベント
              */
@@ -297,36 +303,34 @@ export function ProblemCard(props: Props) {
         </div>)}
     </div>
     <div className="add-content-wrap" ref={addMenuRef}><button className="add-content-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「内容を追加」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */
     function handleClick27(event) { event.stopPropagation(); setAddMenu(!addMenu); })}><Plus size={16}/>内容を追加</button>{addMenu && <div className="add-content-popover"><strong>追加する内容</strong><div>{ADD_CONTENT_OPTIONS.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各作成または検証する要素種別と画面表示やテスト識別に使う名称の組を画面表示用のReact要素へ変換する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput コールバックの呼び出し元から渡される入力情報
+     * @returns 画面表示用のReact要素
      */
-    function mapItem28(parameter1) {
-        let [type, label] = parameter1;
+    function mapItem28(callbackInput) {
+        let [type, label] = callbackInput;
         return <button key={type} onClick={(/**
-         * onClickで発生した画面イベントを処理する。
+         * ボタンからクリック操作を受け、stop・Propagationを実行する。
          *
          * @param event 発生したイベント
          */
         function handleClick29(event) { event.stopPropagation(); addBlock(type); })}>{label}</button>;
     }))}</div></div>}</div>
     {tableTarget !== undefined && <TableDialog onClose={(/**
-         * onCloseで発生した画面イベントを処理する。
-         *
-         * @returns 呼び出し元で使用する処理結果
+         * 表・ダイアログ要素から終了要求を受け、表・対象を操作内容に合う状態へ更新する。
          */
         function handleClose30() {
             return setTableTarget(undefined);
         })} onInsert={(/**
-             * onInsertで発生した画面イベントを処理する。
+             * 表・ダイアログ要素から挿入要求を受け、commitを実行する。
              *
-             * @param table tableとして使用する値
+             * @param table 編集または検証の対象となる表
              */
             function handleInsert31(table) {
                 if (tableTarget === null) {
@@ -335,9 +339,9 @@ export function ProblemCard(props: Props) {
                 }
                 else {
                     commit("表を挿入", updateRichTextDocument(readWorksheet(), problem.id, tableTarget, (/**
-                     * updateRichTextDocumentへ渡す処理を実行する。
+                     * updateRichTextDocumentが渡す更新対象へ、更新・リッチ・テキスト・文書で定義した変更を反映する。
                      *
-                     * @param document documentとして使用する値
+                     * @param document 処理対象のリッチテキスト文書
                      */
                     function updateRichTextDocumentCallback32(document) {
                         document.content.push({ type: "richTable", attrs: { id: table.id, rows: table.rows, columnWidthsPercent: table.columnWidthsPercent, headerRow: table.headerRow, answerColor: tableTarget.kind !== "solution" && tableTarget.color === "answer" } });
@@ -347,19 +351,17 @@ export function ProblemCard(props: Props) {
                 setTableTarget(undefined);
             })}/>}
     {imageDialog && <ImageDialog worksheetId={worksheet.id} {...(imageDialog.mode === "edit" ? { initial: { placement: imageDialog.image.placement, widthPercent: imageDialog.image.widthPercent, alt: imageDialog.image.alt, ...(assetUrls.get(imageDialog.image.assetId) ? { previewUrl: assetUrls.get(imageDialog.image.assetId)! } : {}) } } : {})} onClose={(/**
-         * onCloseで発生した画面イベントを処理する。
-         *
-         * @returns 呼び出し元で使用する処理結果
+         * 画像・ダイアログ要素から終了要求を受け、画像・ダイアログを操作内容に合う状態へ更新する。
          */
         function handleClose33() {
             return setImageDialog(null);
         })} onApply={(/**
-             * onApplyで発生した画面イベントを処理する。
+             * 画面要素から設定の適用要求を受け、対応する編集状態と画面表示を更新する。
              *
-             * @param asset assetとして使用する値
-             * @param placement placementとして使用する値
-             * @param width widthとして使用する値
-             * @param alt altとして使用する値
+             * @param asset 処理対象の画像アセット
+             * @param placement 画像を本文の前後どちらへ置くかの指定
+             * @param width 要素または列へ適用する幅
+             * @param alt 画像の代替テキスト
              */
             function handleApply34(asset, placement, width, alt) {
                 if (imageDialog.mode === "insert") {
@@ -373,6 +375,11 @@ export function ProblemCard(props: Props) {
             })}/>}
   </article>;
 }
+
+// --------------------
+// 問題メニューとダイアログ
+// --------------------
+
 type ImageDialogState = {
     mode: "insert";
     target: RichTextDocumentTarget | null;
@@ -382,10 +389,10 @@ type ImageDialogState = {
     image: EditableImageRef;
 };
 /**
- * ProblemMenuコンポーネントを表示する。
+ * 問題種別・採番・移動・複製・削除の操作をまとめたメニューを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 問題・Menuへ渡す表示情報と操作
+ * @returns 問題・Menuを表示するReact要素
  */
 function ProblemMenu(props: {
     worksheet: Worksheet;
@@ -397,79 +404,79 @@ function ProblemMenu(props: {
 }) {
     let { worksheet, getWorksheet, problem, index, commit, close } = props;
     return <div className="problem-menu" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * div要素からクリック操作を受け、stop・Propagationを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick35(event) {
         return event.stopPropagation();
     })}>
     <button onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「問題を複製」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick36() { commit("問題を複製", duplicateProblem(getWorksheet(), problem.id)); close(); })}>問題を複製</button>
     <button disabled={index === 0} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「上へ移動」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick37() { commit("問題を上へ移動", moveProblem(getWorksheet(), problem.id, index - 1)); close(); })}>上へ移動</button>
     <button disabled={index === worksheet.problems.length - 1} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「下へ移動」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick38() { commit("問題を下へ移動", moveProblem(getWorksheet(), problem.id, index + 1)); close(); })}>下へ移動</button><hr />
     <label className="menu-check"><input type="checkbox" checked={problem.numbering.enabled} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 入力欄から入力変更を受け、commitを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange39(event) {
         return commit("採番を切替", updateProblem(getWorksheet(), problem.id, (/**
-         * updateProblemへ渡す処理を実行する。
+         * 要素のnumberingの外側クリック監視を有効にするかどうかをイベントの編集操作を適用する対象のcheckedへ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateProblemCallback40(item) { item.numbering.enabled = event.target.checked; })));
     })}/>番号を付ける</label>
     <label className="menu-check"><input type="checkbox" checked={problem.numbering.restartAt !== null} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 入力欄から入力変更を受け、commitを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange41(event) {
         return commit("振り直しを切替", updateProblem(getWorksheet(), problem.id, (/**
-         * updateProblemへ渡す処理を実行する。
+         * 要素のnumberingのrestart・位置を条件に応じて選択した値へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateProblemCallback42(item) { item.numbering.restartAt = event.target.checked ? 1 : null; })));
     })}/>この項目から振り直す</label>
     <label className="menu-number">開始番号<input type="number" min={1} disabled={problem.numbering.restartAt === null} value={problem.numbering.restartAt ?? 1} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「開始番号」入力欄から入力変更を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange43(event) {
         return commit("開始番号を変更", updateProblem(getWorksheet(), problem.id, (/**
-         * updateProblemへ渡す処理を実行する。
+         * 要素のnumberingのrestart・位置をmaxの結果へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateProblemCallback44(item) { item.numbering.restartAt = Math.max(1, event.target.valueAsNumber || 1); })));
     })}/></label><hr />
     <button className="danger-text" disabled={worksheet.problems.length === 1} title={worksheet.problems.length === 1 ? "プリントには1問以上必要です" : undefined} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「問題を削除」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick45() { commit("問題を削除", deleteProblem(getWorksheet(), problem.id)); close(); })}><Trash2 size={14}/>問題を削除</button>
   </div>;
 }
+// --------------------
+// 内容編集
+// --------------------
+
 /**
- * ContentEditorコンポーネントを表示する。
+ * 本文・囲み枠・めあて・画像・表・小問・解答欄の種別に応じた編集UIを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 内容・エディタへ渡す表示情報と操作
+ * @returns 内容・エディタを表示するReact要素
  */
 function ContentEditor(props: {
     worksheet: Worksheet;
@@ -487,34 +494,33 @@ function ContentEditor(props: {
 }) {
     let { worksheet, getWorksheet, problem, content, selected, onSelect, commit, mutate, onImage, onEditImage, onTable, assetUrls } = props;
     const update = (/**
-     * updateの対象となる状態を更新する。
+     * ProseMirrorノードまたはアプリ状態の変更を既存DOMへ反映できるか判定し、可能な場合は更新する。
      *
-     * @param label labelとして使用する値
-     * @param change changeとして使用する値
-     * @param historyGroup historyGroupとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param label 画面表示やテスト識別に使う名称
+     * @param change 適用する編集内容
+     * @param historyGroup 同じUndo履歴へまとめる操作種別
      */
     function updateImplementation46(label: string, change: (content: Draft<ContentBlock>) => void, historyGroup?: string) {
         return mutate(label, (/**
-         * mutateへ渡す処理を実行する。
+         * mutateが渡す更新対象へ、mutateで定義した変更を反映する。
          *
-         * @param draft draftとして使用する値
+         * @param draft Immerが提供する更新中の状態
          */
         function mutateCallback47(draft) {
             const targetProblem = draft.problems.find((/**
-             * 検索条件に一致する要素か判定する。
+             * 要素の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する最初の要素を検索する。
              *
-             * @param item 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param item 配列処理で現在参照している要素
+             * @returns 要素の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する場合はtrue
              */
             function findItem48(item) {
                 return item.id === problem.id;
             }));
             const targetContent = targetProblem?.contents.find((/**
-             * 検索条件に一致する要素か判定する。
+             * 要素の対象を一意に特定する識別子が処理対象の問題本文または解説の対象を一意に特定する識別子と一致する最初の要素を検索する。
              *
-             * @param item 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param item 配列処理で現在参照している要素
+             * @returns 要素の対象を一意に特定する識別子が処理対象の問題本文または解説の対象を一意に特定する識別子と一致する場合はtrue
              */
             function findItem49(item) {
                 return item.id === content.id;
@@ -525,15 +531,14 @@ function ContentEditor(props: {
     });
     if (!selected) {
         return <section className="content-card content-card-static" role="button" tabIndex={0} aria-label="内容を編集" onKeyDown={(/**
-         * onKeyDownで発生した画面イベントを処理する。
+         * 「内容を編集」要素のon・キー・Downを受け、対応する編集状態と画面表示を更新する。
          *
          * @param event 発生したイベント
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleKeyDown50(event) {
             return activateOnKeyboard(event, onSelect);
         })} onClick={(/**
-         * onClickで発生した画面イベントを処理する。
+         * 「内容を編集」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
          *
          * @param event 発生したイベント
          */
@@ -542,44 +547,40 @@ function ContentEditor(props: {
     </section>;
     }
     return <section className="content-card selected" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「上へ移動」改ページまたは表示の対象となる問題区画要素からクリック操作を受け、stop・Propagationを実行する。
      *
      * @param event 発生したイベント
      */
     function handleClick52(event) { event.stopPropagation(); onSelect(); })}>
     <div className="content-controls"><button aria-label="上へ移動" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「上へ移動」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick53() {
         return commit("内容を上へ移動", moveContent(getWorksheet(), problem.id, content.id, -1));
     })}>↑</button><button aria-label="下へ移動" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「下へ移動」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick54() {
         return commit("内容を下へ移動", moveContent(getWorksheet(), problem.id, content.id, 1));
     })}>↓</button><button className="danger-text" aria-label="削除" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「削除」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick55() {
         return commit("内容を削除", deleteContent(getWorksheet(), problem.id, content.id));
     })}><Trash2 size={14}/></button></div>
     {content.type === "richText" && <MixedColorDocumentEditor document={mergeColoredDocuments(content.document, content.answerDocument)} placeholder="問題文・解答を入力…" onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 「問題文・解答を入力…」Mixed・色・文書・エディタ要素から入力変更を受け、対象データへ適用する更新処理を実行する。
          *
-         * @param document documentとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param document 処理対象のリッチテキスト文書
          */
         function handleChange56(document) {
             return update("本文を編集", (/**
-             * updateへ渡す処理を実行する。
+             * 要素の処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback57(item) { if (item.type === "richText") {
                 item.document = document;
@@ -588,42 +589,40 @@ function ContentEditor(props: {
         })} target={{ kind: "content", contentId: content.id }} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>}
     {content.type === "box" && <div className={`box-editor box-${content.preset}`}>
       <div className="content-setting-row"><label>囲み枠</label><input value={content.title} placeholder="題名（空欄可）" onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 「囲み枠」入力欄から入力変更を受け、対応する編集状態と画面表示を更新する。
          *
          * @param event 発生したイベント
          */
         function handleChange58(event) { const title = event.currentTarget.value; update("囲み枠の題名", (/**
-         * updateへ渡す処理を実行する。
+         * 要素の題名をプリントまたはテストへ設定する題名へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateCallback59(item) { if (item.type === "box")
             item.title = title; }), `text:${problem.id}:content:${content.id}:title`); })}/><select value={content.preset} onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 選択欄から入力変更を受け、対象データへ適用する更新処理を実行する。
          *
          * @param event 発生したイベント
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleChange60(event) {
             return update("囲み枠デザイン", (/**
-             * updateへ渡す処理を実行する。
+             * 要素のpresetをイベントの編集操作を適用する対象の値へ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback61(item) { if (item.type === "box")
                 item.preset = event.target.value as typeof item.preset; }));
         })}><option value="simple">シンプル</option><option value="heading">見出し付き</option><option value="band">帯見出し</option><option value="emphasis">強調</option></select></div>
       <MixedColorDocumentEditor document={mergeColoredDocuments(content.document, content.answerDocument)} placeholder="囲み枠の問題文・解答を入力…" onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 「題名（空欄可）」Mixed・色・文書・エディタ要素から入力変更を受け、対象データへ適用する更新処理を実行する。
          *
-         * @param document documentとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param document 処理対象のリッチテキスト文書
          */
         function handleChange62(document) {
             return update("囲み枠本文を編集", (/**
-             * updateへ渡す処理を実行する。
+             * 要素の処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback63(item) { if (item.type === "box") {
                 item.document = document;
@@ -634,47 +633,44 @@ function ContentEditor(props: {
     {content.type === "goal" && <div className="goal-editor">
       <div className="content-setting-row"><strong>めあて</strong><small>初期入力色は解答色（赤）です</small></div>
       <MixedColorDocumentEditor document={colorDocumentAsAnswer(content.document)} placeholder="めあてを入力…" onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 「めあてを入力…」Mixed・色・文書・エディタ要素から入力変更を受け、対象データへ適用する更新処理を実行する。
          *
-         * @param document documentとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param document 処理対象のリッチテキスト文書
          */
         function handleChange64(document) {
             return update("めあてを編集", (/**
-             * updateへ渡す処理を実行する。
+             * 要素の処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback65(item) { if (item.type === "goal")
                 item.document = document; }), `richText:${problem.id}:content:${content.id}`);
         })} target={{ kind: "content", contentId: content.id }} initialColor="answer" assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>
     </div>}
     {content.type === "answerArea" && <AnswerAreaEditor answerArea={content.answerArea} onSettingsChange={(/**
-         * onSettingsChangeで発生した画面イベントを処理する。
+         * 画面要素から設定変更を受け、対応する編集状態と画面表示を更新する。
          *
-         * @param style styleとして使用する値
-         * @param rows rowsとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param style 表示対象へ適用する見た目の設定
+         * @param rows 作成または検証する表の行数・行一覧
          */
         function handleSettingsChange66(style, rows) {
             return update("解答欄を設定", (/**
-             * updateへ渡す処理を実行する。
+             * 要素の解答欄の表示領域を値・表示対象へ適用する見た目の設定・作成または検証する表の行数・行一覧を持つオブジェクトへ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback67(item) { if (item.type === "answerArea")
                 item.answerArea = { ...item.answerArea, style, rows }; }));
         })} onChange={(/**
-         * onChangeで発生した画面イベントを処理する。
+         * 解答・Area・エディタ要素から入力変更を受け、対象データへ適用する更新処理を実行する。
          *
-         * @param document documentとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param document 処理対象のリッチテキスト文書
          */
         function handleChange68(document) {
             return update("解答欄を編集", (/**
-             * updateへ渡す処理を実行する。
+             * 要素の解答欄の表示領域の処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              */
             function updateCallback69(item) { if (item.type === "answerArea") {
                 item.answerArea.document = document;
@@ -682,50 +678,47 @@ function ContentEditor(props: {
             } }), `richText:${problem.id}:content:${content.id}:answerArea`);
         })} target={{ kind: "content", contentId: content.id }} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>}
     {content.type === "spacer" && <div className="inline-content-editor"><span>スペーサー</span><label>高さ <select value={content.rows} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 選択欄から入力変更を受け、対象データへ適用する更新処理を実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange70(event) {
         return update("スペーサーを設定", (/**
-         * updateへ渡す処理を実行する。
+         * 要素の作成または検証する表の行数・行一覧を番号の結果へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateCallback71(item) { if (item.type === "spacer")
             item.rows = Number(event.target.value); }));
     })}>{Array.from({ length: 20 }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに画面表示用のReact要素を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns fromを表示するReact要素
      */
     function fromCallback72(_, index) {
         return <option value={index + 1} key={index + 1}>{index + 1}</option>;
     }))}</select> 行</label></div>}
     {content.type === "pageBreak" && <div className="page-break-editor"><span><Scissors size={15}/>ここで改ページ</span></div>}
     {content.type === "image" && <div className="image-content-editor">{assetUrls.get(content.assetId) ? <img src={assetUrls.get(content.assetId)} alt={content.alt}/> : <span className="image-content-missing">画像を読み込めません</span>}<div><strong>画像</strong><span>配置: {{ block: "独立", floatLeft: "左回り込み", floatRight: "右回り込み" }[content.placement]}</span><span>サイズ: {content.widthPercent}%</span></div><button type="button" className="small-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「画像を編集」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick73() {
         return onEditImage(null, { id: content.id, assetId: content.assetId, alt: content.alt, placement: content.placement, widthPercent: content.widthPercent, answerColor: false });
     })}><Pencil size={13}/>画像を編集</button></div>}
     {content.type === "table" && <TableEditor content={content} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 表・エディタ要素から入力変更を受け、対象データへ適用する更新処理を実行する。
      *
-     * @param table tableとして使用する値
-     * @param historyGroup historyGroupとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param table 編集または検証の対象となる表
+     * @param historyGroup 同じUndo履歴へまとめる操作種別
      */
     function handleChange74(table, historyGroup) {
         return update("表を編集", (/**
-         * updateへ渡す処理を実行する。
+         * 要素の作成または検証する表の行数・行一覧を編集または検証の対象となる表の作成または検証する表の行数・行一覧へ更新する。
          *
-         * @param item 処理対象の値
+         * @param item 配列処理で現在参照している要素
          */
         function updateCallback75(item) { if (item.type === "table") {
             item.rows = table.rows;
@@ -735,6 +728,11 @@ function ContentEditor(props: {
     {content.type === "subQuestionGroup" && <SubQuestionEditor worksheet={worksheet} getWorksheet={getWorksheet} problem={problem} content={content} commit={commit} mutate={mutate} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>}
   </section>;
 }
+
+// --------------------
+// リッチテキスト編集
+// --------------------
+
 type MixedColorDocumentEditorProps = {
     document: BasicRichTextDocument;
     placeholder: string;
@@ -748,53 +746,54 @@ type MixedColorDocumentEditorProps = {
     onTable: (target: RichTextDocumentTarget) => void;
 };
 /**
- * targetWithColorに必要な処理を実行する。
+ * 編集操作を適用する対象と文字または数式へ適用する色を基に対象・With・色を導出する。
  *
- * @param target targetとして使用する値
- * @param color colorとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param target 編集操作を適用する対象
+ * @param color 文字または数式へ適用する色
+ * @returns 条件に応じて選択した値
  */
 function targetWithColor(target: RichTextDocumentTarget, color: ContentColor): RichTextDocumentTarget {
     return target.kind === "solution" ? target : { ...target, color };
 }
 /**
- * MixedColorDocumentEditorコンポーネントを表示する。
+ * 問題色と解答色を切り替えながら編集できるリッチテキスト入力欄を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Mixed・色・文書・エディタへ渡す表示情報と操作
+ * @returns Mixed・色・文書・エディタを表示するReact要素
  */
 function MixedColorDocumentEditor(props: MixedColorDocumentEditorProps) {
     return <RichTextEditor compact={Boolean(props.compact)} document={props.document} assetUrls={props.assetUrls} placeholder={props.placeholder} onChange={props.onChange} initialColor={props.initialColor ?? "problem"} enableMath onImage={(/**
-     * onImageで発生した画面イベントを処理する。
+     * 画面要素から画像挿入要求を受け、対応する編集状態と画面表示を更新する。
      *
-     * @param color colorとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param color 文字または数式へ適用する色
      */
     function handleImage76(color) {
         return props.onImage(targetWithColor(props.target, color));
     })} onEditImage={(/**
-     * onEditImageで発生した画面イベントを処理する。
+     * 画面要素から画像編集要求を受け、対応する編集状態と画面表示を更新する。
      *
-     * @param image imageとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param image 表示または編集する画像
      */
     function handleEditImage77(image) {
         return props.onEditImage(targetWithColor(props.target, image.answerColor ? "answer" : "problem"), image);
     })} onTable={(/**
-     * onTableで発生した画面イベントを処理する。
+     * 画面要素から表挿入要求を受け、対応する編集状態と画面表示を更新する。
      *
-     * @param color colorとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param color 文字または数式へ適用する色
      */
     function handleTable78(color) {
         return props.onTable(targetWithColor(props.target, color));
     })}/>;
 }
+// --------------------
+// 解答欄
+// --------------------
+
 /**
- * AnswerAreaEditorコンポーネントを表示する。
+ * 解答欄の種類・行数・幅など、生徒が記入する領域の設定UIを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 解答・Area・エディタへ渡す表示情報と操作
+ * @returns 解答・Area・エディタを表示するReact要素
  */
 function AnswerAreaEditor(props: {
     answerArea: AnswerArea;
@@ -809,27 +808,25 @@ function AnswerAreaEditor(props: {
     let { answerArea, onSettingsChange, onChange, target, assetUrls, onImage, onEditImage, onTable } = props;
     return <div className="answer-area-editor">
     <div className="inline-content-editor answer-area-settings"><strong>生徒用解答欄</strong><label>種類 <select value={answerArea.style} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「横罫線」選択欄から入力変更を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange79(event) {
         return onSettingsChange(event.target.value as "lines" | "box", answerArea.rows);
     })}><option value="lines">横罫線</option><option value="box">四角囲み</option></select></label><label>高さ <select value={answerArea.rows} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 選択欄から入力変更を受け、on・設定・Changeとして親コンポーネントへ通知する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange80(event) {
         return onSettingsChange(answerArea.style, Number(event.target.value));
     })}>{Array.from({ length: 20 }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに画面表示用のReact要素を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns fromを表示するReact要素
      */
     function fromCallback81(_, index) {
         return <option value={index + 1} key={index + 1}>{index + 1}</option>;
@@ -837,11 +834,15 @@ function AnswerAreaEditor(props: {
     <MixedColorDocumentEditor document={mergeColoredDocuments(answerArea.document, answerArea.answerDocument)} placeholder="解答欄の問題文・解答を入力…" onChange={onChange} target={target} compact assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>
   </div>;
 }
+// --------------------
+// 小問編集
+// --------------------
+
 /**
- * SubQuestionEditorコンポーネントを表示する。
+ * 小問の追加・採番・本文・解説・並べ替えを一つの編集領域として表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Sub・Question・エディタへ渡す表示情報と操作
+ * @returns Sub・Question・エディタを表示するReact要素
  */
 function SubQuestionEditor(props: {
     worksheet: Worksheet;
@@ -862,35 +863,34 @@ function SubQuestionEditor(props: {
     const menuRef = useRef<HTMLDivElement>(null);
     const numbers = getSubQuestionNumbers(content, worksheet.pageSettings.subQuestionNumberFormat);
     const updateItem = (/**
-     * updateItemの対象となる状態を更新する。
+     * 要素を現在の編集結果へ反映する。
      *
-     * @param label labelとして使用する値
+     * @param label 画面表示やテスト識別に使う名称
      * @param itemId 対象を識別するID
-     * @param change changeとして使用する値
-     * @param historyGroup historyGroupとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param change 適用する編集内容
+     * @param historyGroup 同じUndo履歴へまとめる操作種別
      */
     function updateItemImplementation82(label: string, itemId: string, change: (item: Draft<(typeof content.items)[number]>) => void, historyGroup?: string) {
         return mutate(label, (/**
-         * mutateへ渡す処理を実行する。
+         * mutateが渡す更新対象へ、mutateで定義した変更を反映する。
          *
-         * @param draft draftとして使用する値
+         * @param draft Immerが提供する更新中の状態
          */
         function mutateCallback83(draft) {
             const targetProblem = draft.problems.find((/**
-             * 検索条件に一致する要素か判定する。
+             * キーと値の組の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する最初の要素を検索する。
              *
-             * @param entry 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param entry キーと値の組
+             * @returns キーと値の組の対象を一意に特定する識別子が処理対象の問題または例題の対象を一意に特定する識別子と一致する場合はtrue
              */
             function findItem84(entry) {
                 return entry.id === problem.id;
             }));
             const targetGroup = targetProblem?.contents.find((/**
-             * 検索条件に一致する要素か判定する。
+             * キーと値の組の対象を一意に特定する識別子が処理対象の問題本文または解説の対象を一意に特定する識別子と一致する最初の要素を検索する。
              *
-             * @param entry 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param entry キーと値の組
+             * @returns キーと値の組の対象を一意に特定する識別子が処理対象の問題本文または解説の対象を一意に特定する識別子と一致する場合はtrue
              */
             function findItem85(entry) {
                 return entry.id === content.id;
@@ -898,10 +898,10 @@ function SubQuestionEditor(props: {
             if (targetGroup?.type !== "subQuestionGroup")
                 return;
             const targetItem = targetGroup.items.find((/**
-             * 検索条件に一致する要素か判定する。
+             * キーと値の組の対象を一意に特定する識別子が要素・Idと一致する最初の要素を検索する。
              *
-             * @param entry 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param entry キーと値の組
+             * @returns キーと値の組の対象を一意に特定する識別子が要素・Idと一致する場合はtrue
              */
             function findItem86(entry) {
                 return entry.id === itemId;
@@ -911,9 +911,7 @@ function SubQuestionEditor(props: {
         }), historyGroup ? { historyGroup } : undefined);
     });
     useOutsidePointerDown(menuRef, menuItemId !== null, (/**
-     * useOutsidePointerDownへ渡す処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Menu・要素・識別子をユーザー操作または非同期処理の結果に合わせて更新する。
      */
     function useOutsidePointerDownCallback87() {
         return setMenuItemId(null);
@@ -921,34 +919,31 @@ function SubQuestionEditor(props: {
     return <div className="subquestion-editor">
     <div className="subquestion-title">小問</div>
     <div className="subquestion-grid">{content.items.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各要素を画面表示用のReact要素へ変換する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 画面表示用のReact要素
          */
         function mapItem88(item) {
             return <article className={item.width === "full" ? "subquestion-card full" : "subquestion-card"} key={item.id}>
       <header>
         <span><GripVertical size={14}/>{numbers.get(item.id)}{item.numbering.restartAt !== null && <span className="status-chip">{item.numbering.restartAt}から再開</span>}</span>
         <select value={item.width} onChange={(/**
-             * onChangeで発生した画面イベントを処理する。
+             * 選択欄から入力変更を受け、更新・要素を実行する。
              *
              * @param event 発生したイベント
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleChange89(event) {
                 return updateItem("小問幅を変更", item.id, (/**
-                 * updateItemへ渡す処理を実行する。
+                 * キーと値の組の要素または列へ適用する幅をイベントの編集操作を適用する対象の値へ更新する。
                  *
-                 * @param entry 処理対象の値
+                 * @param entry キーと値の組
                  */
                 function updateItemCallback90(entry) { entry.width = event.target.value as typeof entry.width; }));
             })}><option value="column">半幅</option><option value="full">全幅</option></select>
         <div className="relative" ref={menuItemId === item.id ? menuRef : undefined}>
           <button className="icon-button" aria-label="小問設定" onClick={(/**
-             * onClickで発生した画面イベントを処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * 「小問設定」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
              */
             function handleClick91() {
                 return setMenuItemId(menuItemId === item.id ? null : item.id);
@@ -956,54 +951,50 @@ function SubQuestionEditor(props: {
           {menuItemId === item.id && <SubQuestionMenu getWorksheet={getWorksheet} problem={problem} groupId={content.id} item={item} commit={commit}/>}
         </div>
         <button className="icon-button" disabled={content.items.length <= 1} aria-label="小問を削除" onClick={(/**
-             * onClickで発生した画面イベントを処理する。
+             * 「小問を削除」要素のon・Clickを受け、対応する編集状態と画面表示を更新する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleClick92() {
                 return commit("小問を削除", deleteSubQuestion(getWorksheet(), problem.id, content.id, item.id));
             })}><Trash2 size={14}/></button>
       </header>
       <MixedColorDocumentEditor compact document={mergeColoredDocuments(item.content, item.answerContent)} placeholder="小問の問題文・解答を入力…" onChange={(/**
-             * onChangeで発生した画面イベントを処理する。
+             * Mixed・色・文書・エディタ要素から入力変更を受け、更新・要素を実行する。
              *
-             * @param document documentとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param document 処理対象のリッチテキスト文書
              */
             function handleChange93(document) {
                 return updateItem("小問を編集", item.id, (/**
-                 * updateItemへ渡す処理を実行する。
+                 * キーと値の組の内容を処理対象のリッチテキスト文書へ更新する。
                  *
-                 * @param entry 処理対象の値
+                 * @param entry キーと値の組
                  */
                 function updateItemCallback94(entry) { entry.content = document; entry.answerContent = emptyDocument(); }), `richText:${problem.id}:subQuestion:${content.id}:${item.id}:content`);
             })} target={{ kind: "subQuestion", groupId: content.id, subQuestionId: item.id, field: "content" }} assetUrls={assetUrls} onImage={onImage} onEditImage={onEditImage} onTable={onTable}/>
       {item.answerArea && <AnswerAreaEditor answerArea={item.answerArea} onSettingsChange={(/**
-                 * onSettingsChangeで発生した画面イベントを処理する。
+                 * 画面要素から設定変更を受け、対応する編集状態と画面表示を更新する。
                  *
-                 * @param style styleとして使用する値
-                 * @param rows rowsとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param style 表示対象へ適用する見た目の設定
+                 * @param rows 作成または検証する表の行数・行一覧
                  */
                 function handleSettingsChange95(style, rows) {
                     return updateItem("小問解答欄を設定", item.id, (/**
-                     * updateItemへ渡す処理を実行する。
+                     * キーと値の組の解答欄の表示領域を値・表示対象へ適用する見た目の設定・作成または検証する表の行数・行一覧を持つオブジェクトへ更新する。
                      *
-                     * @param entry 処理対象の値
+                     * @param entry キーと値の組
                      */
                     function updateItemCallback96(entry) { if (entry.answerArea)
                         entry.answerArea = { ...entry.answerArea, style, rows }; }));
                 })} onChange={(/**
-                 * onChangeで発生した画面イベントを処理する。
+                 * 解答・Area・エディタ要素から入力変更を受け、更新・要素を実行する。
                  *
-                 * @param document documentとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param document 処理対象のリッチテキスト文書
                  */
                 function handleChange97(document) {
                     return updateItem("小問解答欄を編集", item.id, (/**
-                     * updateItemへ渡す処理を実行する。
+                     * キーと値の組の解答欄の表示領域の処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
                      *
-                     * @param entry 処理対象の値
+                     * @param entry キーと値の組
                      */
                     function updateItemCallback98(entry) { if (entry.answerArea) {
                         entry.answerArea.document = document;
@@ -1013,9 +1004,8 @@ function SubQuestionEditor(props: {
     </article>;
         }))}</div>
     <button className="small-button" disabled={content.items.length >= 100} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「小問を追加」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick99() {
         return commit("小問を追加", addSubQuestion(getWorksheet(), problem.id, content.id));
@@ -1023,10 +1013,10 @@ function SubQuestionEditor(props: {
   </div>;
 }
 /**
- * SubQuestionMenuコンポーネントを表示する。
+ * 小問の種類変更・移動・削除操作を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Sub・Question・Menuへ渡す表示情報と操作
+ * @returns Sub・Question・Menuを表示するReact要素
  */
 function SubQuestionMenu(props: {
     getWorksheet: () => Worksheet;
@@ -1039,49 +1029,50 @@ function SubQuestionMenu(props: {
 }) {
     let { getWorksheet, problem, groupId, item, commit } = props;
     return <div className="problem-menu subquestion-menu" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * div要素からクリック操作を受け、stop・Propagationを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick100(event) {
         return event.stopPropagation();
     })}>
     <label className="menu-check"><input type="checkbox" checked={item.numbering.restartAt !== null} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 入力欄から入力変更を受け、commitを実行する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange101(event) {
         return commit("小問の振り直しを切替", updateSubQuestion(getWorksheet(), problem.id, groupId, item.id, (/**
-         * updateSubQuestionへ渡す処理を実行する。
+         * キーと値の組のnumberingのrestart・位置を条件に応じて選択した値へ更新する。
          *
-         * @param entry 処理対象の値
+         * @param entry キーと値の組
          */
         function updateSubQuestionCallback102(entry) { entry.numbering.restartAt = event.target.checked ? 1 : null; })));
     })}/>この小問から番号を振り直す</label>
     <label className="menu-number">開始番号<input type="number" min={1} disabled={item.numbering.restartAt === null} value={item.numbering.restartAt ?? 1} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「開始番号」入力欄から入力変更を受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange103(event) {
         return commit("小問の開始番号を変更", updateSubQuestion(getWorksheet(), problem.id, groupId, item.id, (/**
-         * updateSubQuestionへ渡す処理を実行する。
+         * キーと値の組のnumberingのrestart・位置をmaxの結果へ更新する。
          *
-         * @param entry 処理対象の値
+         * @param entry キーと値の組
          */
         function updateSubQuestionCallback104(entry) { entry.numbering.restartAt = Math.max(1, event.target.valueAsNumber || 1); })));
     })}/></label>
   </div>;
 }
+// --------------------
+// 表編集
+// --------------------
+
 /**
- * TableEditorコンポーネントを表示する。
+ * 表セルの本文と行高・列幅・行列追加削除を編集するUIを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 表・エディタへ渡す表示情報と操作
+ * @returns 表・エディタを表示するReact要素
  */
 function TableEditor(props: {
     content: Extract<ContentBlock, {
@@ -1091,9 +1082,9 @@ function TableEditor(props: {
 }) {
     let { content, onChange } = props;
     const [activeCellId, setActiveCellId] = useState<string | null>((/**
-     * useStateへ渡す処理を実行する。
+     * 初回描画でだけ必要な初期状態を生成し、その後の再描画では同じ値を保持する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 二つの値を比較した結果
      */
     function useStateCallback105() {
         return content.rows[0]?.cells[0]?.id ?? null;
@@ -1106,19 +1097,19 @@ function TableEditor(props: {
     const availability = resolvedActiveCellId ? getTableOperationAvailability(tableData, resolvedActiveCellId) : null;
     const activeLocation = resolvedActiveCellId ? getTableCellLocation(tableData, resolvedActiveCellId) : null;
     const updateCell = (/**
-     * updateCellの対象となる状態を更新する。
+     * 処理対象の表セルの処理対象のリッチテキスト文書を処理対象のリッチテキスト文書へ更新する。
      *
      * @param cellId 対象を識別するID
-     * @param document documentとして使用する値
+     * @param document 処理対象のリッチテキスト文書
      */
     function updateCellImplementation106(cellId: string, document: typeof content.rows[number]["cells"][number]["document"]) {
         const rows = structuredClone(content.rows);
         for (const row of rows) {
             const cell = row.cells.find((/**
-             * 検索条件に一致する要素か判定する。
+             * 要素の対象を一意に特定する識別子がセル・Idと一致する最初の要素を検索する。
              *
-             * @param item 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param item 配列処理で現在参照している要素
+             * @returns 要素の対象を一意に特定する識別子がセル・Idと一致する場合はtrue
              */
             function findItem107(item) {
                 return item.id === cellId;
@@ -1131,9 +1122,9 @@ function TableEditor(props: {
         }
     });
     const operate = (/**
-     * operateに必要な処理を実行する。
+     * operateを適用・表・Operationで処理し、その結果を呼び出し元へ反映する。
      *
-     * @param operation operationとして使用する値
+     * @param operation 計測または適用する操作
      */
     function operateImplementation108(operation: TableOperation) {
         if (!resolvedActiveCellId)
@@ -1145,9 +1136,9 @@ function TableEditor(props: {
         onChange({ rows: result.rows, columnWidthsPercent: result.columnWidthsPercent });
     });
     const setRowHeight = (/**
-     * setRowHeightの対象となる状態を更新する。
+     * 表・行・高さをユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param heightMm heightMmとして使用する値
+     * @param heightMm ミリメートル単位の高さ
      */
     function setRowHeightImplementation109(heightMm: number | null) {
         if (!activeLocation)
@@ -1157,9 +1148,9 @@ function TableEditor(props: {
             onChange(result);
     });
     const setColumnWidth = (/**
-     * setColumnWidthの対象となる状態を更新する。
+     * 表・列・幅をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param widthPercent widthPercentとして使用する値
+     * @param widthPercent 表全体に対する列幅の割合
      */
     function setColumnWidthImplementation110(widthPercent: number) {
         if (!activeLocation)
@@ -1179,27 +1170,27 @@ function TableEditor(props: {
             }}/>}
     <div className="table-cell-toolbar-host" ref={setToolbarContainer}/>
     <table><colgroup>{content.columnWidthsPercent.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各要素または列へ適用する幅を画面表示用のReact要素へ変換する。
      *
-     * @param width widthとして使用する値
+     * @param width 要素または列へ適用する幅
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 画面表示用のReact要素
      */
     function mapItem111(width, index) {
         return <col key={index} style={{ width: `${width}%` }}/>;
     }))}</colgroup><tbody>{content.rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を画面表示用のReact要素へ変換する。
          *
-         * @param row rowとして使用する値
-         * @param rowIndex rowIndexとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @param rowIndex 表内での行位置
+         * @returns 画面表示用のReact要素
          */
         function mapItem112(row, rowIndex) {
             return <tr key={row.id} style={row.heightMm ? { height: `${row.heightMm}mm` } : undefined}>{row.cells.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各処理対象の表セルを画面表示用のReact要素へ変換する。
                  *
-                 * @param cell cellとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param cell 処理対象の表セル
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem113(cell) {
                     const Cell = content.headerRow && rowIndex === 0 ? "th" : "td";
@@ -1208,18 +1199,15 @@ function TableEditor(props: {
                     return <Cell key={cell.id} rowSpan={cell.rowSpan} colSpan={cell.columnSpan} className={resolvedActiveCellId === cell.id ? "active" : ""}>
         {resolvedActiveCellId === cell.id
                             ? <RichTextEditor tableCell compact toolbarContainer={toolbarContainer} document={cell.document} placeholder={`${rowIndex + 1}行${logicalColumn + 1}列`} onChange={(/**
-                             * onChangeで発生した画面イベントを処理する。
+                             * リッチ・テキスト・エディタ要素から入力変更を受け、更新・セルを実行する。
                              *
-                             * @param document documentとして使用する値
-                             * @returns 呼び出し元で使用する処理結果
+                             * @param document 処理対象のリッチテキスト文書
                              */
                             function handleChange114(document) {
                                 return updateCell(cell.id, document as typeof cell.document);
                             })}/>
                             : <button type="button" className="table-cell-select" aria-label={`${rowIndex + 1}行${logicalColumn + 1}列を編集`} onClick={(/**
-                             * onClickで発生した画面イベントを処理する。
-                             *
-                             * @returns 呼び出し元で使用する処理結果
+                             * ボタンからクリック操作を受け、有効状態・セル・識別子を操作内容に合う状態へ更新する。
                              */
                             function handleClick115() {
                                 return setActiveCellId(cell.id);
@@ -1229,11 +1217,15 @@ function TableEditor(props: {
         }))}</tbody></table>
   </div>;
 }
+// --------------------
+// 補助表示
+// --------------------
+
 /**
- * TableCellDocumentPreviewコンポーネントを表示する。
+ * 非編集中の表セル文書を文字装飾と数式を保ったまま表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 表・セル・文書・プレビューへ渡す表示情報と操作
+ * @returns 表・セル・文書・プレビューを表示するReact要素
  */
 function TableCellDocumentPreview(props: {
     document: Extract<ContentBlock, {
@@ -1242,10 +1234,10 @@ function TableCellDocumentPreview(props: {
 }) {
     let { document } = props;
     const visible = document.content.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかのノードが要求条件を満たすか判定する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns ノードの作成または検証する要素種別が「imageRef」と一致するまたはノードの処理対象の問題本文または解説のlengthが0より大きい場合はtrue
      */
     function hasMatchingItem116(node) {
         return node.type === "imageRef" || node.content.length > 0;
@@ -1253,21 +1245,21 @@ function TableCellDocumentPreview(props: {
     if (!visible)
         return <span className="table-cell-empty">空のセル</span>;
     return <>{document.content.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各ノードを条件に応じて選択した値へ変換する。
          *
-         * @param node 処理対象の値
-         * @param blockIndex blockIndexとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @param blockIndex 対象ブロックの位置
+         * @returns 条件に応じて選択した値
          */
         function mapItem117(node, blockIndex) {
             return node.type === "imageRef"
                 ? <span className={node.attrs.answerColor ? "answer-color" : undefined} key={blockIndex}>[画像]</span>
                 : <span className="table-cell-preview-paragraph" key={blockIndex}>{node.content.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各走査中の子ノードを画面表示用のReact要素へ変換する。
                  *
-                 * @param child childとして使用する値
-                 * @param childIndex childIndexとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param child 走査中の子ノード
+                 * @param childIndex 親ノード内での子要素の位置
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem118(child, childIndex) {
                     return <span key={childIndex}>{renderTableCellInline(child)}</span>;
@@ -1278,10 +1270,10 @@ type TableCellInlineNode = Extract<TableCellRichTextDocument["content"][number],
     type: "paragraph";
 }>["content"][number];
 /**
- * renderTableCellInlineに対応する画面表示を更新する。
+ * renderedを画面表示用のReact要素へ更新する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns render・表・セル・Inlineを表示するReact要素
  */
 function renderTableCellInline(node: TableCellInlineNode): ReactNode {
     if (node.type === "hardBreak")

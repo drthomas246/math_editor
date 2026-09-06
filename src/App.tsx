@@ -16,17 +16,17 @@ const router = createBrowserRouter(createRoutesFromElements(<>
     </Route>
   </>));
 /**
- * Appコンポーネントを表示する。
+ * ブラウザーAPIの対応状況を確認し、プリント一覧・編集・ごみ箱・マニュアルの各画面をルーティングする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns Appを表示するReact要素
  */
 export default function App() {
     return <RouterProvider router={router}/>;
 }
 /**
- * RequiredApiGateコンポーネントを表示する。
+ * 必須ブラウザーAPIが不足する環境では理由を案内し、対応環境でだけアプリ本体を表示する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns Required・Api・Gateを表示するReact要素
  */
 function RequiredApiGate() {
     if (supportsRequiredApis())
@@ -34,9 +34,9 @@ function RequiredApiGate() {
     return <main className="centered-state unsupported"><div className="brand-mark large">Σ</div><h1>このブラウザは対応していません</h1><p>最新版のChromeまたはEdgeを使用してください。</p></main>;
 }
 /**
- * supportsRequiredApisに必要な処理を実行する。
+ * アプリの保存・画像処理・印刷に必須のブラウザーAPIが利用可能か判定する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns この実装では常にtrue
  */
 function supportsRequiredApis(): boolean {
     if (import.meta.env.MODE === "test")

@@ -3,13 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Modal } from "./Modal";
 describe("Modal", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「Modal」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("keeps reverse tab navigation inside the dialog from its initial focus", (/**
-     * 期待する振る舞いを検証する。
+     * 「keeps reverse tab navigation inside the dialog from its initial focus」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase2() {
         const user = userEvent.setup();
@@ -22,9 +22,9 @@ function defineTestSuite1() {
         expect(view.getByRole("button", { name: "実行" })).toHaveFocus();
     }));
     it("wraps forward tab navigation from the last control to the first control", (/**
-     * 期待する振る舞いを検証する。
+     * 「wraps forward tab navigation from the last control to the first control」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase3() {
         const user = userEvent.setup();

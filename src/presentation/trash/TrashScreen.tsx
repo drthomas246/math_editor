@@ -22,10 +22,10 @@ type PendingOperation = {
     kind: "empty";
 };
 /**
- * TrashScreenコンポーネントを表示する。
+ * ごみ箱内のプリントを一覧表示し、復元・完全削除・一括削除を提供する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Trash・画面へ渡す表示情報と操作
+ * @returns Trash・画面を表示するReact要素
  */
 export function TrashScreen(props: {
     repository?: WorksheetRepository;
@@ -39,9 +39,9 @@ export function TrashScreen(props: {
     const [target, setTarget] = useState<Worksheet | "all" | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const load = useCallback((/**
-     * 依存値に応じて再利用する操作を作成する。
+     * create・Memoizedをset・Loadingへ渡すコールバックとして安定化する。
      *
-     * @returns 非同期処理の結果
+      * @returns create・Memoizedをset・Loadingへ渡すコールバックとして安定化する処理の完了時に解決するPromise
      */
     async function createMemoizedCallback1() {
         setLoading(true);
@@ -49,19 +49,19 @@ export function TrashScreen(props: {
         try {
             const result = await repository.list();
             setItems(result.worksheets.filter((/**
-             * 対象要素を結果へ残すか判定する。
+             * 処理対象となるプリントのごみ箱へ移した日時がnullと異なる要素だけを後続処理へ残す。
              *
-             * @param worksheet worksheetとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param worksheet 処理対象となるプリント
+             * @returns 処理対象となるプリントのごみ箱へ移した日時がnullと異なる場合はtrue
              */
             function filterItem2(worksheet) {
                 return worksheet.deletedAt !== null;
             })).sort((/**
-             * 表示順を決めるため二つの要素を比較する。
+             * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
              *
-             * @param a aとして使用する値
-             * @param b bとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param a 左側の要素
+             * @param b 右側の要素
+             * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
              */
             function compareItems3(a, b) {
                 return (b.deletedAt ?? "").localeCompare(a.deletedAt ?? "");
@@ -75,7 +75,7 @@ export function TrashScreen(props: {
         }
     }), [repository]);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * 読み込みとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
      */
     function synchronizeEffect4() {
         // 初期表示時に画面の状態をIndexedDBの内容と同期する。
@@ -83,10 +83,10 @@ export function TrashScreen(props: {
         void load();
     }), [load]);
     const restore = (/**
-     * restoreに必要な処理を実行する。
+     * 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 非同期処理の結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function restoreImplementation5(worksheet: Worksheet) {
         if (pendingOperation)
@@ -106,9 +106,9 @@ export function TrashScreen(props: {
         }
     });
     const remove = (/**
-     * removeの対象となる要素を削除または解放する。
+     * 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する。
      *
-     * @returns 非同期処理の結果
+     * @returns 保留中・操作をユーザー操作または非同期処理の結果に合わせて更新する処理の完了時に解決するPromise
      */
     async function removeImplementation6() {
         if (!target || pendingOperation)
@@ -144,15 +144,14 @@ export function TrashScreen(props: {
     return <div className="app-shell">
     <header className="app-header trash-header">
       <div className="header-title-group"><button className="secondary-button" onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「プリント一覧」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleClick7() {
         return navigate("/");
     })}><ArrowLeft size={17}/>プリント一覧</button><span className="header-divider"/><h1>ゴミ箱</h1></div>
       <button className="danger-outline-button" disabled={items.length === 0 || operationPending || loading} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「ゴミ箱を空にする」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick8() { setError(null); setTarget("all"); })}><Trash2 size={16}/>ゴミ箱を空にする</button>
     </header>
@@ -161,10 +160,10 @@ export function TrashScreen(props: {
       {error && !target && <div className="error-panel" role="alert"><strong>{error.title}</strong><p>{error.message}</p>{loadFailed && <button className="secondary-button" disabled={loading} onClick={load}>再読み込み</button>}</div>}
       {!loadFailed && (loading ? <div className="worksheet-list"><div className="worksheet-row skeleton"><span /><span /><span /></div></div> : items.length ? <div className="worksheet-list">
         {items.map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各処理対象となるプリントを画面表示用のReact要素へ変換する。
              *
-             * @param worksheet worksheetとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param worksheet 処理対象となるプリント
+             * @returns 画面表示用のReact要素
              */
             function mapItem9(worksheet) {
                 return <article className="worksheet-row trash-row" key={worksheet.id}>
@@ -172,43 +171,37 @@ export function TrashScreen(props: {
           <span className="paper-badge">{worksheet.pageSettings.size === "B5" ? "JIS B5" : "A4"}</span>
           <time>削除: {formatDeletedDate(worksheet.deletedAt!)}</time>
           <div className="row-actions"><button className="secondary-button" disabled={operationPending} onClick={(/**
-                 * onClickで発生した画面イベントを処理する。
+                 * ボタンからクリック操作を受け、restoreを実行する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
                 function handleClick10() {
                     return restore(worksheet);
                 })}>{pendingOperation?.kind === "restore" && pendingOperation.worksheetId === worksheet.id ? "復元中…" : "復元"}</button><button className="danger-outline-button" disabled={operationPending} onClick={(/**
-                 * onClickで発生した画面イベントを処理する。
+                 * 「完全に削除」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
                  */
                 function handleClick11() { setError(null); setTarget(worksheet); })}>完全に削除</button></div>
         </article>;
             }))}
       </div> : <div className="empty-state"><div className="empty-icon"><Trash2 /></div><h3>ゴミ箱は空です</h3><button className="secondary-button" onClick={(/**
-         * onClickで発生した画面イベントを処理する。
+         * 「プリント一覧へ戻る」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleClick12() {
             return navigate("/");
         })}><ArrowLeft size={16}/>プリント一覧へ戻る</button></div>)}
     </main>
     {target && <Modal title={target === "all" ? "ゴミ箱を空にしますか？" : "プリントを完全に削除しますか？"} size="small" onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
+     * 「キャンセル」要素のon・閉じる操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClose13() { if (!operationPending)
         setTarget(null); })} footer={<><button className="secondary-button" autoFocus disabled={operationPending} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「キャンセル」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick14() {
         return setTarget(null);
     })}>キャンセル</button><button className="danger-button" disabled={operationPending} onClick={remove}>{operationPending ? "削除中…" : target === "all" ? `${items.length}件を完全に削除` : "完全に削除"}</button></>}><p>{target === "all" ? `ゴミ箱内の${items.length}件を削除します。` : `「${target.title}」を削除します。`} この操作は元に戻せません。</p>{error && <div className="notice danger" role="alert"><strong>{error.title}</strong><p>{error.message}</p></div>}</Modal>}
     {toast && <Toast message={toast} onClose={(/**
-     * onCloseで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * Toast要素から終了要求を受け、Toastを操作内容に合う状態へ更新する。
      */
     function handleClose15() {
         return setToast(null);
@@ -216,20 +209,20 @@ export function TrashScreen(props: {
   </div>;
 }
 /**
- * failureMessageに必要な処理を実行する。
+ * 未知の例外値を利用者へ表示できる失敗理由の文字列へ変換する。
  *
  * @param reason 処理中に発生したエラー
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function failureMessage(reason: unknown, fallback: string): string {
     return reason instanceof Error && reason.message ? reason.message : fallback;
 }
 /**
- * formatDeletedDateの入力値を必要な形式へ変換する。
+ * Deleted・Dateを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・Deleted・Dateで判定または変換する入力値
+ * @returns 問題番号へ適用する表示形式の結果として得た文字列。変換できない場合は関数固有の既定値
  */
 function formatDeletedDate(value: string): string {
     return new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(value));

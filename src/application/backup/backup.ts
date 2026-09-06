@@ -5,7 +5,7 @@ import { assertImageByteSize, validateImageBlob, } from "../assets/image-validat
 export const MAX_BACKUP_FILE_BYTES = 100 * 1024 * 1024;
 export class BackupSizeLimitError extends Error {
     /**
-     * 利用に必要な初期状態を設定する。
+     * このインスタンスの生成物または計測項目を識別する名前を「BackupSizeLimitError」へ更新する。
      */
     constructor() {
         super("バックアップは100MiB以下にしてください。画像を減らしてからもう一度お試しください。");
@@ -24,10 +24,10 @@ type BackupExportMetadata = {
     worksheets: readonly Worksheet[];
 });
 const bytesToBase64 = (/**
- * bytesToBase64に必要な処理を実行する。
+ * bytes・To・Baseをfrom・Char・コードで処理し、その結果を呼び出し元へ反映する。
  *
- * @param bytes bytesとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param bytes 検証または変換するバイト列
+ * @returns btoaの結果として得た文字列。変換できない場合は関数固有の既定値
  */
 function bytesToBase64Implementation1(bytes: Uint8Array): string {
     let binary = "";
@@ -38,56 +38,56 @@ function bytesToBase64Implementation1(bytes: Uint8Array): string {
     return btoa(binary);
 });
 const base64ToBytes = (/**
- * base64ToBytesに必要な処理を実行する。
+ * base64・To・Bytesをatobで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value base64・To・Bytesで判定または変換する入力値
+ * @returns fromの結果として得た要素一覧
  */
 function base64ToBytesImplementation2(value: string): Uint8Array {
     const binary = atob(value);
     return Uint8Array.from(binary, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとにchar・結果理由・Atの結果を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param character characterとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param character 検査中の一文字
+     * @returns char・コード・位置の結果
      */
     function fromCallback3(character) {
         return character.charCodeAt(0);
     }));
 });
 /**
- * selectReferencedAssetsで必要な値を取得する。
+ * Referenced・Assetsを入力データまたは現在の状態から取り出す。
  *
- * @param worksheets worksheetsとして使用する値
- * @param assets assetsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheets 処理対象となるプリント一覧
+ * @param assets プリントに関連付ける画像アセット一覧
+ * @returns 条件に合う要素だけを残した配列として得た要素一覧
  */
 function selectReferencedAssets(worksheets: readonly Worksheet[], assets: readonly AssetRecord[]): AssetRecord[] {
     const worksheetIds = new Set(worksheets.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各処理対象となるプリントを処理対象となるプリントの対象を一意に特定する識別子へ変換する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 処理対象となるプリントの対象を一意に特定する識別子
      */
     function mapItem4(worksheet) {
         return worksheet.id;
     })));
     const referencedAssetIds = collectReferencedAssetIds(worksheets);
     return assets.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * プリント・Idsに処理対象の画像アセットのプリント・Idが登録されているかつreferenced・アセット・Idsに処理対象の画像アセットの対象を一意に特定する識別子が登録されている要素だけを後続処理へ残す。
      *
-     * @param asset assetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param asset 処理対象の画像アセット
+     * @returns プリント・Idsに処理対象の画像アセットのプリント・Idが登録されているかつreferenced・アセット・Idsに処理対象の画像アセットの対象を一意に特定する識別子が登録されている場合はtrue
      */
     function filterItem5(asset) {
         return (worksheetIds.has(asset.worksheetId) && referencedAssetIds.has(asset.id));
     }));
 }
 /**
- * toBackupAssetの入力値を必要な形式へ変換する。
+ * 識別子・プリント・識別子・画像ファイルのMIME形式・データ・Base64・要素または列へ適用する幅を持つオブジェクトを一つの結果へまとめる。
  *
- * @param asset assetとして使用する値
- * @returns 非同期処理の結果
+ * @param asset 処理対象の画像アセット
+ * @returns 識別子・プリント・識別子・画像ファイルのMIME形式・データ・Base64・要素または列へ適用する幅を持つオブジェクトを一つの結果へまとめる処理の完了時に解決するPromise
  */
 export async function toBackupAsset(asset: AssetRecord): Promise<BackupAsset> {
     return {
@@ -101,11 +101,11 @@ export async function toBackupAsset(asset: AssetRecord): Promise<BackupAsset> {
     };
 }
 /**
- * createSingleBackupで必要な値を作成する。
+ * Single・Backupを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param worksheet worksheetとして使用する値
- * @param assets assetsとして使用する値
- * @returns 非同期処理の結果
+ * @param worksheet 処理対象となるプリント
+ * @param assets プリントに関連付ける画像アセット一覧
+ * @returns Single・Backupを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
  */
 export async function createSingleBackup(worksheet: Worksheet, assets: AssetRecord[]): Promise<MathWorksheetFile> {
     const referencedAssets = selectReferencedAssets([worksheet], assets);
@@ -123,18 +123,18 @@ export async function createSingleBackup(worksheet: Worksheet, assets: AssetReco
     });
 }
 /**
- * createArchiveBackupで必要な値を作成する。
+ * Archive・Backupを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param worksheets worksheetsとして使用する値
- * @param assets assetsとして使用する値
- * @returns 非同期処理の結果
+ * @param worksheets 処理対象となるプリント一覧
+ * @param assets プリントに関連付ける画像アセット一覧
+ * @returns Archive・Backupを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
  */
 export async function createArchiveBackup(worksheets: Worksheet[], assets: AssetRecord[]): Promise<MathWorksheetArchive> {
     const activeWorksheets = worksheets.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 処理対象となるプリントのごみ箱へ移した日時がnullと一致する要素だけを後続処理へ残す。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 処理対象となるプリントのごみ箱へ移した日時がnullと一致する場合はtrue
      */
     function filterItem6(worksheet) {
         return worksheet.deletedAt === null;
@@ -154,20 +154,20 @@ export async function createArchiveBackup(worksheets: Worksheet[], assets: Asset
     }) as MathWorksheetArchive;
 }
 /**
- * estimateBackupOutputBytesに必要な処理を実行する。
+ * estimate・Backup・Output・Bytesをstringifyで処理し、その結果を呼び出し元へ反映する。
  *
- * @param metadata metadataとして使用する値
- * @param assets assetsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param metadata 復元または検証に使う付随情報
+ * @param assets プリントに関連付ける画像アセット一覧
+  * @returns utf8・Byte・Lengthの結果とreduceの結果を加算した値から算出した数値
  */
 export function estimateBackupOutputBytes(metadata: BackupExportMetadata, assets: readonly AssetRecord[]): number {
     const withoutImageData = JSON.stringify({
         ...metadata,
         assets: assets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・データ・Base64・要素または列へ適用する幅を持つオブジェクトへ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・データ・Base64・要素または列へ適用する幅を持つオブジェクト
          */
         function mapItem7(asset) {
             return ({
@@ -183,40 +183,40 @@ export function estimateBackupOutputBytes(metadata: BackupExportMetadata, assets
     }, null, 2);
     return utf8ByteLength(withoutImageData)
         + assets.reduce((/**
-         * 各要素を一つの集計結果へまとめる。
+         * 現在の計算途中の累積値を、それまでの集計結果へ重複なく反映する。
          *
-         * @param total totalとして使用する値
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param total 計算途中の累積値
+         * @param asset 処理対象の画像アセット
+         * @returns 計算途中の累積値を反映した次の累積結果
          */
         function reduceItems8(total, asset) {
             return total + base64EncodedLength(asset.blob.size);
         }), 0);
 }
 /**
- * parseBackupの入力値を必要な形式へ変換する。
+ * Backupを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param text textとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @returns スキーマ検証済みのデータ
  */
 export function parseBackup(text: string): MathWorksheetFile {
     return MathWorksheetFileSchema.parse(JSON.parse(text));
 }
 /**
- * assertBackupInputSizeに必要な処理を実行する。
+ * assert・Backup・Input・寸法が永続化・表示・テストの制約を満たすか検証する。
  *
- * @param byteLength byteLengthとして使用する値
+ * @param byteLength 許容するバイト数
  */
 export function assertBackupInputSize(byteLength: number): void {
     if (byteLength > MAX_BACKUP_FILE_BYTES)
         throw new BackupSizeLimitError();
 }
 /**
- * serializeBackupの入力値を必要な形式へ変換する。
+ * Backupを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param file fileとして使用する値
- * @param maximumBytes maximumBytesとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param file 読み込みまたは検証の対象ファイル
+ * @param maximumBytes バックアップへ許容する最大バイト数
+ * @returns serializedとして得た文字列。変換できない場合は関数固有の既定値
  */
 export function serializeBackup(file: MathWorksheetFile, maximumBytes = MAX_BACKUP_FILE_BYTES): string {
     const serialized = JSON.stringify(file, null, 2);
@@ -226,10 +226,10 @@ export function serializeBackup(file: MathWorksheetFile, maximumBytes = MAX_BACK
     return serialized;
 }
 /**
- * hydrateBackupに必要な処理を実行する。
+ * hydrate・Backupをentriesで処理し、その結果を呼び出し元へ反映する。
  *
- * @param file fileとして使用する値
- * @returns 非同期処理の結果
+ * @param file 読み込みまたは検証の対象ファイル
+ * @returns hydrate・Backupをentriesで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 export async function hydrateBackup(file: MathWorksheetFile): Promise<Array<{
     worksheet: Worksheet;
@@ -252,18 +252,18 @@ export async function hydrateBackup(file: MathWorksheetFile): Promise<Array<{
     }
     const worksheets = file.kind === "single" ? [file.worksheet] : file.worksheets;
     return worksheets.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各バックアップから復元した元プリントを処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクトへ変換する。
      *
-     * @param sourceWorksheet sourceWorksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param sourceWorksheet バックアップから復元した元プリント
+     * @returns 処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクト
      */
     function mapItem9(sourceWorksheet) {
         const worksheet = structuredClone(sourceWorksheet);
         const worksheetId = createId();
         const remap = (/**
-         * remapに必要な処理を実行する。
+         * remapをis・Arrayで処理し、その結果を呼び出し元へ反映する。
          *
-         * @param value 処理対象の値
+         * @param value remapで判定または変換する入力値
          */
         function remapImplementation10(value: unknown): void {
             if (Array.isArray(value))
@@ -281,27 +281,27 @@ export async function hydrateBackup(file: MathWorksheetFile): Promise<Array<{
         worksheet.updatedAt = new Date().toISOString();
         worksheet.createdAt = worksheet.updatedAt;
         const sourceAssets = file.assets.filter((/**
-         * 対象要素を結果へ残すか判定する。
+         * 処理対象の画像アセットのプリント・Idがバックアップから復元した元プリントの対象を一意に特定する識別子と一致する要素だけを後続処理へ残す。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットのプリント・Idがバックアップから復元した元プリントの対象を一意に特定する識別子と一致する場合はtrue
          */
         function filterItem11(asset) {
             return asset.worksheetId === sourceWorksheet.id;
         }));
         const assetIds = new Map(sourceAssets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを順序を保った要素一覧へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 順序を保った要素一覧
          */
         function mapItem12(asset) {
             return [asset.id, createId()];
         })));
         const replaceAssetIds = (/**
-         * replaceAssetIdsの対象となる状態を更新する。
+         * replace・アセット・Idsをis・Arrayで処理し、その結果を呼び出し元へ反映する。
          *
-         * @param value 処理対象の値
+         * @param value replace・アセット・Idsで判定または変換する入力値
          */
         function replaceAssetIdsImplementation13(value: unknown): void {
             if (Array.isArray(value))
@@ -316,10 +316,10 @@ export async function hydrateBackup(file: MathWorksheetFile): Promise<Array<{
         });
         replaceAssetIds(worksheet);
         const assets = sourceAssets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・検証または保存するバイナリデータ・要素または列へ適用する幅を持つオブジェクトへ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・検証または保存するバイナリデータ・要素または列へ適用する幅を持つオブジェクト
          */
         function mapItem14(asset): AssetRecord {
             return {
@@ -336,10 +336,10 @@ export async function hydrateBackup(file: MathWorksheetFile): Promise<Array<{
     }));
 }
 /**
- * toBackupAssetsの入力値を必要な形式へ変換する。
+ * to・Backup・Assetsを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param assets assetsとして使用する値
- * @returns 非同期処理の結果
+ * @param assets プリントに関連付ける画像アセット一覧
+ * @returns to・Backup・Assetsを比較・保存・表示先が要求する形式へ変換する処理の完了時に解決するPromise
  */
 async function toBackupAssets(assets: readonly AssetRecord[]): Promise<BackupAsset[]> {
     const result: BackupAsset[] = [];
@@ -348,10 +348,10 @@ async function toBackupAssets(assets: readonly AssetRecord[]): Promise<BackupAss
     return result;
 }
 /**
- * base64DecodedByteLengthに必要な処理を実行する。
+ * base64・Decoded・Byte・Lengthをends・Withで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value base64・Decoded・Byte・Lengthで判定または変換する入力値
+ * @returns 0から算出した数値
  */
 function base64DecodedByteLength(value: string): number {
     if (value.length === 0)
@@ -360,19 +360,20 @@ function base64DecodedByteLength(value: string): number {
     return (value.length / 4) * 3 - padding;
 }
 /**
- * base64EncodedLengthに必要な処理を実行する。
+ * base64・Encoded・Lengthをceilで処理し、その結果を呼び出し元へ反映する。
  *
- * @param byteLength byteLengthとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param byteLength 許容するバイト数
+ * base64・Encoded・Lengthをceilで処理し、その結果を呼び出し元へ反映する。
+  * @returns ceilの結果と4を乗算した値から算出した数値
  */
 function base64EncodedLength(byteLength: number): number {
     return Math.ceil(byteLength / 3) * 4;
 }
 /**
- * assertEstimatedBackupSizeに必要な処理を実行する。
+ * assert・Estimated・Backup・寸法が永続化・表示・テストの制約を満たすか検証する。
  *
- * @param metadata metadataとして使用する値
- * @param assets assetsとして使用する値
+ * @param metadata 復元または検証に使う付随情報
+ * @param assets プリントに関連付ける画像アセット一覧
  */
 function assertEstimatedBackupSize(metadata: BackupExportMetadata, assets: readonly AssetRecord[]): void {
     if (estimateBackupOutputBytes(metadata, assets) > MAX_BACKUP_FILE_BYTES) {
@@ -380,10 +381,10 @@ function assertEstimatedBackupSize(metadata: BackupExportMetadata, assets: reado
     }
 }
 /**
- * utf8ByteLengthに必要な処理を実行する。
+ * utf8・Byte・Lengthをコード・Point・Atで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value utf8・Byte・Lengthで判定または変換する入力値
+ * @returns 検証または変換するバイト列から算出した数値
  */
 function utf8ByteLength(value: string): number {
     let bytes = 0;
@@ -394,11 +395,11 @@ function utf8ByteLength(value: string): number {
     return bytes;
 }
 /**
- * utf8ByteLengthExceedsに必要な処理を実行する。
+ * utf8・Byte・Length・Exceedsをコード・Point・Atで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @param maximumBytes maximumBytesとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value utf8・Byte・Length・Exceedsで判定または変換する入力値
+ * @param maximumBytes バックアップへ許容する最大バイト数
+ * @returns この実装では常にtrue
  */
 function utf8ByteLengthExceeds(value: string, maximumBytes: number): boolean {
     let bytes = 0;

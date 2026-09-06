@@ -18,11 +18,11 @@ const PNG_BYTES = [
     78, 68, 174, 66, 96, 130,
 ];
 test("200問の複合Worksheetでも入力レイテンシを上限内に保つ", (/**
- * 期待する振る舞いを検証する。
+ * 「200問の複合Worksheetでも入力レイテンシを上限内に保つ」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
  * @param testInfo 実行中のテスト情報
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase1({ page }, testInfo) {
     test.setTimeout(300000);
@@ -30,9 +30,9 @@ async function runTestCase1({ page }, testInfo) {
     const fixture = createEditorStressFixture();
     fixture.worksheet.id = worksheetId;
     fixture.assets.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の画像アセットについて更新を実行し、対応関係または検証状態を更新する。
      *
-     * @param asset assetとして使用する値
+     * @param asset 処理対象の画像アセット
      */
     function processItem2(asset) { asset.worksheetId = worksheetId; }));
     await seedStressFixture(page, fixture);
@@ -60,37 +60,34 @@ async function runTestCase1({ page }, testInfo) {
     const durationsMs: number[] = [];
     for (let index = 0; index < MEASURED_KEYSTROKES; index += 1) {
         await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns ブラウザー内で取得または計測した値
          */
         function evaluateCallback3() {
             return performance.mark("editor-stress-input-start");
         }));
         await page.keyboard.type(String(index % 10));
         durationsMs.push(await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns 非同期処理の結果
+         * @returns ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す処理の完了時に解決するPromise
          */
         async function evaluateCallback4() {
             await new Promise<void>((/**
-             * 呼び出し元から要求された処理を実行する。
+             * レイアウト確定後の描画フレームを、呼び出し側がawaitできるPromiseへ変換する。
              *
-             * @param resolve resolveとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param resolve 非同期処理を正常完了させるPromise関数
              */
-            function commentRuleCallback5(resolve) {
+            function settlePromise5(resolve) {
                 return requestAnimationFrame((/**
-                 * 次の描画タイミングで画面状態を更新する。
+                 * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
                 function handleAnimationFrame6() {
                     return requestAnimationFrame((/**
-                     * 次の描画タイミングで画面状態を更新する。
+                     * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
                      */
                     function handleAnimationFrame7() {
                         return resolve();
@@ -102,11 +99,11 @@ async function runTestCase1({ page }, testInfo) {
         })));
     }
     const sortedDurations = [...durationsMs].sort((/**
-     * 表示順を決めるため二つの要素を比較する。
+     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
      *
-     * @param left leftとして使用する値
-     * @param right rightとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param left 並び順を比較する左側の値
+     * @param right 並び順を比較する右側の値
+     * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
      */
     function compareItems8(left, right) {
         return left - right;
@@ -114,9 +111,9 @@ async function runTestCase1({ page }, testInfo) {
     const p95Ms = sortedDurations[Math.ceil(sortedDurations.length * 0.95) - 1]
         ?? Number.POSITIVE_INFINITY;
     const browserStats = await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザーの対応APIからheap使用量を取得し、未対応時はnullを返す。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns ブラウザー内で取得または計測した値
      */
     function evaluateCallback9() {
         return ({
@@ -161,10 +158,10 @@ async function runTestCase1({ page }, testInfo) {
     await expect(page.locator(".ProseMirror")).toHaveCount(1);
 }));
 /**
- * openNewWorksheetに対応する画面表示を更新する。
+ * 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する処理の完了時に解決するPromise
  */
 async function openNewWorksheet(page: Page): Promise<string> {
     await page.goto("/");
@@ -173,41 +170,39 @@ async function openNewWorksheet(page: Page): Promise<string> {
     return new URL(page.url()).pathname.split("/").at(-1)!;
 }
 /**
- * seedStressFixtureに必要な処理を実行する。
+ * seed・負荷・Fixtureをevaluateで処理し、その結果を呼び出し元へ反映する。
  *
- * @param page pageとして使用する値
- * @param fixture fixtureとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @param fixture ブラウザーへ投入する性能測定用データ一式
+ * @returns seed・負荷・Fixtureをevaluateで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEditorStressFixture>): Promise<void> {
     await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 非同期処理の結果
+     * @param callbackInput let・{・プリント・プリントに関連付ける画像アセット一覧・png・Bytesをまとめて受け取るコールバック入力
+     * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
      */
-    async function evaluateCallback10(parameter1) {
-        let { worksheet, assets, pngBytes } = parameter1;
+    async function evaluateCallback10(callbackInput) {
+        let { worksheet, assets, pngBytes } = callbackInput;
         const database = await new Promise<IDBDatabase>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback11(resolve, reject) {
+        function settlePromise11(resolve, reject) {
             const request = indexedDB.open("math-worksheet-db");
             request.addEventListener("success", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent12() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent13() {
                 return reject(request.error);
@@ -223,32 +218,29 @@ async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEd
             });
         }
         await new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback14(resolve, reject) {
+        function settlePromise14(resolve, reject) {
             transaction.addEventListener("complete", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent15() {
                 return resolve();
             }), { once: true });
             transaction.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent16() {
                 return reject(transaction.error);
             }), { once: true });
             transaction.addEventListener("abort", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent17() {
                 return reject(transaction.error);
@@ -258,35 +250,32 @@ async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEd
     }), { ...fixture, pngBytes: PNG_BYTES });
 }
 /**
- * waitForTwoAnimationFramesに必要な処理を実行する。
+ * レイアウトと描画の反映を計測前に完了させるため、連続する2フレームを待機する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns レイアウトと描画の反映を計測前に完了させるため、連続する2フレームを待機する処理の完了時に解決するPromise
  */
 async function waitForTwoAnimationFrames(page: Page): Promise<void> {
     await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザー内のDOMまたはWeb APIを操作し、Node側では取得できない検証値を返す。
      *
-     * @returns 非同期処理の結果
+     * @returns ブラウザー内のDOMまたはWeb APIを操作し、Node側では取得できない検証値を返す処理の完了時に解決するPromise
      */
     async function evaluateCallback18() {
         await new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * レイアウト確定後の描画フレームを、呼び出し側がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param resolve 非同期処理を正常完了させるPromise関数
          */
-        function commentRuleCallback19(resolve) {
+        function settlePromise19(resolve) {
             return requestAnimationFrame((/**
-             * 次の描画タイミングで画面状態を更新する。
+             * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleAnimationFrame20() {
                 return requestAnimationFrame((/**
-                 * 次の描画タイミングで画面状態を更新する。
+                 * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
                 function handleAnimationFrame21() {
                     return resolve();
@@ -296,11 +285,11 @@ async function waitForTwoAnimationFrames(page: Page): Promise<void> {
     }));
 }
 /**
- * readPositiveNumberで必要な値を取得する。
+ * 環境変数の文字列を正の数として検証し、不正な場合は安全な既定値へ戻す。
  *
- * @param value 処理対象の値
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・Positive・番号で判定または変換する入力値
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 設定値が不正な場合に採用する既定値から算出した数値
  */
 function readPositiveNumber(value: string | undefined, fallback: number): number {
     if (value === undefined)

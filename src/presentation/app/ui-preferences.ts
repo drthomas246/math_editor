@@ -5,10 +5,10 @@ const UiPreferencesSchema = z.strictObject({
     paneRatio: z.number().min(0.35).max(0.65),
     zoom: z.union([
         z.number().min(0.25).max(2).refine((/**
-         * refineへ渡す処理を実行する。
+         * refineをabsで処理し、その結果を呼び出し元へ反映する。
          *
-         * @param value 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param value refineで判定または変換する入力値
+         * @returns 二つの値を比較した結果
          */
         function refineCallback1(value) {
             return Math.abs(value * 20 - Math.round(value * 20)) < 1e-8;
@@ -29,9 +29,9 @@ export const DEFAULT_UI_PREFERENCES: UiPreferences = {
     previewMode: "questions",
 };
 /**
- * loadUiPreferencesで必要な値を取得する。
+ * Ui・Preferencesを取得して利用可能な状態へ反映する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 既定・UI・PREFERENCES
  */
 export function loadUiPreferences(): UiPreferences {
     try {
@@ -50,10 +50,10 @@ export function loadUiPreferences(): UiPreferences {
     }
 }
 /**
- * saveUiPreferencesの対象となるデータを保存または出力する。
+ * 要素をユーザー操作または非同期処理の結果に合わせて更新する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 保存・Ui・Preferencesで判定または変換する入力値
+ * @returns この実装では常にtrue
  */
 export function saveUiPreferences(value: UiPreferences): boolean {
     try {

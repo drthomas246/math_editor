@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 test("自動保存後のリロードで最新データを復元する", (/**
- * 期待する振る舞いを検証する。
+ * 「自動保存後のリロードで最新データを復元する」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase1({ page }) {
     await openNewWorksheet(page);
@@ -15,10 +15,10 @@ async function runTestCase1({ page }) {
     await expect(page.getByRole("textbox", { name: "プリント題名" })).toHaveValue("ブラウザE2E保存");
 }));
 test("dirty状態でタブを閉じるとbeforeunload警告を要求する", (/**
- * 期待する振る舞いを検証する。
+ * 「dirty状態でタブを閉じるとbeforeunload警告を要求する」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase2({ page }) {
     await openNewWorksheet(page);
@@ -34,10 +34,10 @@ async function runTestCase2({ page }) {
     await page.close();
 }));
 test("ブラウザの戻る操作でも編集内容をIndexedDBへ残す", (/**
- * 期待する振る舞いを検証する。
+ * 「ブラウザの戻る操作でも編集内容をIndexedDBへ残す」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase3({ page }) {
     await openNewWorksheet(page);
@@ -48,10 +48,10 @@ async function runTestCase3({ page }) {
     await expect(page.getByRole("button", { name: "戻る操作で保存", exact: true })).toBeVisible();
 }));
 /**
- * openNewWorksheetに対応する画面表示を更新する。
+ * 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する処理の完了時に解決するPromise
  */
 async function openNewWorksheet(page: Page): Promise<void> {
     await page.goto("/");

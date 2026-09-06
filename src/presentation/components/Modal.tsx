@@ -7,25 +7,25 @@ type ModalProps = PropsWithChildren<{
     size?: "small" | "medium" | "large";
 }>;
 /**
- * Modalコンポーネントを表示する。
+ * フォーカスを内部へ閉じ込め、Escape終了と終了後のフォーカス復元を備えたダイアログを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Modalへ渡す表示情報と操作
+ * @returns Modalを表示するReact要素
  */
 export function Modal(props: ModalProps) {
     let { title, onClose, footer, size = "medium", children } = props;
     const dialogRef = useRef<HTMLDivElement>(null);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * focusとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 次回のEffect実行前またはコンポーネント破棄時に呼び出すクリーンアップ関数
      */
     function synchronizeEffect1() {
         const previous = document.activeElement as HTMLElement | null;
         const dialog = dialogRef.current;
         dialog?.focus();
         const onKeyDown = (/**
-         * onKeyDownに対応するイベントまたは通知を処理する。
+         * キー・Downの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
          *
          * @param event 発生したイベント
          */
@@ -36,10 +36,10 @@ export function Modal(props: ModalProps) {
                 return;
             const focusable = [...dialog.querySelectorAll<HTMLElement>("a[href],button,input,select,textarea,[tabindex]:not([tabindex='-1'])")]
                 .filter((/**
-             * 対象要素を結果へ残すか判定する。
+             * has・Attributeの結果が存在しない要素だけを後続処理へ残す。
              *
-             * @param element 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param element 走査または監視の対象となる要素
+             * @returns has・Attributeの結果が存在しない場合はtrue
              */
             function filterItem3(element) {
                 return !element.hasAttribute("disabled");
@@ -66,18 +66,17 @@ export function Modal(props: ModalProps) {
         });
         document.addEventListener("keydown", onKeyDown);
         return (/**
-         * 呼び出し元から要求された処理を実行する。
+         * 不要になったイベント購読またはブラウザーリソースを解放し、後続画面への影響を防ぐ。
          */
-        function commentRuleCallback4() {
+        function releaseResources4() {
             document.removeEventListener("keydown", onKeyDown);
             previous?.focus();
         });
     }), [onClose]);
     return (<div className="modal-backdrop" onMouseDown={(/**
-     * onMouseDownで発生した画面イベントを処理する。
+     * div要素から画面操作を受け、on・閉じる操作として親コンポーネントへ通知する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleMouseDown5(event) {
         return event.target === event.currentTarget && onClose();

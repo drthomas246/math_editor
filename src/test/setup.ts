@@ -4,17 +4,16 @@ import { afterEach, vi } from "vitest";
 import { cleanup, configure } from "@testing-library/react";
 configure({ asyncUtilTimeout: 5000 });
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 呼び出し元で使用する処理結果
  */
 function cleanUpTestCase1() {
     return cleanup();
 }));
 Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn((/**
-     * fnへ渡す処理を実行する。
+     * 「対象機能」で外部依存から返す「blob:test」を固定し、検証を決定的にする。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 「blob:test」
      */
     function fnCallback2() {
         return "blob:test";

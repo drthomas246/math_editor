@@ -4,28 +4,28 @@ import { OVERSIZED_PAGINATION_MESSAGE } from "../../application/pdf/pdf-paginati
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { ImageDialog, MathDialog, PdfDialog, TableDialog, WorksheetSettingsDialog } from "./EditorDialogs";
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  */
 function cleanUpTestCase1() {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
 }));
 describe("WorksheetSettingsDialog", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「WorksheetSettingsDialog」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite2() {
     it("小問の番号形式だけを選択肢として表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「小問の番号形式だけを選択肢として表示する」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const onApply = vi.fn();
         const view = render(<WorksheetSettingsDialog worksheet={createWorksheet()} onClose={vi.fn()} onApply={onApply}/>);
         const formatSelect = view.getByRole("combobox", { name: "小問の番号形式" });
         expect(within(formatSelect).getAllByRole("option").map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各検証対象の選択肢要素を検証対象の選択肢要素のテキスト・内容へ変換する。
          *
-         * @param option optionとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param option 検証対象の選択肢要素
+         * @returns 検証対象の選択肢要素のテキスト・内容
          */
         function mapItem4(option) {
             return option.textContent;
@@ -37,21 +37,21 @@ function defineTestSuite2() {
     }));
 }));
 describe("PdfDialog", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「PdfDialog」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite5() {
     it("ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す", (/**
-     * 期待する振る舞いを検証する。
+     * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         const frames: FrameRequestCallback[] = [];
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」で外部依存から返すframesのlengthを固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
+         * @returns framesのlength
          */
         function fnCallback7(callback: FrameRequestCallback) {
             frames.push(callback);
@@ -60,10 +60,10 @@ function defineTestSuite5() {
         vi.stubGlobal("cancelAnimationFrame", vi.fn());
         const view = render(<PdfDialog worksheet={createWorksheet()} initialMode="questions" assetUrls={new Map()} onClose={vi.fn()} onDone={vi.fn()}/>);
         expect(view.getAllByRole("radio").map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各選択状態を確認するラジオボタンを選択状態を確認するラジオボタンのparent・要素のテキスト・内容へ変換する。
          *
-         * @param radio radioとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param radio 選択状態を確認するラジオボタン
+         * @returns 選択状態を確認するラジオボタンのparent・要素のテキスト・内容
          */
         function mapItem8(radio) {
             return radio.parentElement?.textContent;
@@ -75,21 +75,19 @@ function defineTestSuite5() {
         expect(view.getByText("ページを分割中…")).toBeInTheDocument();
         expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback9() {
             return expect(frames).toHaveLength(1);
         }));
         act((/**
-         * actへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」で発生するReactの状態更新と副作用をまとめて完了させる。
          */
         function actCallback10() { frames.shift()!(0); }));
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback11() {
             return expect(view.getByText("ページ数: 1ページ")).toBeInTheDocument();
@@ -99,21 +97,19 @@ function defineTestSuite5() {
         expect(view.getByText("ページを分割中…")).toBeInTheDocument();
         expect(view.getByRole("button", { name: "PDFをダウンロード" })).toBeDisabled();
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback12() {
             return expect(frames).toHaveLength(1);
         }));
         act((/**
-         * actへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」で発生するReactの状態更新と副作用をまとめて完了させる。
          */
         function actCallback13() { frames.shift()!(0); }));
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「ページ分割完了までダウンロードを無効化し、モード変更時もreadyを待ち直す」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback14() {
             return expect(view.getByText("ページ数: 2ページ")).toBeInTheDocument();
@@ -123,41 +119,38 @@ function defineTestSuite5() {
         vi.unstubAllGlobals();
     }));
     it("1ページに収まらないcontentがある場合はPDFダウンロードを無効化する", (/**
-     * 期待する振る舞いを検証する。
+     * 「1ページに収まらないcontentがある場合はPDFダウンロードを無効化する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase15() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「1ページに収まらないcontentがある場合はPDFダウンロードを無効化する」で外部依存から返すset・Timeoutの結果を固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
          */
         function fnCallback16(callback: FrameRequestCallback) {
             return window.setTimeout((/**
-             * 指定時間後に必要な処理を実行する。
+             * 連続操作が落ち着いてから、保留中の保存または表示更新を実行する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleScheduledTask17() {
                 return callback(0);
             }), 0);
         })));
         vi.stubGlobal("cancelAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「1ページに収まらないcontentがある場合はPDFダウンロードを無効化する」で外部依存から返すclear・Timeoutの結果を固定し、検証を決定的にする。
          *
          * @param id 対象を識別するID
-         * @returns 呼び出し元で使用する処理結果
          */
         function fnCallback18(id: number) {
             return window.clearTimeout(id);
         })));
         vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「1ページに収まらないcontentがある場合はPDFダウンロードを無効化する」で外部依存から返すrectangleの結果を固定し、検証を決定的にする。
          *
          * @param this 関数を呼び出したオブジェクト
-         * @returns 呼び出し元で使用する処理結果
+         * @returns rectangleの結果
          */
         function mockImplementationCallback19(this: HTMLElement) {
             if (this.classList.contains("paper-page"))
@@ -174,11 +167,11 @@ function defineTestSuite5() {
     }));
 }));
 describe("MathDialog", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「MathDialog」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite20() {
     it("記号パレットではTeXコマンドではなく数式記号を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「記号パレットではTeXコマンドではなく数式記号を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase21() {
         const view = render(<MathDialog onClose={vi.fn()} onInsert={vi.fn()}/>);
@@ -197,7 +190,7 @@ function defineTestSuite20() {
         expect(palette).not.toHaveTextContent(/\\(?:times|div|ne|pm|frac|sqrt|le|ge)/u);
     }));
     it("記号を挿入した後は数式欄のプレースホルダーへフォーカスする", (/**
-     * 期待する振る舞いを検証する。
+     * 「記号を挿入した後は数式欄のプレースホルダーへフォーカスする」という仕様を操作結果から検証する。
      */
     function runTestCase22() {
         const view = render(<MathDialog onClose={vi.fn()} onInsert={vi.fn()}/>);
@@ -207,9 +200,9 @@ function defineTestSuite20() {
         };
         const focus = vi.spyOn(mathfield, "focus");
         const insert = vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「記号を挿入した後は数式欄のプレースホルダーへフォーカスする」で外部依存から返す条件成立を示すtrueを固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 条件成立を示すtrue
          */
         function fnCallback23() {
             return true;
@@ -236,11 +229,11 @@ function defineTestSuite20() {
     }));
 }));
 describe("TableDialog", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「TableDialog」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite24() {
     it("関数テンプレートでも行数と列数を変更して挿入できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「関数テンプレートでも行数と列数を変更して挿入できる」という仕様を操作結果から検証する。
      */
     function runTestCase25() {
         const onInsert = vi.fn();
@@ -262,13 +255,13 @@ function defineTestSuite24() {
     }));
 }));
 describe("ImageDialog", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「ImageDialog」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite26() {
     it("複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する", (/**
-     * 期待する振る舞いを検証する。
+     * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase27() {
         const firstDecode = createPromiseGate<ImageBitmap>();
@@ -276,10 +269,10 @@ function defineTestSuite26() {
         const firstFile = createPngFile("first.png");
         const secondFile = createPngFile("second.png");
         const decode = vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」で外部依存から返す条件に応じて選択した値を固定し、検証を決定的にする。
          *
-         * @param blob blobとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param blob 検証または保存するバイナリデータ
+         * @returns 条件に応じて選択した値
          */
         function fnCallback28(blob: Blob) {
             return ((blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise);
@@ -290,18 +283,16 @@ function defineTestSuite26() {
         const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
         fireEvent.change(input, { target: { files: [firstFile] } });
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback29() {
             return expect(decode).toHaveBeenCalledTimes(1);
         }));
         fireEvent.change(input, { target: { files: [secondFile] } });
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback30() {
             return expect(decode).toHaveBeenCalledTimes(2);
@@ -309,9 +300,8 @@ function defineTestSuite26() {
         const secondBitmap = createImageBitmapResult(200, 100);
         secondDecode.resolve(secondBitmap);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback31() {
             return expect(view.getByRole("button", { name: "挿入" })).toBeEnabled();
@@ -320,9 +310,8 @@ function defineTestSuite26() {
         const firstBitmap = createImageBitmapResult(300, 150, firstClose);
         firstDecode.resolve(firstBitmap);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「複数ファイルの検証が逆順に完了しても最後に選択した画像を使用する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback32() {
             return expect(firstClose).toHaveBeenCalledOnce();
@@ -333,9 +322,9 @@ function defineTestSuite26() {
         expect(appliedAsset).toMatchObject({ width: 200, height: 100 });
     }));
     it("古いファイルの検証失敗で最新画像の選択状態を上書きしない", (/**
-     * 期待する振る舞いを検証する。
+     * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase33() {
         const firstDecode = createPromiseGate<ImageBitmap>();
@@ -343,10 +332,10 @@ function defineTestSuite26() {
         const firstFile = createPngFile("first.png");
         const secondFile = createPngFile("second.png");
         const decode = vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」で外部依存から返す条件に応じて選択した値を固定し、検証を決定的にする。
          *
-         * @param blob blobとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param blob 検証または保存するバイナリデータ
+         * @returns 条件に応じて選択した値
          */
         function fnCallback34(blob: Blob) {
             return ((blob as File).name === firstFile.name ? firstDecode.promise : secondDecode.promise);
@@ -357,45 +346,41 @@ function defineTestSuite26() {
         const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
         fireEvent.change(input, { target: { files: [firstFile] } });
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback35() {
             return expect(decode).toHaveBeenCalledTimes(1);
         }));
         fireEvent.change(input, { target: { files: [secondFile] } });
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback36() {
             return expect(decode).toHaveBeenCalledTimes(2);
         }));
         secondDecode.resolve(createImageBitmapResult(200, 100));
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback37() {
             return expect(view.getByRole("button", { name: "挿入" })).toBeEnabled();
         }));
         await act((/**
-         * actへ渡す処理を実行する。
+         * 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 非同期処理の結果
+         * @returns 「古いファイルの検証失敗で最新画像の選択状態を上書きしない」で発生するReactの状態更新と副作用をまとめて完了させる処理の完了時に解決するPromise
          */
         async function actCallback38() {
             firstDecode.reject(new Error("古い画像のdecode失敗"));
             await new Promise((/**
-             * 呼び出し元から要求された処理を実行する。
+             * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
              *
-             * @param resolve resolveとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param resolve 非同期処理を正常完了させるPromise関数
              */
-            function commentRuleCallback39(resolve) {
+            function settlePromise39(resolve) {
                 return window.setTimeout(resolve, 0);
             }));
         }));
@@ -405,7 +390,7 @@ function defineTestSuite26() {
         expect(onApply.mock.lastCall?.[0].blob).toBe(secondFile);
     }));
     it("既存画像はファイルを選び直さず配置とサイズを変更できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「既存画像はファイルを選び直さず配置とサイズを変更できる」という仕様を操作結果から検証する。
      */
     function runTestCase40() {
         const onApply = vi.fn();
@@ -422,10 +407,10 @@ function defineTestSuite26() {
     }));
 }));
 /**
- * rectangleに必要な処理を実行する。
+ * DOM寸法に依存する処理を検証するため、指定値を持つ矩形情報を作る。
  *
- * @param height heightとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param height 要素またはページの高さ
+ * @returns 水平方向の座標・垂直方向の座標・要素または列へ適用する幅・要素またはページの高さ・要素上端の座標を持つオブジェクト
  */
 function rectangle(height: number): DOMRect {
     return {
@@ -438,9 +423,9 @@ function rectangle(height: number): DOMRect {
         bottom: height,
         left: 0,
         toJSON: (/**
-         * toJSONの入力値を必要な形式へ変換する。
+         * を持つオブジェクトを一つの結果へまとめる。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns を持つオブジェクト
          */
         function toJSONCallback41() {
             return ({});
@@ -448,10 +433,10 @@ function rectangle(height: number): DOMRect {
     };
 }
 /**
- * createPngFileで必要な値を作成する。
+ * Png・ファイルを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param name nameとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param name 生成物または計測項目を識別する名前
+ * @returns ファイルの新しいインスタンス
  */
 function createPngFile(name: string): File {
     return new File([
@@ -459,20 +444,20 @@ function createPngFile(name: string): File {
     ], name, { type: "image/png" });
 }
 /**
- * createImageBitmapResultで必要な値を作成する。
+ * 画像・Bitmap・結果を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param width widthとして使用する値
- * @param height heightとして使用する値
- * @param close closeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param width 要素または列へ適用する幅
+ * @param height 要素またはページの高さ
+ * @param close 対象を閉じる操作
+ * @returns 要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクト
  */
 function createImageBitmapResult(width: number, height: number, close = vi.fn()): ImageBitmap {
     return { width, height, close } as unknown as ImageBitmap;
 }
 /**
- * createPromiseGateで必要な値を作成する。
+ * Promise・Gateを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns Promise・Gateを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
  */
 function createPromiseGate<T>(): {
     promise: Promise<T>;
@@ -480,28 +465,24 @@ function createPromiseGate<T>(): {
     reject: (reason?: unknown) => void;
 } {
     let resolve: (value: T) => void = (/**
-     * resolveで必要な値を取得する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 現在の状態を基に非同期処理を正常完了させるPromise関数を導出する。
      */
     function resolveImplementation42() {
         return undefined;
     });
     let reject: (reason?: unknown) => void = (/**
-     * rejectに必要な処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 現在の状態を基に非同期処理を失敗として終了させるPromise関数を導出する。
      */
     function rejectImplementation43() {
         return undefined;
     });
     const promise = new Promise<T>((/**
-     * 呼び出し元から要求された処理を実行する。
+     * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolvePromise resolvePromiseとして使用する値
-     * @param rejectPromise rejectPromiseとして使用する値
+     * @param resolvePromise テスト用Promiseを正常完了させる関数
+     * @param rejectPromise テスト用Promiseを失敗として終了させる関数
      */
-    function commentRuleCallback44(resolvePromise, rejectPromise) {
+    function captureCompletion44(resolvePromise, rejectPromise) {
         resolve = resolvePromise;
         reject = rejectPromise;
     }));

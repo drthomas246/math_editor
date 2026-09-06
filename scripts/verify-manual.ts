@@ -6,10 +6,10 @@ const root = resolve(process.cwd(), "src/manual");
 const contentDirectory = join(root, "content");
 const assetsDirectory = join(root, "assets");
 const slugs = new Set(MANUAL_CHAPTER_MANIFEST.map((/**
- * 各要素を画面表示または別形式へ変換する。
+ * 各検索または表示の対象となるマニュアル章を検索または表示の対象となるマニュアル章のマニュアル章をURL上で特定する識別子へ変換する。
  *
- * @param chapter chapterとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param chapter 検索または表示の対象となるマニュアル章
+ * @returns 検索または表示の対象となるマニュアル章のマニュアル章をURL上で特定する識別子
  */
 function mapItem1(chapter) {
     return chapter.slug;
@@ -26,10 +26,10 @@ for (const chapter of MANUAL_CHAPTER_MANIFEST) {
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(chapter.updatedAt))
         errors.push(`${chapter.slug}: 更新日形式が不正です。`);
     if (new Set(chapter.keywords).size !== chapter.keywords.length || chapter.keywords.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかの検索対象として照合する語が要求条件を満たすか判定する。
      *
-     * @param keyword keywordとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param keyword 検索対象として照合する語
+     * @returns trimの結果が存在しない場合はtrue
      */
     function hasMatchingItem2(keyword) {
         return !keyword.trim();
@@ -83,10 +83,10 @@ for (const chapter of MANUAL_CHAPTER_MANIFEST) {
 }
 const actualMarkdownFiles = readdirSync(contentDirectory)
     .filter((/**
- * 対象要素を結果へ残すか判定する。
+ * to・Lower・Caseの結果が「.md」と一致する要素だけを後続処理へ残す。
  *
- * @param fileName fileNameとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param fileName 安全性または規則を検証するファイル名
+ * @returns to・Lower・Caseの結果が「.md」と一致する場合はtrue
  */
 function filterItem3(fileName) {
     return extname(fileName).toLowerCase() === ".md";
@@ -101,10 +101,10 @@ for (const [topic, slug] of Object.entries(MANUAL_TOPIC_CHAPTERS)) {
 }
 if (errors.length > 0) {
     console.error(["マニュアル検証に失敗しました。", ...errors.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各エラーを画面表示またはレポート用の文字列へ変換する。
          *
          * @param error 処理中に発生したエラー
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 画面表示またはレポート用の文字列
          */
         function mapItem4(error) {
             return `- ${error}`;

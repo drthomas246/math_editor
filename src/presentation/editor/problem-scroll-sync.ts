@@ -15,29 +15,29 @@ type ScrollAnchor = {
 export function syncProblemScroll(editorScroll: HTMLElement, previewScroll: HTMLElement, previewMode: EditorPreviewMode): number | null {
     const previewProblems = new Map(Array.from(previewScroll.querySelectorAll<HTMLElement>("[data-preview-problem-id]"))
         .filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 処理対象の要素のdatasetのプレビュー・区画がプレビュー・モードと一致する要素だけを後続処理へ残す。
      *
-     * @param element 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param element 走査または監視の対象となる要素
+     * @returns 処理対象の要素のdatasetのプレビュー・区画がプレビュー・モードと一致する場合はtrue
      */
     function filterItem1(element) {
         return element.dataset.previewSection === previewMode;
     }))
         .map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各処理対象の要素を順序を保った要素一覧へ変換する。
      *
-     * @param element 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param element 走査または監視の対象となる要素
+     * @returns 順序を保った要素一覧
      */
     function mapItem2(element) {
         return [element.dataset.previewProblemId!, element];
     })));
     const editorProblems = Array.from(editorScroll.querySelectorAll<HTMLElement>("[data-editor-problem-id]"));
     const matchingProblems = editorProblems.flatMap((/**
-     * 各要素を変換しながら一つの配列へ展開する。
+     * 各スクロール位置を求める編集側の問題要素を0件以上の結果へ変換し、一つの配列へ展開する。
      *
-     * @param editorProblem editorProblemとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param editorProblem スクロール位置を求める編集側の問題要素
+     * @returns 条件に応じて選択した値
      */
     function expandItem3(editorProblem) {
         const problemId = editorProblem.dataset.editorProblemId;
@@ -64,11 +64,11 @@ export function syncProblemScroll(editorScroll: HTMLElement, previewScroll: HTML
     }
     anchors.push({ source: sourceMax, target: targetMax });
     anchors.sort((/**
-     * 表示順を決めるため二つの要素を比較する。
+     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
      *
-     * @param left leftとして使用する値
-     * @param right rightとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param left 並び順を比較する左側の値
+     * @param right 並び順を比較する右側の値
+     * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
      */
     function compareItems4(left, right) {
         return left.source - right.source;
@@ -78,11 +78,11 @@ export function syncProblemScroll(editorScroll: HTMLElement, previewScroll: HTML
     return target;
 }
 /**
- * interpolateScrollPositionに必要な処理を実行する。
+ * interpolate・Scroll・Positionを表操作を適用する位置で処理し、その結果を呼び出し元へ反映する。
  *
  * @param position 対象となる位置
- * @param anchors anchorsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param anchors 問題位置とスクロール位置の対応表
+ * @returns 0から算出した数値
  */
 export function interpolateScrollPosition(position: number, anchors: readonly ScrollAnchor[]): number {
     if (anchors.length === 0)
@@ -103,11 +103,12 @@ export function interpolateScrollPosition(position: number, anchors: readonly Sc
     return anchors.at(-1)!.target;
 }
 /**
- * getScrollOffsetで必要な値を取得する。
+ * Scroll・Offsetを入力データまたは現在の状態から取り出す。
  *
- * @param element 処理対象の値
- * @param scrollContainer scrollContainerとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param element 走査または監視の対象となる要素
+ * @param scrollContainer 同期先となるスクロール領域
+ * Scroll・Offsetを入力データまたは現在の状態から取り出す。
+  * @returns get・Bounding・Client・Rectの結果の要素上端の座標とget・Bounding・Client・Rectの結果の要素上端の座標の差と同期先となるスクロール領域のscroll・Topを加算した値から算出した数値
  */
 function getScrollOffset(element: HTMLElement, scrollContainer: HTMLElement): number {
     return element.getBoundingClientRect().top
@@ -115,12 +116,12 @@ function getScrollOffset(element: HTMLElement, scrollContainer: HTMLElement): nu
         + scrollContainer.scrollTop;
 }
 /**
- * clampに必要な処理を実行する。
+ * clampをminで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @param minimum minimumとして使用する値
- * @param maximum maximumとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value clampで判定または変換する入力値
+ * @param minimum 許容する最小値
+ * @param maximum 許容する最大値
+ * @returns minの結果から算出した数値
  */
 function clamp(value: number, minimum: number, maximum: number): number {
     return Math.min(maximum, Math.max(minimum, value));

@@ -28,11 +28,11 @@ const LIST_PROFILE_PROBLEM_COUNTS: Record<WorksheetListFixtureProfile, number> =
 // 正常な透過1×1 PNGデータ。
 const TRANSPARENT_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 /**
- * createWorksheetListFixturesで必要な値を作成する。
+ * プリント・一覧・Fixturesを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param profile profileとして使用する値
- * @param count countとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param profile 生成する負荷データの規模区分
+ * @param count 生成または検査する要素数
+ * @returns fromの結果として得た要素一覧
  */
 export function createWorksheetListFixtures(profile: WorksheetListFixtureProfile, count: number): Worksheet[] {
     if (!Number.isInteger(count) || count <= 0 || count > STRUCTURE_LIMITS.worksheetsPerArchive) {
@@ -40,11 +40,11 @@ export function createWorksheetListFixtures(profile: WorksheetListFixtureProfile
     }
     const baseTime = Date.parse("2026-08-28T00:00:00.000Z");
     return Array.from({ length: count }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに処理対象となるプリントを生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param worksheetIndex worksheetIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param worksheetIndex fixture一覧内でのプリント位置
+     * @returns 処理対象となるプリント
      */
     function fromCallback1(_, worksheetIndex) {
         const worksheet = createWorksheet(new Date(baseTime + worksheetIndex * 1000));
@@ -53,11 +53,11 @@ export function createWorksheetListFixtures(profile: WorksheetListFixtureProfile
         if (profile !== "minimal") {
             const assetId = createId();
             worksheet.problems = Array.from({ length: LIST_PROFILE_PROBLEM_COUNTS[profile] }, (/**
-             * fromへ渡す処理を実行する。
+             * 配列位置ごとにcreate・一覧・問題の結果を生成し、fixtureまたはバイナリの要素として格納する。
              *
-             * @param _ _として使用する値
-             * @param problemIndex problemIndexとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+             * @param problemIndex プリント内での問題位置
+             * @returns create・一覧・問題の結果
              */
             function fromCallback2(_, problemIndex) {
                 return createListProblem(profile, worksheetIndex, problemIndex, assetId);
@@ -67,12 +67,12 @@ export function createWorksheetListFixtures(profile: WorksheetListFixtureProfile
     }));
 }
 /**
- * worksheetListFixtureTitleに必要な処理を実行する。
+ * 一覧性能fixtureの規模と通し番号を、人が識別できる題名へ整形する。
  *
- * @param profile profileとして使用する値
+ * @param profile 生成する負荷データの規模区分
  * @param index 対象となる位置
- * @param count countとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param count 生成または検査する要素数
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 export function worksheetListFixtureTitle(profile: WorksheetListFixtureProfile, index: number, count: number): string {
     return index === count - 1
@@ -80,10 +80,10 @@ export function worksheetListFixtureTitle(profile: WorksheetListFixtureProfile, 
         : `${profile}一覧性能テスト ${String(index).padStart(4, "0")}`;
 }
 /**
- * summarizeWorksheetComplexityに必要な処理を実行する。
+ * プリント内の問題・本文・表セル・画像の件数を走査して負荷規模を集計する。
  *
- * @param worksheet worksheetとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @returns problems・内容・Blocks・表・Cells・sub・Questionsを持つオブジェクトから算出した数値
  */
 export function summarizeWorksheetComplexity(worksheet: Worksheet): {
     problems: number;
@@ -95,25 +95,25 @@ export function summarizeWorksheetComplexity(worksheet: Worksheet): {
     let tableCells = 0;
     let subQuestions = 0;
     worksheet.problems.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の問題または例題についてfor・Eachを実行し、対応関係または検証状態を更新する。
      *
-     * @param problem problemとして使用する値
+     * @param problem 処理対象の問題または例題
      */
     function processItem3(problem) {
         contentBlocks += problem.contents.length;
         problem.contents.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の問題本文または解説についてreduceを実行し、対応関係または検証状態を更新する。
          *
-         * @param content contentとして使用する値
+         * @param content 処理対象の問題本文または解説
          */
         function processItem4(content) {
             if (content.type === "table") {
                 tableCells += content.rows.reduce((/**
-                 * 各要素を一つの集計結果へまとめる。
+                 * 現在の計算途中の累積値を、それまでの集計結果へ重複なく反映する。
                  *
-                 * @param total totalとして使用する値
-                 * @param row rowとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param total 計算途中の累積値
+                 * @param row 処理対象の表の行
+                 * @returns 計算途中の累積値を反映した次の累積結果
                  */
                 function reduceItems5(total, row) {
                     return total + row.cells.length;
@@ -126,21 +126,21 @@ export function summarizeWorksheetComplexity(worksheet: Worksheet): {
     return { problems: worksheet.problems.length, contentBlocks, tableCells, subQuestions };
 }
 /**
- * createSimplePdfBenchmarkFixtureで必要な値を作成する。
+ * Simple・PDF・Benchmark・Fixtureを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param pageCount pageCountとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param pageCount 生成するPDFのページ数
+ * @returns 処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクト
  */
 export function createSimplePdfBenchmarkFixture(pageCount: number): PdfBenchmarkFixture {
     const worksheet = createWorksheet(new Date("2026-08-28T00:00:00.000Z"));
     worksheet.title = `${pageCount}ページPDF性能テスト`;
     worksheet.header.title = worksheet.title;
     worksheet.problems = Array.from({ length: pageCount }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに処理対象の問題または例題を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 処理対象の問題または例題
      */
     function fromCallback6(_, index) {
         const problem = createProblem();
@@ -154,10 +154,10 @@ export function createSimplePdfBenchmarkFixture(pageCount: number): PdfBenchmark
     return { worksheet: WorksheetSchema.parse(worksheet), assets: [] };
 }
 /**
- * createComplexPdfBenchmarkFixtureで必要な値を作成する。
+ * Complex・PDF・Benchmark・Fixtureを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param pageCount pageCountとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param pageCount 生成するPDFのページ数
+ * @returns 処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクト
  */
 export function createComplexPdfBenchmarkFixture(pageCount = COMPLEX_PDF_BENCHMARK_PAGE_COUNT): PdfBenchmarkFixture {
     const createdAt = "2026-08-28T00:00:00.000Z";
@@ -167,11 +167,11 @@ export function createComplexPdfBenchmarkFixture(pageCount = COMPLEX_PDF_BENCHMA
     worksheet.header.title = worksheet.title;
     worksheet.pageSettings.margin = "narrow";
     worksheet.problems = Array.from({ length: pageCount }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに処理対象の問題または例題を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 処理対象の問題または例題
      */
     function fromCallback7(_, index) {
         const problem = createProblem();
@@ -197,13 +197,13 @@ export function createComplexPdfBenchmarkFixture(pageCount = COMPLEX_PDF_BENCHMA
     };
 }
 /**
- * createListProblemで必要な値を作成する。
+ * 一覧・問題を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param profile profileとして使用する値
- * @param worksheetIndex worksheetIndexとして使用する値
- * @param problemIndex problemIndexとして使用する値
+ * @param profile 生成する負荷データの規模区分
+ * @param worksheetIndex fixture一覧内でのプリント位置
+ * @param problemIndex プリント内での問題位置
  * @param assetId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理対象の問題または例題
  */
 function createListProblem(profile: Exclude<WorksheetListFixtureProfile, "minimal">, worksheetIndex: number, problemIndex: number, assetId: string) {
     const problem = createProblem();
@@ -224,11 +224,11 @@ function createListProblem(profile: Exclude<WorksheetListFixtureProfile, "minima
     }
     const subQuestions = createSubQuestionGroup();
     subQuestions.items = Array.from({ length: 4 }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに要素を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param itemIndex itemIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param itemIndex 配列内での要素位置
+     * @returns 要素
      */
     function fromCallback8(_, itemIndex) {
         const item = createSubQuestion();
@@ -251,12 +251,12 @@ function createListProblem(profile: Exclude<WorksheetListFixtureProfile, "minima
     return problem;
 }
 /**
- * mixedDocumentに必要な処理を実行する。
+ * 性能試験で文字装飾・数式・改行を同時に含むリッチテキスト文書を作る。
  *
- * @param label labelとして使用する値
- * @param number numberとして使用する値
+ * @param label 画面表示やテスト識別に使う名称
+ * @param number 表示やデータ生成に使う通し番号
  * @param assetId 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function mixedDocument(label: string, number: number, assetId: string): BasicRichTextDocument {
     return {
@@ -286,11 +286,11 @@ function mixedDocument(label: string, number: number, assetId: string): BasicRic
     };
 }
 /**
- * mathDocumentに必要な処理を実行する。
+ * 性能試験で指定式を含む数式中心のリッチテキスト文書を作る。
  *
- * @param label labelとして使用する値
- * @param number numberとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param label 画面表示やテスト識別に使う名称
+ * @param number 表示やデータ生成に使う通し番号
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function mathDocument(label: string, number: number): BasicRichTextDocument {
     return {
@@ -306,10 +306,10 @@ function mathDocument(label: string, number: number): BasicRichTextDocument {
     };
 }
 /**
- * textDocumentに必要な処理を実行する。
+ * 性能試験で指定文字列を含む段落文書を作る。
  *
- * @param text textとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @returns 処理対象のリッチテキスト文書
  */
 function textDocument(text: string): BasicRichTextDocument {
     const document = emptyDocument();
@@ -321,10 +321,10 @@ function textDocument(text: string): BasicRichTextDocument {
     return document;
 }
 /**
- * tableCellDocumentに必要な処理を実行する。
+ * 性能試験の表セルへ格納する短いリッチテキスト文書を作る。
  *
- * @param text textとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function tableCellDocument(text: string): TableCellRichTextDocument {
     return {
@@ -337,11 +337,11 @@ function tableCellDocument(text: string): TableCellRichTextDocument {
     };
 }
 /**
- * solutionDocumentに必要な処理を実行する。
+ * 性能試験で本文・数式・表を含む解説文書を作る。
  *
- * @param label labelとして使用する値
- * @param number numberとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param label 画面表示やテスト識別に使う名称
+ * @param number 表示やデータ生成に使う通し番号
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function solutionDocument(label: string, number: number): SolutionRichTextDocument {
     return {
@@ -360,28 +360,28 @@ function solutionDocument(label: string, number: number): SolutionRichTextDocume
     };
 }
 /**
- * populatedTableに必要な処理を実行する。
+ * 指定行列数の全セルへfixture文書を設定した表を作る。
  *
- * @param number numberとして使用する値
- * @param rows rowsとして使用する値
- * @param columns columnsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param number 表示やデータ生成に使う通し番号
+ * @param rows 作成または検証する表の行数・行一覧
+ * @param columns 作成する表の列数
+ * @returns 編集または検証の対象となる表
  */
 function populatedTable(number: number, rows: number, columns: number): TableBlock {
     const table = createTableBlock(rows, columns);
     table.headerRow = true;
     table.rows.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の表の行についてfor・Eachを実行し、対応関係または検証状態を更新する。
      *
-     * @param row rowとして使用する値
-     * @param rowIndex rowIndexとして使用する値
+     * @param row 処理対象の表の行
+     * @param rowIndex 表内での行位置
      */
     function processItem9(row, rowIndex) {
         row.cells.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の表セルについて表・セル・文書を実行し、対応関係または検証状態を更新する。
          *
-         * @param cell cellとして使用する値
-         * @param columnIndex columnIndexとして使用する値
+         * @param cell 処理対象の表セル
+         * @param columnIndex 表内での列位置
          */
         function processItem10(cell, columnIndex) {
             cell.document = tableCellDocument(`${number}-${rowIndex + 1}-${columnIndex + 1}`);

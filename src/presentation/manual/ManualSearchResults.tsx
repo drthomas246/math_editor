@@ -10,10 +10,10 @@ type Props = {
     onClear: () => void;
 };
 /**
- * ManualSearchResultsコンポーネントを表示する。
+ * 検索語に一致した章の題名・抜粋・一致度を一覧表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・検索・Resultsへ渡す表示情報と操作
+ * @returns マニュアル・検索・Resultsを表示するReact要素
  */
 export function ManualSearchResults(props: Props) {
     let { query, results, headingRef, onSelect, onClear } = props;
@@ -22,10 +22,10 @@ export function ManualSearchResults(props: Props) {
       <p id="manual-search-status" role="status" aria-live="polite">{results.length}件見つかりました</p>
       {results.length > 0 ? (<div className="manual-search-result-list">
           {results.map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各結果を画面表示用のReact要素へ変換する。
              *
              * @param result 処理によって得られた結果
-             * @returns 呼び出し元で使用する処理結果
+             * @returns 画面表示用のReact要素
              */
             function mapItem1(result) {
                 return (<Link key={result.slug} className="manual-search-result" to={`/help/${result.slug}`} onClick={onSelect}>

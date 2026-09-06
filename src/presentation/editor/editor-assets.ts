@@ -3,11 +3,11 @@ import { collectReferencedAssetIds } from "../../domain/worksheet/worksheet.asse
 import type { Worksheet } from "../../domain/worksheet/worksheet";
 import type { HistoryEntry } from "./editor-store";
 /**
- * collectRetainedAssetIdsで必要な値を取得する。
+ * Retained・アセット・Idsを入力データまたは現在の状態から取り出す。
  *
- * @param worksheet worksheetとして使用する値
- * @param historyEntries historyEntriesとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @param historyEntries 参照アセットを調べるUndo・Redo履歴
+ * @returns 解放せず保持するアセット識別子集合として得た文字列。変換できない場合は関数固有の既定値
  */
 export function collectRetainedAssetIds(worksheet: Worksheet, historyEntries: readonly HistoryEntry[]): Set<string> {
     const retainedIds = collectReferencedAssetIds(worksheet);
@@ -19,27 +19,26 @@ export function collectRetainedAssetIds(worksheet: Worksheet, historyEntries: re
     return retainedIds;
 }
 /**
- * pruneAssetUrlsの対象となる要素を削除または解放する。
+ * prune・アセット・Urlsをfor・Eachで処理し、その結果を呼び出し元へ反映する。
  *
  * @param current 更新前または現在の状態
- * @param retainedIds retainedIdsとして使用する値
- * @param revokeObjectUrl revokeObjectUrlとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param retainedIds 解放せず保持するアセット識別子集合
+ * @param revokeObjectUrl 不要になったObject URLを解放する処理
+  * @returns 二つの値を比較した結果として得た文字列。変換できない場合は関数固有の既定値
  */
 export function pruneAssetUrls(current: Map<string, string>, retainedIds: ReadonlySet<string>, revokeObjectUrl: (url: string) => void = (/**
- * 呼び出し元から要求された処理を実行する。
+ * 不要になったイベント購読またはブラウザーリソースを解放し、後続画面への影響を防ぐ。
  *
- * @param url urlとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param url 安全性の検証または解放を行うURL
  */
-function commentRuleCallback1(url) {
+function releaseResources1(url) {
     return URL.revokeObjectURL(url);
 })): Map<string, string> {
     let next: Map<string, string> | null = null;
     current.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各安全性の検証または解放を行うURLについてhasを実行し、対応関係または検証状態を更新する。
      *
-     * @param url urlとして使用する値
+     * @param url 安全性の検証または解放を行うURL
      * @param assetId 対象を識別するID
      */
     function processItem2(url, assetId) {
@@ -52,10 +51,10 @@ function commentRuleCallback1(url) {
     return next ?? current;
 }
 /**
- * collectAssetIdsFromPatchで必要な値を取得する。
+ * アセット・Ids・From・Patchを入力データまたは現在の状態から取り出す。
  *
- * @param patch patchとして使用する値
- * @param retainedIds retainedIdsとして使用する値
+ * @param patch 履歴またはアセット参照を調べるImmerパッチ
+ * @param retainedIds 解放せず保持するアセット識別子集合
  */
 function collectAssetIdsFromPatch(patch: Patch, retainedIds: Set<string>): void {
     if (patch.path.at(-1) === "assetId" && "value" in patch && typeof patch.value === "string") {
@@ -64,10 +63,9 @@ function collectAssetIdsFromPatch(patch: Patch, retainedIds: Set<string>): void 
     if (!("value" in patch))
         return;
     collectReferencedAssetIds(patch.value).forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各アセット・Idについてaddを実行し、対応関係または検証状態を更新する。
      *
      * @param assetId 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
      */
     function processItem3(assetId) {
         return retainedIds.add(assetId);

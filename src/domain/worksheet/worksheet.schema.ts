@@ -130,17 +130,17 @@ const RichTextMarksSchema = z
     .array(RichTextMarkSchema)
     .max(5)
     .superRefine((/**
- * superRefineへ渡す処理を実行する。
+ * リッチテキストへ適用する文字装飾一覧だけでは表せない識別子・参照・構造上限の整合性を追加検証する。
  *
- * @param marks marksとして使用する値
- * @param context contextとして使用する値
+ * @param marks リッチテキストへ適用する文字装飾一覧
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function superRefineCallback1(marks, context) {
     const types = new Set<string>();
     marks.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の文字装飾についてhasを実行し、対応関係または検証状態を更新する。
      *
-     * @param mark markとして使用する値
+     * @param mark 処理対象の文字装飾
      * @param index 対象となる位置
      */
     function processItem2(mark, index) {
@@ -166,10 +166,10 @@ export const LatexStringSchema = z
     .min(1)
     .max(STRUCTURE_LIMITS.latexCharacters)
     .superRefine((/**
- * superRefineへ渡す処理を実行する。
+ * 描画または保存するLaTeX式だけでは表せない識別子・参照・構造上限の整合性を追加検証する。
  *
- * @param latex latexとして使用する値
- * @param context contextとして使用する値
+ * @param latex 描画または保存するLaTeX式
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function superRefineCallback3(latex, context) {
     if (latex.trim().length === 0) {
@@ -232,10 +232,10 @@ const TableCellBlockNodeSchema = z.discriminatedUnion("type", [
     ImageRefNodeSchema,
 ]);
 /**
- * validateRichTextLimitsに必要な処理を実行する。
+ * リッチ・テキスト・Limitsが永続化または画面表示の制約を満たすか検証する。
  *
- * @param document documentとして使用する値
- * @param context contextとして使用する値
+ * @param document 処理対象のリッチテキスト文書
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function validateRichTextLimits(document: {
     content: readonly unknown[];
@@ -245,10 +245,10 @@ function validateRichTextLimits(document: {
         node: unknown;
         depth: number;
     }> = document.content.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各ノードをノード・depthを持つオブジェクトへ変換する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns ノード・depthを持つオブジェクト
      */
     function mapItem4(node) {
         return ({
@@ -325,21 +325,21 @@ type TableData = {
     columnWidthsPercent: number[];
 };
 /**
- * validateTableDataに必要な処理を実行する。
+ * 表・データが永続化または画面表示の制約を満たすか検証する。
  *
- * @param table tableとして使用する値
- * @param context contextとして使用する値
- * @param pathPrefix pathPrefixとして使用する値
+ * @param table 編集または検証の対象となる表
+ * @param context 検証エラーを登録するZodコンテキスト
+ * @param pathPrefix 子要素のエラー位置へ付ける親パス
  */
 function validateTableData(table: TableData, context: z.RefinementCtx, pathPrefix: Array<string | number> = []): void {
     const rowCount = table.rows.length;
     const columnCount = table.columnWidthsPercent.length;
     const widthTotal = table.columnWidthsPercent.reduce((/**
-     * 各要素を一つの集計結果へまとめる。
+     * 現在の計算途中の累積値を、それまでの集計結果へ重複なく反映する。
      *
-     * @param total totalとして使用する値
-     * @param width widthとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param total 計算途中の累積値
+     * @param width 要素または列へ適用する幅
+     * @returns 計算途中の累積値を反映した次の累積結果
      */
     function reduceItems5(total, width) {
         return total + width;
@@ -352,33 +352,33 @@ function validateTableData(table: TableData, context: z.RefinementCtx, pathPrefi
         });
     }
     const occupied = Array.from({ length: rowCount }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとにfromの結果を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 変換元の結果
      */
     function fromCallback6() {
         return Array.from({ length: columnCount }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとにfalseを生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 条件不成立を示すfalse
          */
         function fromCallback7() {
             return false;
         }));
     }));
     table.rows.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の表の行についてfor・Eachを実行し、対応関係または検証状態を更新する。
      *
-     * @param row rowとして使用する値
-     * @param rowIndex rowIndexとして使用する値
+     * @param row 処理対象の表の行
+     * @param rowIndex 表内での行位置
      */
     function processItem8(row, rowIndex) {
         let columnIndex = 0;
         row.cells.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の表セルについてadd・Issueを実行し、対応関係または検証状態を更新する。
          *
-         * @param cell cellとして使用する値
-         * @param cellIndex cellIndexとして使用する値
+         * @param cell 処理対象の表セル
+         * @param cellIndex 行内でのセル位置
          */
         function processItem9(cell, cellIndex) {
             while (columnIndex < columnCount && occupied[rowIndex]?.[columnIndex]) {
@@ -423,17 +423,17 @@ function validateTableData(table: TableData, context: z.RefinementCtx, pathPrefi
         }));
     }));
     if (occupied.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかの処理対象の表の行が要求条件を満たすか判定する。
      *
-     * @param row rowとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param row 処理対象の表の行
+     * @returns someの結果が真になる場合はtrue
      */
     function hasMatchingItem10(row) {
         return row.some((/**
-         * 条件に一致する要素か判定する。
+         * いずれかの処理対象の表セルが要求条件を満たすか判定する。
          *
-         * @param cell cellとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param cell 処理対象の表セル
+         * @returns 処理対象の表セルが存在しない場合はtrue
          */
         function hasMatchingItem11(cell) {
             return !cell;
@@ -454,10 +454,10 @@ const TableBlockBaseSchema = z.strictObject({
     headerRow: z.boolean(),
 });
 export const TableBlockSchema = TableBlockBaseSchema.superRefine((/**
- * superRefineへ渡す処理を実行する。
+ * 編集または検証の対象となる表だけでは表せない識別子・参照・構造上限の整合性を追加検証する。
  *
- * @param table tableとして使用する値
- * @param context contextとして使用する値
+ * @param table 編集または検証の対象となる表
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function superRefineCallback12(table, context) {
     validateTableData(table, context);
@@ -476,10 +476,10 @@ const RichTableNodeBaseSchema = z.strictObject({
     }),
 });
 export const RichTableNodeSchema = RichTableNodeBaseSchema.superRefine((/**
- * superRefineへ渡す処理を実行する。
+ * ノードだけでは表せない識別子・参照・構造上限の整合性を追加検証する。
  *
- * @param node 処理対象の値
- * @param context contextとして使用する値
+ * @param node 走査または変換するリッチテキストノード
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function superRefineCallback13(node, context) {
     validateTableData(node.attrs, context, ["attrs"]);
@@ -546,9 +546,9 @@ export const RichTextNodeSchema = z.discriminatedUnion("type", [
     RichTextSpacerNodeSchema,
 ]);
 const createEmptyBasicDocument = (/**
- * createEmptyBasicDocumentで必要な値を作成する。
+ * Empty・Basic・文書を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function createEmptyBasicDocumentImplementation14() {
     return ({
@@ -706,10 +706,10 @@ const WorksheetObjectSchema = z.strictObject({
     deletedAt: ISODateTimeStringSchema.nullable(),
 });
 /**
- * validateWorksheetHeaderTitleに必要な処理を実行する。
+ * プリント・ヘッダー・題名が永続化または画面表示の制約を満たすか検証する。
  *
- * @param worksheet worksheetとして使用する値
- * @param context contextとして使用する値
+ * @param worksheet 処理対象となるプリント
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function validateWorksheetHeaderTitle(worksheet: {
     title: string;
@@ -726,27 +726,26 @@ function validateWorksheetHeaderTitle(worksheet: {
     }
 }
 /**
- * validateUniqueEntityIdsに必要な処理を実行する。
+ * Unique・Entity・Idsが永続化または画面表示の制約を満たすか検証する。
  *
- * @param value 処理対象の値
- * @param context contextとして使用する値
+ * @param value validate・Unique・Entity・Idsで判定または変換する入力値
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function validateUniqueEntityIds(value: unknown, context: z.RefinementCtx): void {
     const seenIds = new Map<string, Array<string | number>>();
     const visit = (/**
-     * visitで定義された一連の処理を実行する。
+     * 入れ子の文書・表・問題構造を再帰走査し、対象値を漏れなく収集または検証する。
      *
      * @param current 更新前または現在の状態
-     * @param path pathとして使用する値
+     * @param path 検証エラーが指すデータ位置
      */
     function visitImplementation15(current: unknown, path: Array<string | number>): void {
         if (Array.isArray(current)) {
             current.forEach((/**
-             * 各要素へ必要な処理を適用する。
+             * 各要素についてvisitを実行し、対応関係または検証状態を更新する。
              *
-             * @param item 処理対象の値
+             * @param item 配列処理で現在参照している要素
              * @param index 対象となる位置
-             * @returns 呼び出し元で使用する処理結果
              */
             function processItem16(item, index) {
                 return visit(item, [...path, index]);
@@ -757,12 +756,12 @@ function validateUniqueEntityIds(value: unknown, context: z.RefinementCtx): void
             return;
         }
         Object.entries(current).forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各保存先または要素を特定するキーと走査中の子ノードの組についてストアの最新状態を取得する関数を実行し、対応関係または検証状態を更新する。
          *
-         * @param parameter1 parameter1として使用する値
+         * @param callbackInput コールバックの呼び出し元から渡される入力情報
          */
-        function processItem17(parameter1) {
-            let [key, child] = parameter1;
+        function processItem17(callbackInput) {
+            let [key, child] = callbackInput;
             const childPath = [...path, key];
             if (key === "id" && typeof child === "string") {
                 const previousPath = seenIds.get(child);
@@ -783,10 +782,10 @@ function validateUniqueEntityIds(value: unknown, context: z.RefinementCtx): void
     visit(value, []);
 }
 /**
- * validateWorksheetに必要な処理を実行する。
+ * プリントが永続化または画面表示の制約を満たすか検証する。
  *
- * @param worksheet worksheetとして使用する値
- * @param context contextとして使用する値
+ * @param worksheet 処理対象となるプリント
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function validateWorksheet(worksheet: z.infer<typeof WorksheetObjectSchema>, context: z.RefinementCtx) {
     validateWorksheetHeaderTitle(worksheet, context);
@@ -803,10 +802,10 @@ const ActiveWorksheetSchema = WorksheetObjectSchema.extend({
 // IndexedDB assets テーブル用レコード
 // -----------------------------------------------------------------------------
 export const BlobSchema = z.custom<Blob>((/**
- * customへ渡す処理を実行する。
+ * 変換・検証・保存の対象となる値を基にcustomを導出する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value customで判定または変換する入力値
+ * @returns 二つの値を比較した結果
  */
 function customCallback18(value) {
     return typeof Blob !== "undefined" && value instanceof Blob;
@@ -885,11 +884,11 @@ type EntityPath = Array<string | number>;
 /**
  * visitRichTextDocumentで定義された一連の処理を実行する。
  *
- * @param document documentとして使用する値
- * @param path pathとして使用する値
+ * @param document 処理対象のリッチテキスト文書
+ * @param path 検証エラーが指すデータ位置
  * @param worksheetId 対象を識別するID
  * @param registerId 対象を識別するID
- * @param registerAssetReference registerAssetReferenceとして使用する値
+ * @param registerAssetReference 検出したアセット参照を登録する処理
  */
 function visitRichTextDocument(document: {
     content: readonly unknown[];
@@ -897,8 +896,8 @@ function visitRichTextDocument(document: {
     const visitNode = (/**
      * visitNodeで定義された一連の処理を実行する。
      *
-     * @param node 処理対象の値
-     * @param nodePath nodePathとして使用する値
+     * @param node 走査または変換するリッチテキストノード
+     * @param nodePath リッチテキスト内でのノード位置
      */
     function visitNodeImplementation19(node: unknown, nodePath: EntityPath): void {
         if (typeof node !== "object" || node === null) {
@@ -935,11 +934,10 @@ function visitRichTextDocument(document: {
         }
         if (Array.isArray(value.content)) {
             value.content.forEach((/**
-             * 各要素へ必要な処理を適用する。
+             * 各走査中の子ノードについてvisit・ノードを実行し、対応関係または検証状態を更新する。
              *
-             * @param child childとして使用する値
+             * @param child 走査中の子ノード
              * @param index 対象となる位置
-             * @returns 呼び出し元で使用する処理結果
              */
             function processItem20(child, index) {
                 return visitNode(child, [...nodePath, "content", index]);
@@ -947,11 +945,10 @@ function visitRichTextDocument(document: {
         }
     });
     document.content.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各ノードについてvisit・ノードを実行し、対応関係または検証状態を更新する。
      *
-     * @param node 処理対象の値
+     * @param node 走査または変換するリッチテキストノード
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
      */
     function processItem21(node, index) {
         return visitNode(node, [...path, "content", index]);
@@ -960,26 +957,26 @@ function visitRichTextDocument(document: {
 /**
  * visitTableRowsで定義された一連の処理を実行する。
  *
- * @param rows rowsとして使用する値
- * @param path pathとして使用する値
+ * @param rows 作成または検証する表の行数・行一覧
+ * @param path 検証エラーが指すデータ位置
  * @param worksheetId 対象を識別するID
  * @param registerId 対象を識別するID
- * @param registerAssetReference registerAssetReferenceとして使用する値
+ * @param registerAssetReference 検出したアセット参照を登録する処理
  */
 function visitTableRows(rows: Array<z.infer<typeof TableRowSchema>>, path: EntityPath, worksheetId: string, registerId: (id: string, path: EntityPath) => void, registerAssetReference: (assetId: string, worksheetId: string, path: EntityPath) => void): void {
     rows.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の表の行についてregister・Idを実行し、対応関係または検証状態を更新する。
      *
-     * @param row rowとして使用する値
-     * @param rowIndex rowIndexとして使用する値
+     * @param row 処理対象の表の行
+     * @param rowIndex 表内での行位置
      */
     function processItem22(row, rowIndex) {
         registerId(row.id, [...path, rowIndex, "id"]);
         row.cells.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の表セルについてregister・Idを実行し、対応関係または検証状態を更新する。
          *
-         * @param cell cellとして使用する値
-         * @param cellIndex cellIndexとして使用する値
+         * @param cell 処理対象の表セル
+         * @param cellIndex 行内でのセル位置
          */
         function processItem23(cell, cellIndex) {
             const cellPath = [...path, rowIndex, "cells", cellIndex];
@@ -991,27 +988,27 @@ function visitTableRows(rows: Array<z.infer<typeof TableRowSchema>>, path: Entit
 /**
  * visitWorksheetで定義された一連の処理を実行する。
  *
- * @param worksheet worksheetとして使用する値
- * @param path pathとして使用する値
+ * @param worksheet 処理対象となるプリント
+ * @param path 検証エラーが指すデータ位置
  * @param registerId 対象を識別するID
- * @param registerAssetReference registerAssetReferenceとして使用する値
+ * @param registerAssetReference 検出したアセット参照を登録する処理
  */
 function visitWorksheet(worksheet: WorksheetValue, path: EntityPath, registerId: (id: string, path: EntityPath) => void, registerAssetReference: (assetId: string, worksheetId: string, path: EntityPath) => void): void {
     registerId(worksheet.id, [...path, "id"]);
     worksheet.problems.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の問題または例題についてregister・Idを実行し、対応関係または検証状態を更新する。
      *
-     * @param problem problemとして使用する値
-     * @param problemIndex problemIndexとして使用する値
+     * @param problem 処理対象の問題または例題
+     * @param problemIndex プリント内での問題位置
      */
     function processItem24(problem, problemIndex) {
         const problemPath = [...path, "problems", problemIndex];
         registerId(problem.id, [...problemPath, "id"]);
         problem.contents.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の問題本文または解説についてregister・Idを実行し、対応関係または検証状態を更新する。
          *
-         * @param content contentとして使用する値
-         * @param contentIndex contentIndexとして使用する値
+         * @param content 処理対象の問題本文または解説
+         * @param contentIndex 問題内での本文・解説の位置
          */
         function processItem25(content, contentIndex) {
             const contentPath = [...problemPath, "contents", contentIndex];
@@ -1031,10 +1028,10 @@ function visitWorksheet(worksheet: WorksheetValue, path: EntityPath, registerId:
                     break;
                 case "subQuestionGroup":
                     content.items.forEach((/**
-                     * 各要素へ必要な処理を適用する。
+                     * 各要素についてregister・識別子を実行し、対応関係または検証状態を更新する。
                      *
-                     * @param item 処理対象の値
-                     * @param itemIndex itemIndexとして使用する値
+                     * @param item 配列処理で現在参照している要素
+                     * @param itemIndex 配列内での要素位置
                      */
                     function processItem26(item, itemIndex) {
                         const itemPath = [...contentPath, "items", itemIndex];
@@ -1066,10 +1063,10 @@ function visitWorksheet(worksheet: WorksheetValue, path: EntityPath, registerId:
     }));
 }
 /**
- * validateBackupFileに必要な処理を実行する。
+ * Backup・ファイルが永続化または画面表示の制約を満たすか検証する。
  *
- * @param file fileとして使用する値
- * @param context contextとして使用する値
+ * @param file 読み込みまたは検証の対象ファイル
+ * @param context 検証エラーを登録するZodコンテキスト
  */
 function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): void {
     const seenEntityIds = new Map<string, EntityPath>();
@@ -1078,10 +1075,10 @@ function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): vo
         path: EntityPath;
     }>>();
     const registerId = (/**
-     * registerIdの対象となる要素を追加する。
+     * register・識別子をストアの最新状態を取得する関数で処理し、その結果を呼び出し元へ反映する。
      *
      * @param id 対象を識別するID
-     * @param path pathとして使用する値
+     * @param path 検証エラーが指すデータ位置
      */
     function registerIdImplementation27(id: string, path: EntityPath): void {
         const previousPath = seenEntityIds.get(id);
@@ -1096,11 +1093,11 @@ function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): vo
         seenEntityIds.set(id, path);
     });
     const registerAssetReference = (/**
-     * registerAssetReferenceの対象となる要素を追加する。
+     * 検出したアセット参照を登録する処理をストアの最新状態を取得する関数で処理し、その結果を呼び出し元へ反映する。
      *
      * @param assetId 対象を識別するID
      * @param worksheetId 対象を識別するID
-     * @param path pathとして使用する値
+     * @param path 検証エラーが指すデータ位置
      */
     function registerAssetReferenceImplementation28(assetId: string, worksheetId: string, path: EntityPath): void {
         const references = assetReferences.get(assetId) ?? [];
@@ -1109,18 +1106,18 @@ function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): vo
     });
     const worksheets = file.kind === "single" ? [file.worksheet] : file.worksheets;
     const worksheetIds = new Set(worksheets.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各処理対象となるプリントを処理対象となるプリントの対象を一意に特定する識別子へ変換する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 処理対象となるプリント
+     * @returns 処理対象となるプリントの対象を一意に特定する識別子
      */
     function mapItem29(worksheet) {
         return worksheet.id;
     })));
     worksheets.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象となるプリントについてvisit・プリントを実行し、対応関係または検証状態を更新する。
      *
-     * @param worksheet worksheetとして使用する値
+     * @param worksheet 処理対象となるプリント
      * @param index 対象となる位置
      */
     function processItem30(worksheet, index) {
@@ -1128,9 +1125,9 @@ function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): vo
     }));
     const assetsById = new Map<string, z.infer<typeof BackupAssetSchema>>();
     file.assets.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各処理対象の画像アセットについてregister・Idを実行し、対応関係または検証状態を更新する。
      *
-     * @param asset assetとして使用する値
+     * @param asset 処理対象の画像アセット
      * @param index 対象となる位置
      */
     function processItem31(asset, index) {
@@ -1163,9 +1160,9 @@ function validateBackupFile(file: BackupFileValue, context: z.RefinementCtx): vo
             continue;
         }
         references.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各検証対象のアセット参照についてadd・Issueを実行し、対応関係または検証状態を更新する。
          *
-         * @param reference referenceとして使用する値
+         * @param reference 検証対象のアセット参照
          */
         function processItem32(reference) {
             if (asset.worksheetId !== reference.worksheetId) {

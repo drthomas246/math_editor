@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { prepareJsonDownload } from "./download";
 describe("prepareJsonDownload", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「prepareJsonDownload」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     afterEach((/**
-     * 各テストケースで使用した状態を後片付けする。
+     * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
      */
     function cleanUpTestCase2() {
         vi.useRealTimers();
@@ -13,7 +13,7 @@ function defineTestSuite1() {
         document.body.replaceChildren();
     }));
     it("利用者が直接クリックできるJSONのダウンロード情報を生成する", (/**
-     * 期待する振る舞いを検証する。
+     * 「利用者が直接クリックできるJSONのダウンロード情報を生成する」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const createObjectUrl = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:worksheet-backup");

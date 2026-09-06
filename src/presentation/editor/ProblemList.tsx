@@ -17,28 +17,28 @@ type ProblemDescriptor = {
     displayNumber: string | null;
 };
 const getCurrentWorksheet = (/**
- * getCurrentWorksheetで必要な値を取得する。
+ * 現在・プリントを入力データまたは現在の状態から取り出す。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns get・状態の結果の処理対象となるプリント
  */
 function getCurrentWorksheetImplementation1(): Worksheet | null {
     return useEditorStore.getState().worksheet;
 });
 export const ProblemList = memo((/**
- * ProblemListコンポーネントを表示する。
+ * プリント内の問題を採番順に並べ、選択中の問題だけを編集可能なカードとして表示する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput let・{・アセット・Urls・on・Add・画像・on・更新・画像・on・Toastをまとめて受け取るコールバック入力
+ * @returns 問題・一覧を表示するReact要素
  */
-function ProblemList(parameter1: ProblemListProps) {
-    let { assetUrls, onAddImage, onUpdateImage, onToast } = parameter1;
+function ProblemList(callbackInput: ProblemListProps) {
+    let { assetUrls, onAddImage, onUpdateImage, onToast } = callbackInput;
     // リッチテキスト編集ではこれらのプリミティブ値が変わらないため、個別問題の変更で
     // 一覧全体を再描画せず、構造または採番が変わった場合だけ更新する。
     const structureKey = useEditorStore(useShallow((/**
-     * useShallowへ渡す処理を実行する。
+     * use・Shallowをflat・Mapで処理し、その結果を呼び出し元へ反映する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     function useShallowCallback3(state) {
         const worksheet = state.worksheet;
@@ -48,10 +48,10 @@ function ProblemList(parameter1: ProblemListProps) {
             worksheet.pageSettings.problemNumberFormat,
             worksheet.pageSettings.subQuestionNumberFormat,
             ...worksheet.problems.flatMap((/**
-             * 各要素を変換しながら一つの配列へ展開する。
+             * 各処理対象の問題または例題を0件以上の結果へ変換し、一つの配列へ展開する。
              *
-             * @param problem problemとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param problem 処理対象の問題または例題
+             * @returns 順序を保った要素一覧
              */
             function expandItem4(problem) {
                 return [
@@ -64,9 +64,9 @@ function ProblemList(parameter1: ProblemListProps) {
         ];
     })));
     const descriptors = useMemo<ProblemDescriptor[]>((/**
-     * 依存値から再利用する計算結果を作成する。
+     * 順序を保った要素一覧を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue5() {
         // structureKeyだけを購読することで、リッチテキストのみの編集では一覧を再描画せず、
@@ -77,11 +77,11 @@ function ProblemList(parameter1: ProblemListProps) {
             return [];
         const numbers = getProblemNumbers(worksheet);
         return worksheet.problems.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の問題または例題を対象を一意に特定する識別子・位置・display・番号を持つオブジェクトへ変換する。
          *
-         * @param problem problemとして使用する値
+         * @param problem 処理対象の問題または例題
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 対象を一意に特定する識別子・位置・display・番号を持つオブジェクト
          */
         function mapItem6(problem, index) {
             return ({
@@ -92,95 +92,95 @@ function ProblemList(parameter1: ProblemListProps) {
         }));
     }), [structureKey]);
     return <>{descriptors.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各画面表示へ変換する問題の記述情報を画面表示用のReact要素へ変換する。
          *
-         * @param descriptor descriptorとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param descriptor 画面表示へ変換する問題の記述情報
+         * @returns 画面表示用のReact要素
          */
         function mapItem7(descriptor) {
             return <StoreProblemCard key={descriptor.id} descriptor={descriptor} assetUrls={assetUrls} onAddImage={onAddImage} onUpdateImage={onUpdateImage} onToast={onToast}/>;
         }))}</>;
 }));
 /**
- * StoreProblemCardコンポーネントを表示する。
+ * Store・問題・カードの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Store・問題・カードへ渡す表示情報と操作
+ * @returns Store・問題・カードを表示するReact要素
  */
 function StoreProblemCard(props: ProblemListProps & {
     descriptor: ProblemDescriptor;
 }) {
     let { descriptor, assetUrls, onAddImage, onUpdateImage, onToast } = props;
     const problem = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから条件に応じて選択した値だけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 条件に応じて選択した値
      */
     function useEditorStoreCallback8(state) {
         const candidate = state.worksheet?.problems[descriptor.index];
         return candidate?.id === descriptor.id
             ? candidate
             : state.worksheet?.problems.find((/**
-             * 検索条件に一致する要素か判定する。
+             * 要素の対象を一意に特定する識別子が画面表示へ変換する問題の記述情報の対象を一意に特定する識別子と一致する最初の要素を検索する。
              *
-             * @param item 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param item 配列処理で現在参照している要素
+             * @returns 要素の対象を一意に特定する識別子が画面表示へ変換する問題の記述情報の対象を一意に特定する識別子と一致する場合はtrue
              */
             function findItem9(item) {
                 return item.id === descriptor.id;
             }));
     }));
     const selected = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから二つの値を比較した結果だけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 二つの値を比較した結果
      */
     function useEditorStoreCallback10(state) {
         return state.selectedProblemId === descriptor.id;
     }));
     const selectedContentId = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから条件に応じて選択した値だけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 条件に応じて選択した値
      */
     function useEditorStoreCallback11(state) {
         return (state.selectedProblemId === descriptor.id ? state.selectedContentId : null);
     }));
     const selectProblem = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから状態のselect・問題だけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 状態のselect・問題
      */
     function useEditorStoreCallback12(state) {
         return state.selectProblem;
     }));
     const selectContent = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから状態のselect・内容だけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 状態のselect・内容
      */
     function useEditorStoreCallback13(state) {
         return state.selectContent;
     }));
     const commit = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから状態のcommitだけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 状態のcommit
      */
     function useEditorStoreCallback14(state) {
         return state.commit;
     }));
     const mutate = useEditorStore((/**
-     * useEditorStoreへ渡す処理を実行する。
+     * エディタストアから状態のmutateだけを購読対象として選択する。
      *
      * @param state 更新前または現在の状態
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 状態のmutate
      */
     function useEditorStoreCallback15(state) {
         return state.mutate;
@@ -189,9 +189,8 @@ function StoreProblemCard(props: ProblemListProps & {
     if (!worksheet || !problem)
         return null;
     return <ProblemCard worksheet={worksheet} getWorksheet={getCurrentWorksheet} problem={problem} index={descriptor.index} displayNumber={descriptor.displayNumber} selected={selected} selectedContentId={selectedContentId} onSelect={(/**
-     * onSelectで発生した画面イベントを処理する。
+     * 画面要素から選択操作を受け、対応する編集状態と画面表示を更新する。
      *
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleSelect16() {
         return selectProblem(descriptor.id);

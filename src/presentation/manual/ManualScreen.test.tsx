@@ -4,16 +4,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ManualScreen } from "./ManualScreen";
 /**
- * renderManualに対応する画面表示を更新する。
+ * マニュアルの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param path pathとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param path 検証エラーが指すデータ位置
+ * @returns renderの結果
  */
 function renderManual(path: string) {
     vi.spyOn(window, "scrollTo").mockImplementation((/**
-     * mockImplementationへ渡す処理を実行する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 「対象機能」で外部依存から返すundefinedを固定し、検証を決定的にする。
      */
     function mockImplementationCallback1() {
         return undefined;
@@ -26,13 +24,13 @@ function renderManual(path: string) {
     </MemoryRouter>);
 }
 describe("ManualScreen", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「ManualScreen」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite2() {
     it("章、目次、前後移動を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「章、目次、前後移動を表示する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase3() {
         renderManual("/help/overview");
@@ -42,7 +40,7 @@ function defineTestSuite2() {
         expect(await screen.findByRole("heading", { level: 1, name: "最初のプリントを作る" })).toBeInTheDocument();
     }));
     it("目次の11番目にAI Skillsの使い方を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「目次の11番目にAI Skillsの使い方を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         renderManual("/help/ai-skills");
@@ -51,7 +49,7 @@ function defineTestSuite2() {
         expect(screen.getByRole("heading", { level: 2, name: "AIのSkillとは" })).toBeInTheDocument();
     }));
     it("目次の13番目にバージョンとライセンスを表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「目次の13番目にバージョンとライセンスを表示する」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         renderManual("/help/version-and-license");
@@ -61,9 +59,9 @@ function defineTestSuite2() {
         expect(screen.getByText("Copyright © 2026 Yamahara Yoshihiro")).toBeInTheDocument();
     }));
     it("検索結果へ切り替え、選択後に章を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「検索結果へ切り替え、選択後に章を表示する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         renderManual("/help/overview");
@@ -72,18 +70,17 @@ function defineTestSuite2() {
         expect(screen.getByRole("status")).toHaveTextContent(/件見つかりました/u);
         await userEvent.click((await screen.findAllByRole("link", { name: /数式/u }))[0]!);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「検索結果へ切り替え、選択後に章を表示する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback7() {
             return expect(screen.getByRole("heading", { level: 1, name: "数式" })).toBeInTheDocument();
         }));
     }));
     it("Escapeで検索を解除し、不明URLではNot Foundを表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「Escapeで検索を解除し、不明URLではNot Foundを表示する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase8() {
         renderManual("/help/unknown/path");

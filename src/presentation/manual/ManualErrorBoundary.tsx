@@ -8,26 +8,27 @@ type State = {
 export class ManualErrorBoundary extends Component<Props, State> {
     state: State = { failed: false };
     /**
-     * getDerivedStateFromErrorで必要な値を取得する。
+     * failedを持つオブジェクトを一つの結果へまとめる。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns failedを持つオブジェクト
      */
     static getDerivedStateFromError(): State {
         return { failed: true };
     }
     /**
-     * componentDidCatchに必要な処理を実行する。
+     * component・Did・Catchをエラーで処理し、その結果を呼び出し元へ反映する。
      *
      * @param error 処理中に発生したエラー
-     * @param info infoとして使用する値
+     * @param info Reactが報告したエラー発生位置
      */
     componentDidCatch(error: Error, info: ErrorInfo) {
         console.error("Manual rendering failed", error, info);
     }
     /**
-     * renderに対応する画面表示を更新する。
+     * テスト対象コンポーネントを規定のルーターと依存モックを使って描画する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * テスト対象コンポーネントを規定のルーターと依存モックを使って描画する。
+      * @returns 正常時の子要素または描画失敗時の再読み込み案内を表示するReact要素
      */
     render() {
         if (!this.state.failed)
@@ -38,9 +39,8 @@ export class ManualErrorBoundary extends Component<Props, State> {
         <p>ページを再読み込みしてください。改善しない場合は、はじめに戻ってください。</p>
         <div className="manual-error-actions">
           <button className="primary-button" onClick={(/**
-         * onClickで発生した画面イベントを処理する。
+         * 「再読み込み」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleClick1() {
             return window.location.reload();

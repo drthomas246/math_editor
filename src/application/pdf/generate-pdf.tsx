@@ -37,10 +37,9 @@ export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: r
     assertPreviewPaginationCanExport(previewRoot);
     await waitForPreviewAssets(previewPages);
     Object.values(PDF_PERFORMANCE_MEASURES).forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各生成物または計測項目を識別する名前についてclear・Measuresを実行し、対応関係または検証状態を更新する。
      *
-     * @param name nameとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param name 生成物または計測項目を識別する名前
      */
     function processItem1(name) {
         return performance.clearMeasures(name);
@@ -71,11 +70,11 @@ export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: r
     ] = [mmToPt(pageSize.width), mmToPt(pageSize.height)];
     const element = <Document title={worksheet.title} author="数学プリント作成">
     {pageImages.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各複製・変換・更新の起点となる値を画面表示用のReact要素へ変換する。
          *
-         * @param source sourceとして使用する値
+         * @param source 複製・変換・更新の起点となる値
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 画面表示用のReact要素
          */
         function mapItem2(source, index) {
             return <Page key={index} size={pdfPageSize} style={styles.page} wrap={false}>
@@ -95,32 +94,32 @@ export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: r
     }
 }
 /**
- * recordPerformanceMeasureに必要な処理を実行する。
+ * Performance APIの開始・終了markから処理時間を計算し、計測結果として記録する。
  *
- * @param name nameとして使用する値
- * @param startedAt startedAtとして使用する値
+ * @param name 生成物または計測項目を識別する名前
+ * @param startedAt 処理時間を計算する開始時刻
  */
 function recordPerformanceMeasure(name: string, startedAt: number): void {
     performance.measure(name, { start: startedAt, end: performance.now() });
 }
 /**
- * canvasToPdfImageで表される条件を判定する。
+ * vas・To・PDF・画像が仕様上の条件を満たすか判定する。
  *
- * @param canvas canvasとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param canvas PDF画像へ変換する描画済みcanvas要素
+ * @returns Promiseの新しいインスタンスが真になる場合はtrue
  */
 function canvasToPdfImage(canvas: HTMLCanvasElement): Promise<Blob> {
     return new Promise((/**
-     * 呼び出し元から要求された処理を実行する。
+     * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
-     * @param reject rejectとして使用する値
+     * @param resolve 非同期処理を正常完了させるPromise関数
+     * @param reject 非同期処理を失敗として終了させるPromise関数
      */
-    function commentRuleCallback3(resolve, reject) {
+    function settlePromise3(resolve, reject) {
         canvas.toBlob((/**
-         * toBlobへ渡す処理を実行する。
+         * to・Blobを比較・保存・表示先が要求する形式へ変換する。
          *
-         * @param blob blobとして使用する値
+         * @param blob 検証または保存するバイナリデータ
          */
         function toBlobCallback4(blob) {
             if (blob)
@@ -131,9 +130,9 @@ function canvasToPdfImage(canvas: HTMLCanvasElement): Promise<Blob> {
     }));
 }
 /**
- * installReactPdfBrowserBufferGuardに必要な処理を実行する。
+ * Node.jsのBufferを前提とするreact-pdfの判定をブラウザー向けに補い、終了時に元の状態へ戻せるようにする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 呼び出し元が後で実行する関数
  */
 function installReactPdfBrowserBufferGuard(): () => void {
     // @react-pdf/layoutはブラウザーでもBlob判定より先にBuffer.isBufferを参照する。
@@ -142,58 +141,56 @@ function installReactPdfBrowserBufferGuard(): () => void {
     const runtimeGlobal = globalThis as unknown as {
         Buffer?: {
             /**
-             * isBufferで表される条件を判定する。
+             * react-pdfが受け取った値をNode.jsのBufferとして扱う必要があるか判定する。
              *
-             * @param value 処理対象の値
-             * @returns 呼び出し元で使用する処理結果
+             * @param value react-pdfが画像データとして検査する値
+             * @returns ブラウザーではBufferを使用しないため常にfalse
              */
             isBuffer(value: unknown): boolean;
         };
     };
     if (runtimeGlobal.Buffer)
         return (/**
-         * 呼び出し元から要求された処理を実行する。
-         *
-         * @returns 呼び出し元で使用する処理結果
+         * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
          */
-        function commentRuleCallback5() {
+        function applyDeferredOperation5() {
             return undefined;
         });
     runtimeGlobal.Buffer = { isBuffer: (/**
-         * isBufferで表される条件を判定する。
+         * 条件不成立を示すfalseが真になるかを判定する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns ブラウザーではBufferとして扱わないため常にfalse
          */
         function isBufferCallback6() {
             return false;
         }) };
     return (/**
-     * 呼び出し元から要求された処理を実行する。
+     * 登録したイベント購読・Object URL・一時状態を処理終了時に解放する。
      */
-    function commentRuleCallback7() { delete runtimeGlobal.Buffer; });
+    function releaseResources7() { delete runtimeGlobal.Buffer; });
 }
 /**
- * waitForPreviewAssetsに必要な処理を実行する。
+ * PDF変換前にプレビュー内の画像とフォントの読み込みが完了するまで待機する。
  *
- * @param previewPages previewPagesとして使用する値
- * @returns 非同期処理の結果
+ * @param previewPages PDFへ変換するプレビューのページ要素一覧
+ * @returns PDF変換前にプレビュー内の画像とフォントの読み込みが完了するまで待機する処理の完了時に解決するPromise
  */
 async function waitForPreviewAssets(previewPages: readonly HTMLElement[]) {
     await document.fonts?.ready;
     const images = previewPages.flatMap((/**
-     * 各要素を変換しながら一つの配列へ展開する。
+     * 各ブラウザー操作と描画確認に使うPlaywrightページを0件以上の結果へ変換し、一つの配列へ展開する。
      *
-     * @param page pageとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+     * @returns 変換元の結果
      */
     function expandItem8(page) {
         return Array.from(page.querySelectorAll("img"));
     }));
     await Promise.all(images.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各表示または編集する画像を処理済みの要素へ変換する。
      *
-     * @param image imageとして使用する値
-     * @returns 非同期処理の結果
+     * @param image 表示または編集する画像
+     * @returns 各表示または編集する画像を処理済みの要素へ変換する処理の完了時に解決するPromise
      */
     async function mapItem9(image) {
         if (image.complete) {
@@ -202,24 +199,22 @@ async function waitForPreviewAssets(previewPages: readonly HTMLElement[]) {
             throw new Error("PDFに使用する画像を読み込めませんでした");
         }
         await new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback10(resolve, reject) {
+        function settlePromise10(resolve, reject) {
             image.addEventListener("load", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「load」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent11() {
                 return resolve();
             }), { once: true });
             image.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent12() {
                 return reject(new Error("PDFに使用する画像を読み込めませんでした"));
@@ -228,22 +223,19 @@ async function waitForPreviewAssets(previewPages: readonly HTMLElement[]) {
     })));
     // Reactの反映と画像デコード後のレイアウトが確定するまで待つ。
     await new Promise<void>((/**
-     * 呼び出し元から要求された処理を実行する。
+     * レイアウト確定後の描画フレームを、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param resolve 非同期処理を正常完了させるPromise関数
      */
-    function commentRuleCallback13(resolve) {
+    function settlePromise13(resolve) {
         return requestAnimationFrame((/**
-         * 次の描画タイミングで画面状態を更新する。
+         * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function handleAnimationFrame14() {
             return requestAnimationFrame((/**
-             * 次の描画タイミングで画面状態を更新する。
+             * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleAnimationFrame15() {
                 return resolve();

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { interpolateScrollPosition, syncProblemScroll } from "./problem-scroll-sync";
 describe("problem scroll sync", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「problem scroll sync」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("問題アンカーの間を補間する", (/**
-     * 期待する振る舞いを検証する。
+     * 「問題アンカーの間を補間する」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         expect(interpolateScrollPosition(250, [
@@ -15,7 +15,7 @@ function defineTestSuite1() {
         ])).toBe(500);
     }));
     it("編集側の問題位置を同じプレビュー問題位置へ合わせる", (/**
-     * 期待する振る舞いを検証する。
+     * 「編集側の問題位置を同じプレビュー問題位置へ合わせる」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const editor = createScrollContainer(1000, 200);
@@ -31,7 +31,7 @@ function defineTestSuite1() {
         expect(preview.scrollTop).toBe(800);
     }));
     it("解答付きでは解答用プレビューのアンカーを使う", (/**
-     * 期待する振る舞いを検証する。
+     * 「解答付きでは解答用プレビューのアンカーを使う」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         const editor = createScrollContainer(800, 200);
@@ -44,11 +44,11 @@ function defineTestSuite1() {
     }));
 }));
 /**
- * createScrollContainerで必要な値を作成する。
+ * Scroll・Containerを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param scrollHeight scrollHeightとして使用する値
- * @param clientHeight clientHeightとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param scrollHeight スクロール領域全体の高さ
+ * @param clientHeight 表示領域として利用できる高さ
+ * @returns 処理対象の要素
  */
 function createScrollContainer(scrollHeight: number, clientHeight: number): HTMLElement {
     const element = document.createElement("div");
@@ -57,11 +57,11 @@ function createScrollContainer(scrollHeight: number, clientHeight: number): HTML
         clientHeight: { configurable: true, value: clientHeight },
     });
     element.getBoundingClientRect = (/**
-     * 呼び出し元から要求された処理を実行する。
+     * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 要素上端の座標・bottom・並び順を比較する左側の値・並び順を比較する右側の値・要素または列へ適用する幅を持つオブジェクト
      */
-    function commentRuleCallback5() {
+    function applyDeferredOperation5() {
         return ({
             top: 10,
             bottom: 10 + clientHeight,
@@ -72,9 +72,7 @@ function createScrollContainer(scrollHeight: number, clientHeight: number): HTML
             x: 0,
             y: 10,
             toJSON: (/**
-             * toJSONの入力値を必要な形式へ変換する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * to・JSONを比較・保存・表示先が要求する形式へ変換する。
              */
             function toJSONCallback6() {
                 return undefined;
@@ -85,13 +83,13 @@ function createScrollContainer(scrollHeight: number, clientHeight: number): HTML
     return element;
 }
 /**
- * addProblemAnchorの対象となる要素を追加する。
+ * 処理対象の要素のdatasetのエディタ・問題・識別子を問題・識別子へ更新する。
  *
- * @param container containerとして使用する値
+ * @param container イベント境界または表示領域となる要素
  * @param problemId 対象を識別するID
- * @param side sideとして使用する値
+ * @param side 計測する要素の上下端
  * @param offset 対象となる位置
- * @param section sectionとして使用する値
+ * @param section 改ページまたは表示の対象となる問題区画
  */
 function addProblemAnchor(container: HTMLElement, problemId: string, side: "editor" | "preview", offset: number, section?: "questions" | "withAnswers") {
     const element = document.createElement("div");
@@ -103,11 +101,11 @@ function addProblemAnchor(container: HTMLElement, problemId: string, side: "edit
             element.dataset.previewSection = section;
     }
     element.getBoundingClientRect = (/**
-     * 呼び出し元から要求された処理を実行する。
+     * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 要素上端の座標・bottom・並び順を比較する左側の値・並び順を比較する右側の値・要素または列へ適用する幅を持つオブジェクト
      */
-    function commentRuleCallback7() {
+    function applyDeferredOperation7() {
         return ({
             top: 10 + offset - container.scrollTop,
             bottom: 20 + offset - container.scrollTop,
@@ -118,9 +116,7 @@ function addProblemAnchor(container: HTMLElement, problemId: string, side: "edit
             x: 0,
             y: 10 + offset - container.scrollTop,
             toJSON: (/**
-             * toJSONの入力値を必要な形式へ変換する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * to・JSONを比較・保存・表示先が要求する形式へ変換する。
              */
             function toJSONCallback8() {
                 return undefined;

@@ -4,9 +4,9 @@ import { createTableBlock } from "./worksheet.defaults";
 import { TableBlockSchema } from "./worksheet.schema";
 import type { TableCell } from "./worksheet";
 /**
- * expectValidに必要な処理を実行する。
+ * expect・Validをto・Beで処理し、その結果を呼び出し元へ反映する。
  *
- * @param table tableとして使用する値
+ * @param table 編集または検証の対象となる表
  */
 function expectValid(table: EditableTableData): void {
     expect(TableBlockSchema.safeParse({
@@ -18,12 +18,12 @@ function expectValid(table: EditableTableData): void {
     }).success).toBe(true);
 }
 /**
- * applyの対象となる状態を更新する。
+ * 適用を現在の編集結果へ反映する。
  *
- * @param table tableとして使用する値
+ * @param table 編集または検証の対象となる表
  * @param cellId 対象を識別するID
- * @param operation operationとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param operation 計測または適用する操作
+ * @returns 結果
  */
 function apply(table: EditableTableData, cellId: string, operation: Parameters<typeof applyTableOperation>[2]) {
     const result = applyTableOperation(table, cellId, operation);
@@ -31,20 +31,20 @@ function apply(table: EditableTableData, cellId: string, operation: Parameters<t
     return result!;
 }
 /**
- * setCellTextの対象となる状態を更新する。
+ * 処理対象の表セルの処理対象のリッチテキスト文書を種別・内容を持つオブジェクトへ更新する。
  *
- * @param cell cellとして使用する値
- * @param text textとして使用する値
+ * @param cell 処理対象の表セル
+ * @param text 文書または画面へ設定する文字列
  */
 function setCellText(cell: TableCell, text: string): void {
     cell.document = { type: "doc", content: [{ type: "paragraph", attrs: { textAlign: "left" }, content: [{ type: "text", text }] }] };
 }
 describe("table operations", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「table operations」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("選択セルを基準に行列を追加・削除し、列幅の合計を100に保つ", (/**
-     * 期待する振る舞いを検証する。
+     * 「選択セルを基準に行列を追加・削除し、列幅の合計を100に保つ」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         const source = createTableBlock(2, 2);
@@ -53,10 +53,10 @@ function defineTestSuite1() {
         table = apply(table, activeId, "insertRowBelow");
         expect(table.rows).toHaveLength(3);
         expect(table.rows.every((/**
-         * すべての要素に求める条件を満たすか判定する。
+         * すべての処理対象の表の行に共通して要求する条件を検証する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 処理対象の表の行のcellsのlengthが2と一致する場合はtrue
          */
         function isMatchingItem3(row) {
             return row.cells.length === 2;
@@ -64,11 +64,11 @@ function defineTestSuite1() {
         table = apply(table, activeId, "insertColumnRight");
         expect(table.columnWidthsPercent).toHaveLength(3);
         expect(table.columnWidthsPercent.reduce((/**
-         * 各要素を一つの集計結果へまとめる。
+         * 現在の幅または件数の累積値を、それまでの集計結果へ重複なく反映する。
          *
-         * @param sum sumとして使用する値
-         * @param width widthとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param sum 幅または件数の累積値
+         * @param width 要素または列へ適用する幅
+         * @returns 幅または件数の累積値を反映した次の累積結果
          */
         function reduceItems4(sum, width) {
             return sum + width;
@@ -81,7 +81,7 @@ function defineTestSuite1() {
         expectValid(table);
     }));
     it("横結合・縦結合で両方の内容を保持し、分割すると左上以外を空セルにする", (/**
-     * 期待する振る舞いを検証する。
+     * 「横結合・縦結合で両方の内容を保持し、分割すると左上以外を空セルにする」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         const source = createTableBlock(2, 2);
@@ -105,10 +105,10 @@ function defineTestSuite1() {
         expectValid(table);
         table = apply(table, topLeft.id, "splitCell");
         expect(table.rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を処理対象の表の行のcellsのlengthへ変換する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 処理対象の表の行のcellsのlength
          */
         function mapItem6(row) {
             return row.cells.length;
@@ -117,17 +117,17 @@ function defineTestSuite1() {
         expect(table.rows[0]!.cells[1]!.document.content[0]).toMatchObject({ type: "paragraph", content: [] });
         expect(table.rows[1]!.cells[0]!.document.content[0]).toMatchObject({ type: "paragraph", content: [] });
         expect(new Set(table.rows.flatMap((/**
-         * 各要素を変換しながら一つの配列へ展開する。
+         * 各処理対象の表の行を0件以上の結果へ変換し、一つの配列へ展開する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 各要素を変換した配列
          */
         function expandItem7(row) {
             return row.cells.map((/**
-             * 各要素を画面表示または別形式へ変換する。
+             * 各処理対象の表セルを処理対象の表セルの対象を一意に特定する識別子へ変換する。
              *
-             * @param cell cellとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param cell 処理対象の表セル
+             * @returns 処理対象の表セルの対象を一意に特定する識別子
              */
             function mapItem8(cell) {
                 return cell.id;
@@ -136,7 +136,7 @@ function defineTestSuite1() {
         expectValid(table);
     }));
     it("別セルの縦結合をまたぐ位置へ行を追加すると結合範囲を拡張する", (/**
-     * 期待する振る舞いを検証する。
+     * 「別セルの縦結合をまたぐ位置へ行を追加すると結合範囲を拡張する」という仕様を操作結果から検証する。
      */
     function runTestCase9() {
         const source = createTableBlock(3, 2);
@@ -146,10 +146,10 @@ function defineTestSuite1() {
         table = apply(table, rightId, "insertRowBelow");
         expect(table.rows).toHaveLength(4);
         expect(table.rows[0]!.cells.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 処理対象の表セルの対象を一意に特定する識別子がleft・Idと一致する最初の要素を検索する。
          *
-         * @param cell cellとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param cell 処理対象の表セル
+         * @returns 処理対象の表セルの対象を一意に特定する識別子がleft・Idと一致する場合はtrue
          */
         function findItem10(cell) {
             return cell.id === leftId;
@@ -159,10 +159,10 @@ function defineTestSuite1() {
         table = apply(table, leftId, "deleteRow");
         expect(table.rows).toHaveLength(3);
         expect(table.rows[0]!.cells.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 処理対象の表セルの対象を一意に特定する識別子がleft・Idと一致する最初の要素を検索する。
          *
-         * @param cell cellとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param cell 処理対象の表セル
+         * @returns 処理対象の表セルの対象を一意に特定する識別子がleft・Idと一致する場合はtrue
          */
         function findItem11(cell) {
             return cell.id === leftId;
@@ -170,7 +170,7 @@ function defineTestSuite1() {
         expectValid(table);
     }));
     it("20行・20列では追加操作を無効にする", (/**
-     * 期待する振る舞いを検証する。
+     * 「20行・20列では追加操作を無効にする」という仕様を操作結果から検証する。
      */
     function runTestCase12() {
         const table = createTableBlock(20, 20);
@@ -181,7 +181,7 @@ function defineTestSuite1() {
         expect(availability.insertColumnRight).toBe(false);
     }));
     it("選択行の高さと選択列の幅を設定し、列幅合計を100に保つ", (/**
-     * 期待する振る舞いを検証する。
+     * 「選択行の高さと選択列の幅を設定し、列幅合計を100に保つ」という仕様を操作結果から検証する。
      */
     function runTestCase13() {
         const source = createTableBlock(2, 3);
@@ -193,11 +193,11 @@ function defineTestSuite1() {
         expect(withWidth?.columnWidthsPercent[1]).toBeCloseTo(30);
         expect(withWidth?.columnWidthsPercent[2]).toBeCloseTo(30);
         expect(withWidth?.columnWidthsPercent.reduce((/**
-         * 各要素を一つの集計結果へまとめる。
+         * 現在の幅または件数の累積値を、それまでの集計結果へ重複なく反映する。
          *
-         * @param sum sumとして使用する値
-         * @param width widthとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param sum 幅または件数の累積値
+         * @param width 要素または列へ適用する幅
+         * @returns 幅または件数の累積値を反映した次の累積結果
          */
         function reduceItems14(sum, width) {
             return sum + width;
@@ -208,7 +208,7 @@ function defineTestSuite1() {
         expectValid(automaticHeight!);
     }));
     it("行を追加・削除しても既存行の高さを保持する", (/**
-     * 期待する振る舞いを検証する。
+     * 「行を追加・削除しても既存行の高さを保持する」という仕様を操作結果から検証する。
      */
     function runTestCase15() {
         const source = createTableBlock(2, 2);
@@ -216,20 +216,20 @@ function defineTestSuite1() {
         const activeId = source.rows[0]!.cells[0]!.id;
         let table = apply(source, activeId, "insertRowBelow");
         expect(table.rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を二つの値を比較した結果へ変換する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 二つの値を比較した結果
          */
         function mapItem16(row) {
             return row.heightMm ?? null;
         }))).toEqual([null, null, 25]);
         table = apply(table, table.rows[1]!.cells[0]!.id, "deleteRow");
         expect(table.rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を二つの値を比較した結果へ変換する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 二つの値を比較した結果
          */
         function mapItem17(row) {
             return row.heightMm ?? null;

@@ -1,9 +1,9 @@
 import { CheckCircle2, X } from "lucide-react";
 /**
- * Toastコンポーネントを表示する。
+ * 処理結果の短い通知と、必要に応じた取消操作を一定時間表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props Toastへ渡す表示情報と操作
+ * @returns Toastを表示するReact要素
  */
 export function Toast(props: {
     message: string;

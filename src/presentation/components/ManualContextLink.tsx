@@ -8,10 +8,10 @@ type ManualContextLinkProps = {
     className?: string;
 };
 /**
- * ManualContextLinkコンポーネントを表示する。
+ * 現在の操作に対応するマニュアル章へのリンクを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・Context・Linkへ渡す表示情報と操作
+ * @returns マニュアル・Context・Linkを表示するReact要素
  */
 export function ManualContextLink(props: ManualContextLinkProps) {
     let { topic, children, variant = "text", className, } = props;

@@ -3,10 +3,10 @@ import type { AssetRecord, Worksheet } from "../../domain/worksheet/worksheet";
 import { createId, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { assertBackupInputSize, BackupSizeLimitError, createArchiveBackup, createSingleBackup, estimateBackupOutputBytes, hydrateBackup, MAX_BACKUP_FILE_BYTES, serializeBackup, } from "./backup";
 /**
- * createAssetで必要な値を作成する。
+ * アセットを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param worksheet worksheetとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @returns 対象を一意に特定する識別子・プリント・Id・画像ファイルのMIME形式・検証または保存するバイナリデータ・要素または列へ適用する幅を持つオブジェクト
  */
 function createAsset(worksheet: Worksheet): AssetRecord {
     return {
@@ -20,10 +20,10 @@ function createAsset(worksheet: Worksheet): AssetRecord {
     };
 }
 /**
- * referenceAssetに必要な処理を実行する。
+ * reference・アセットをpushで処理し、その結果を呼び出し元へ反映する。
  *
- * @param worksheet worksheetとして使用する値
- * @param asset assetとして使用する値
+ * @param worksheet 処理対象となるプリント
+ * @param asset 処理対象の画像アセット
  */
 function referenceAsset(worksheet: Worksheet, asset: AssetRecord): void {
     worksheet.problems[0]!.contents.push({
@@ -36,13 +36,13 @@ function referenceAsset(worksheet: Worksheet, asset: AssetRecord): void {
     });
 }
 describe("backup export", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「backup export」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("個別バックアップから参照されていない余剰Assetを除外する", (/**
-     * 期待する振る舞いを検証する。
+     * 「個別バックアップから参照されていない余剰Assetを除外する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase2() {
         const worksheet = createWorksheet();
@@ -51,19 +51,19 @@ function defineTestSuite1() {
         referenceAsset(worksheet, referencedAsset);
         const backup = await createSingleBackup(worksheet, [unusedAsset, referencedAsset]);
         expect(backup.assets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットの対象を一意に特定する識別子
          */
         function mapItem3(asset) {
             return asset.id;
         }))).toEqual([referencedAsset.id]);
     }));
     it("全体バックアップから余剰Assetとゴミ箱専用Assetを除外する", (/**
-     * 期待する振る舞いを検証する。
+     * 「全体バックアップから余剰Assetとゴミ箱専用Assetを除外する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase4() {
         const activeWorksheet = createWorksheet();
@@ -76,28 +76,28 @@ function defineTestSuite1() {
         referenceAsset(trashedWorksheet, trashedAsset);
         const backup = await createArchiveBackup([activeWorksheet, trashedWorksheet], [unusedAsset, trashedAsset, referencedAsset]);
         expect(backup.worksheets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象となるプリントを処理対象となるプリントの対象を一意に特定する識別子へ変換する。
          *
-         * @param worksheet worksheetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param worksheet 処理対象となるプリント
+         * @returns 処理対象となるプリントの対象を一意に特定する識別子
          */
         function mapItem5(worksheet) {
             return worksheet.id;
         }))).toEqual([activeWorksheet.id]);
         expect(backup.assets.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の画像アセットを処理対象の画像アセットの対象を一意に特定する識別子へ変換する。
          *
-         * @param asset assetとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param asset 処理対象の画像アセット
+         * @returns 処理対象の画像アセットの対象を一意に特定する識別子
          */
         function mapItem6(asset) {
             return asset.id;
         }))).toEqual([referencedAsset.id]);
     }));
     it("exportとimportで同じ100MiB境界を使用する", (/**
-     * 期待する振る舞いを検証する。
+     * 「exportとimportで同じ100MiB境界を使用する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase7() {
         const backup = await createSingleBackup(createWorksheet(), []);
@@ -105,34 +105,34 @@ function defineTestSuite1() {
         const byteLength = new TextEncoder().encode(serialized).byteLength;
         expect(serializeBackup(backup, byteLength)).toBe(serialized);
         expect((/**
-         * expectへ渡す処理を実行する。
+         * expectをserialize・Backupで処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns serialize・Backupの結果
          */
         function expectCallback8() {
             return serializeBackup(backup, byteLength - 1);
         })).toThrow(BackupSizeLimitError);
         expect((/**
-         * expectへ渡す処理を実行する。
+         * expectをassert・Backup・Input・寸法で処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns assert・Backup・Input・寸法の結果
          */
         function expectCallback9() {
             return assertBackupInputSize(MAX_BACKUP_FILE_BYTES);
         })).not.toThrow();
         expect((/**
-         * expectへ渡す処理を実行する。
+         * expectをassert・Backup・Input・寸法で処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns assert・Backup・Input・寸法の結果
          */
         function expectCallback10() {
             return assertBackupInputSize(MAX_BACKUP_FILE_BYTES + 1);
         })).toThrow(BackupSizeLimitError);
     }));
     it("Base64化前の推定値が実際のUTF-8 JSONサイズと一致する", (/**
-     * 期待する振る舞いを検証する。
+     * 「Base64化前の推定値が実際のUTF-8 JSONサイズと一致する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase11() {
         const worksheet = createWorksheet();
@@ -147,9 +147,9 @@ function defineTestSuite1() {
         expect(estimateBackupOutputBytes(metadata, [asset])).toBe(new TextEncoder().encode(serializeBackup(backup)).byteLength);
     }));
     it("推定サイズが100MiBを超える単体・全体exportはBlobをBase64化する前に拒否する", (/**
-     * 期待する振る舞いを検証する。
+     * 「推定サイズが100MiBを超える単体・全体exportはBlobをBase64化する前に拒否する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase12() {
         const worksheet = createWorksheet();
@@ -162,9 +162,9 @@ function defineTestSuite1() {
         expect(arrayBuffer).not.toHaveBeenCalled();
     }));
     it("画像の実体が宣言MIMEと異なるバックアップを保存前に拒否する", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像の実体が宣言MIMEと異なるバックアップを保存前に拒否する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase13() {
         const worksheet = createWorksheet();

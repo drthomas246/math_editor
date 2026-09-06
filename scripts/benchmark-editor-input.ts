@@ -14,36 +14,36 @@ type BenchmarkResult = {
     p95Ms: number;
 };
 /**
- * createBenchmarkWorksheetで必要な値を作成する。
+ * Benchmark・プリントを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 処理対象となるプリント
  */
 function createBenchmarkWorksheet(): Worksheet {
     const worksheet = createWorksheet(new Date("2026-08-21T00:00:00.000Z"));
     worksheet.problems = Array.from({ length: PROBLEM_COUNT }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに処理対象の問題または例題を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param problemIndex problemIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param problemIndex プリント内での問題位置
+     * @returns 処理対象の問題または例題
      */
     function fromCallback1(_, problemIndex) {
         const problem = createProblem();
         problem.contents = Array.from({ length: CONTENTS_PER_PROBLEM }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに処理対象の問題本文または解説を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param _ _として使用する値
-         * @param contentIndex contentIndexとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+         * @param contentIndex 問題内での本文・解説の位置
+         * @returns 処理対象の問題本文または解説
          */
         function fromCallback2(_, contentIndex) {
             const content = createRichTextBlock();
             content.document.content = Array.from({ length: PARAGRAPHS_PER_CONTENT }, (/**
-             * fromへ渡す処理を実行する。
+             * 配列位置ごとに作成または検証する要素種別・ノードへ設定する属性・処理対象の問題本文または解説を持つオブジェクトを生成し、fixtureまたはバイナリの要素として格納する。
              *
-             * @param _ _として使用する値
-             * @param paragraphIndex paragraphIndexとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+             * @param paragraphIndex 文書内での段落位置
+             * @returns 作成または検証する要素種別・ノードへ設定する属性・処理対象の問題本文または解説を持つオブジェクト
              */
             function fromCallback3(_, paragraphIndex) {
                 return ({
@@ -62,10 +62,10 @@ function createBenchmarkWorksheet(): Worksheet {
     return worksheet;
 }
 /**
- * measureで必要な値を取得する。
+ * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
  *
- * @param operation operationとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param operation 計測または適用する操作
+ * @returns 合計・Ms・median・Ms・p95・Msを持つオブジェクト
  */
 function measure(operation: (iteration: number) => void): BenchmarkResult {
     for (let iteration = 0; iteration < WARMUP_ITERATIONS; iteration += 1)
@@ -77,22 +77,22 @@ function measure(operation: (iteration: number) => void): BenchmarkResult {
         durations.push(performance.now() - startedAt);
     }
     const sorted = [...durations].sort((/**
-     * 表示順を決めるため二つの要素を比較する。
+     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
      *
-     * @param left leftとして使用する値
-     * @param right rightとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param left 並び順を比較する左側の値
+     * @param right 並び順を比較する右側の値
+     * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
      */
     function compareItems4(left, right) {
         return left - right;
     }));
     return {
         totalMs: durations.reduce((/**
-         * 各要素を一つの集計結果へまとめる。
+         * 現在の計算途中の累積値を、それまでの集計結果へ重複なく反映する。
          *
-         * @param total totalとして使用する値
-         * @param duration durationとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param total 計算途中の累積値
+         * @param duration 一回の編集操作に要したミリ秒数
+         * @returns 計算途中の累積値を反映した次の累積結果
          */
         function reduceItems5(total, duration) {
             return total + duration;
@@ -102,10 +102,10 @@ function measure(operation: (iteration: number) => void): BenchmarkResult {
     };
 }
 /**
- * updateTargetTextの対象となる状態を更新する。
+ * 処理対象の問題本文または解説の処理対象のリッチテキスト文書の内容を順序を保った要素一覧へ更新する。
  *
- * @param worksheet worksheetとして使用する値
- * @param text textとして使用する値
+ * @param worksheet 処理対象となるプリント
+ * @param text 文書または画面へ設定する文字列
  */
 function updateTargetText(worksheet: Worksheet, text: string): void {
     const content = worksheet.problems[50]?.contents[10];
@@ -120,18 +120,18 @@ function updateTargetText(worksheet: Worksheet, text: string): void {
 const fixture = createBenchmarkWorksheet();
 let legacyWorksheet = structuredClone(fixture);
 const legacy = measure((/**
- * measureへ渡す処理を実行する。
+ * legacy・プリントを編集操作を適用した後のプリントへ更新する。
  *
- * @param iteration iterationとして使用する値
+ * @param iteration ウォームアップまたは本計測の反復番号
  */
 function measureCallback6(iteration) {
     const nextWorksheet = structuredClone(legacyWorksheet);
     updateTargetText(nextWorksheet, `legacy-${iteration}`);
     if (JSON.stringify(legacyWorksheet) !== JSON.stringify(nextWorksheet)) {
         produceWithPatches(legacyWorksheet, (/**
-         * produceWithPatchesへ渡す処理を実行する。
+         * produceWithPatchesが渡す更新対象へ、produce・With・Patchesで定義した変更を反映する。
          *
-         * @param draft draftとして使用する値
+         * @param draft Immerが提供する更新中の状態
          */
         function produceWithPatchesCallback7(draft) {
             Object.assign(draft, nextWorksheet);
@@ -143,31 +143,31 @@ useEditorStore.getState().initialize(structuredClone(fixture));
 const targetProblemId = fixture.problems[50]!.id;
 const targetContentId = fixture.problems[50]!.contents[10]!.id;
 const optimized = measure((/**
- * measureへ渡す処理を実行する。
+ * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
  *
- * @param iteration iterationとして使用する値
+ * @param iteration ウォームアップまたは本計測の反復番号
  */
 function measureCallback8(iteration) {
     useEditorStore.getState().mutate("本文を編集", (/**
-     * mutateへ渡す処理を実行する。
+     * 処理対象の問題本文または解説の処理対象のリッチテキスト文書の内容を順序を保った要素一覧へ更新する。
      *
-     * @param draft draftとして使用する値
+     * @param draft Immerが提供する更新中の状態
      */
     function mutateCallback9(draft) {
         const problem = draft.problems.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が対象・問題・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が対象・問題・Idと一致する場合はtrue
          */
         function findItem10(item) {
             return item.id === targetProblemId;
         }));
         const content = problem?.contents.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 要素の対象を一意に特定する識別子が対象・内容・Idと一致する最初の要素を検索する。
          *
-         * @param item 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param item 配列処理で現在参照している要素
+         * @returns 要素の対象を一意に特定する識別子が対象・内容・Idと一致する場合はtrue
          */
         function findItem11(item) {
             return item.id === targetContentId;

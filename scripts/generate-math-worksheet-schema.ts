@@ -20,9 +20,9 @@ const jsonSchema = {
 const nextContents = `${JSON.stringify(jsonSchema, null, 2)}\n`;
 if (process.argv.includes("--check")) {
     const currentContents = await readFile(outputPath, "utf8").catch((/**
-     * 非同期処理で発生した失敗を処理する。
+     * 非同期処理の失敗を利用者向けのエラー状態または終了コードへ変換する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 「」
      */
     function handleRejectedValue1() {
         return "";

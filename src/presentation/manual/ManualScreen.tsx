@@ -9,9 +9,9 @@ import { ManualNotFound } from "./ManualNotFound";
 import { ManualSearchResults } from "./ManualSearchResults";
 import { ManualSidebar } from "./ManualSidebar";
 /**
- * ManualScreenコンポーネントを表示する。
+ * URLに対応するマニュアル章と検索結果を切り替え、移動後に本文へフォーカスする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns マニュアル・画面を表示するReact要素
  */
 export function ManualScreen() {
     const { chapterSlug } = useParams();
@@ -21,16 +21,16 @@ export function ManualScreen() {
     const deferredQuery = useDeferredValue(query);
     const searchActive = normalizeManualSearchText(query).length > 0;
     const results = useMemo((/**
-     * 依存値から再利用する計算結果を作成する。
+     * 検索・マニュアルの結果を依存値から計算し、次の変更まで再利用する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 依存値が変わるまで再利用する計算済みの派生値
      */
     function calculateMemoizedValue1() {
         return searchManual(deferredQuery);
     }), [deferredQuery]);
     const headingRef = useRef<HTMLHeadingElement>(null);
     useEffect((/**
-     * 外部状態と画面状態を同期する副作用を実行する。
+     * focusとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
      */
     function synchronizeEffect2() {
         if (searchActive)
@@ -41,9 +41,7 @@ export function ManualScreen() {
         // oxlint-disable-next-line react-hooks/exhaustive-deps
     }), [chapterSlug, location.pathname]);
     const clearQuery = (/**
-     * clearQueryの対象となる要素を削除または解放する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * 検索語をユーザー操作または非同期処理の結果に合わせて更新する。
      */
     function clearQueryImplementation3() {
         return setQuery("");

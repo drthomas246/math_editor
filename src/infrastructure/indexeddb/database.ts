@@ -12,9 +12,9 @@ export class MathWorksheetDatabase extends Dexie {
     assets!: EntityTable<AssetRecord, "id">;
     editLocks!: EntityTable<EditLockRecord, "worksheetId">;
     /**
-     * 利用に必要な初期状態を設定する。
+     * 数式・プリント・Databaseの基底クラスを、受け取った初期値で初期化する。
      *
-     * @param name nameとして使用する値
+     * @param name 生成物または計測項目を識別する名前
      */
     constructor(name = "math-worksheet-db") {
         super(name);

@@ -37,44 +37,43 @@ const groups: Array<{
         ] },
 ];
 const formatNumber = (/**
- * formatNumberの入力値を必要な形式へ変換する。
+ * 番号を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・番号で判定または変換する入力値
+ * @returns Stringの結果
  */
 function formatNumberImplementation1(value: number) {
     return String(Math.round(value * 10) / 10);
 });
 /**
- * TableStructureToolbarコンポーネントを表示する。
+ * 表・Structure・Toolbarの情報と操作を、画面へ組み込むReact要素として構成する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 表・Structure・Toolbarへ渡す表示情報と操作
+ * @returns 表・Structure・Toolbarを表示するReact要素
  */
 export function TableStructureToolbar(props: Props) {
     let { availability, onOperation, sizing } = props;
     const sizingKey = `${sizing.rowHeightMm ?? "auto"}:${sizing.columnWidthPercent}:${sizing.canResizeColumn}`;
     return <div className="table-structure-toolbar" role="toolbar" aria-label="表の行・列・セル操作">
     {groups.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各採番または表示をまとめる問題グループを画面表示用のReact要素へ変換する。
          *
-         * @param group groupとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param group 採番または表示をまとめる問題グループ
+         * @returns 画面表示用のReact要素
          */
         function mapItem2(group) {
             return <div className="table-structure-group" key={group.label}>
       <span>{group.label}</span>
       {group.actions.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各実行する編集操作を画面表示用のReact要素へ変換する。
                  *
-                 * @param action actionとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param action 実行する編集操作
+                 * @returns 画面表示用のReact要素
                  */
                 function mapItem3(action) {
                     return <button type="button" key={action.operation} disabled={!availability[action.operation]} aria-label={action.title} title={action.title} onClick={(/**
-                     * onClickで発生した画面イベントを処理する。
+                     * ボタンからクリック操作を受け、on・操作として親コンポーネントへ通知する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
                      */
                     function handleClick4() {
                         return onOperation(action.operation);
@@ -86,17 +85,17 @@ export function TableStructureToolbar(props: Props) {
   </div>;
 }
 /**
- * TableSizingControlsコンポーネントを表示する。
+ * 表・Sizing・Controlsの情報と操作を、画面へ組み込むReact要素として構成する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props 表・Sizing・Controlsへ渡す表示情報と操作
+ * @returns 表・Sizing・Controlsを表示するReact要素
  */
 function TableSizingControls(props: Pick<Props, "sizing">) {
     let { sizing } = props;
     const [rowHeight, setRowHeight] = useState(sizing.rowHeightMm === null ? "" : formatNumber(sizing.rowHeightMm));
     const [columnWidth, setColumnWidth] = useState(formatNumber(sizing.columnWidthPercent));
     const commitRowHeight = (/**
-     * commitRowHeightの対象となる状態を更新する。
+     * commit・行・高さを現在の編集結果へ反映する。
      */
     function commitRowHeightImplementation5() {
         if (!rowHeight.trim()) {
@@ -113,7 +112,7 @@ function TableSizingControls(props: Pick<Props, "sizing">) {
         sizing.onRowHeightChange(next);
     });
     const commitColumnWidth = (/**
-     * commitColumnWidthの対象となる状態を更新する。
+     * commit・列・幅を現在の編集結果へ反映する。
      */
     function commitColumnWidthImplementation6() {
         const value = Number(columnWidth);
@@ -128,36 +127,34 @@ function TableSizingControls(props: Pick<Props, "sizing">) {
     return <div className="table-sizing-group">
       <label className="table-size-control">行高
         <input type="number" min={TABLE_ROW_HEIGHT_MM.min} max={TABLE_ROW_HEIGHT_MM.max} step={1} value={rowHeight} placeholder="自動" aria-label="選択行の高さ（mm）" onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「選択行の高さ（mm）」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange7(event) {
         return setRowHeight(event.target.value);
     })} onBlur={commitRowHeight} onKeyDown={(/**
-     * onKeyDownで発生した画面イベントを処理する。
+     * 「選択行の高さ（mm）」要素のon・キー・Downを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */
     function handleKeyDown8(event) { if (event.key === "Enter")
         event.currentTarget.blur(); })}/><small>mm</small>
         <button type="button" className="table-size-reset" disabled={sizing.rowHeightMm === null} onClick={(/**
-     * onClickで発生した画面イベントを処理する。
+     * 「自動」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick9() { setRowHeight(""); sizing.onRowHeightChange(null); })}>自動</button>
       </label>
       <label className="table-size-control">列幅
         <input type="number" min={TABLE_COLUMN_WIDTH_PERCENT.min} max={TABLE_COLUMN_WIDTH_PERCENT.max} step={1} value={columnWidth} disabled={!sizing.canResizeColumn} aria-label="選択列の幅（%）" onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「選択列の幅（%）」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange10(event) {
         return setColumnWidth(event.target.value);
     })} onBlur={commitColumnWidth} onKeyDown={(/**
-     * onKeyDownで発生した画面イベントを処理する。
+     * 「選択列の幅（%）」要素のon・キー・Downを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
      */

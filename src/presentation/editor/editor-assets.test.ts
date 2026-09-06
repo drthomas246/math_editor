@@ -3,11 +3,11 @@ import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import type { HistoryEntry } from "./editor-store";
 import { collectRetainedAssetIds, pruneAssetUrls } from "./editor-assets";
 describe("editor asset lifecycle", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「editor asset lifecycle」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("現在参照中またはUndo/Redoで復元可能なAssetだけを保持する", (/**
-     * 期待する振る舞いを検証する。
+     * 「現在参照中またはUndo/Redoで復元可能なAssetだけを保持する」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         const worksheet = createWorksheet();
@@ -32,7 +32,7 @@ function defineTestSuite1() {
         expect(collectRetainedAssetIds(worksheet, [])).toEqual(new Set(["current-asset"]));
     }));
     it("履歴から外れたAssetのObject URLを解放する", (/**
-     * 期待する振る舞いを検証する。
+     * 「履歴から外れたAssetのObject URLを解放する」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const current = new Map([

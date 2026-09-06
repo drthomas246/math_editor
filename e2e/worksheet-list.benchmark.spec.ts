@@ -12,11 +12,11 @@ const DEFAULT_SCENARIO_THRESHOLDS = {
 };
 for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
     test(`${scenario.description} × ${scenario.worksheetCount.toLocaleString("ja-JP")}件の一覧性能を計測する`, (/**
-     * 期待する振る舞いを検証する。
+     * 「${scenario.description} × ${scenario.worksheetCount.toLocaleString("ja-JP")}件の一覧性能を計測する」という仕様を操作結果から検証する。
      *
      * @param page Playwrightが提供するブラウザーページ
      * @param testInfo 実行中のテスト情報
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase1({ page }, testInfo) {
         test.setTimeout(300000);
@@ -33,10 +33,10 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
         let seedMs = 0;
         for (let offset = 0; offset < fixtures.length; offset += SEED_BATCH_SIZE) {
             seedMs += await page.evaluate((/**
-             * evaluateへ渡す処理を実行する。
+             * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
              *
-             * @param worksheets worksheetsとして使用する値
-             * @returns 非同期処理の結果
+             * @param worksheets 処理対象となるプリント一覧
+             * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
              */
             async function evaluateCallback2(worksheets) {
                 const startedAt = performance.now();
@@ -44,10 +44,9 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                 const transaction = database.transaction("worksheets", "readwrite");
                 const store = transaction.objectStore("worksheets");
                 worksheets.forEach((/**
-                 * 各要素へ必要な処理を適用する。
+                 * 各処理対象となるプリントについてputを実行し、対応関係または検証状態を更新する。
                  *
-                 * @param worksheet worksheetとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param worksheet 処理対象となるプリント
                  */
                 function processItem3(worksheet) {
                     return store.put(worksheet);
@@ -56,31 +55,29 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                 database.close();
                 return performance.now() - startedAt;
                 /**
-                 * openDatabaseに対応する画面表示を更新する。
+                 * Databaseを取得して利用可能な状態へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns Databaseを外部状態から取得し、利用者が操作できる画面状態へ反映する処理の完了時に解決するPromise
                  */
                 function openDatabase(): Promise<IDBDatabase> {
                     return new Promise((/**
-                     * 呼び出し元から要求された処理を実行する。
+                     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
                      *
-                     * @param resolve resolveとして使用する値
-                     * @param reject rejectとして使用する値
+                     * @param resolve 非同期処理を正常完了させるPromise関数
+                     * @param reject 非同期処理を失敗として終了させるPromise関数
                      */
-                    function commentRuleCallback4(resolve, reject) {
+                    function settlePromise4(resolve, reject) {
                         const request = indexedDB.open("math-worksheet-db");
                         request.addEventListener("success", (/**
-                         * DOMから通知されたイベントを処理する。
+                         * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleDomEvent5() {
                             return resolve(request.result);
                         }), { once: true });
                         request.addEventListener("error", (/**
-                         * DOMから通知されたイベントを処理する。
+                         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleDomEvent6() {
                             return reject(request.error);
@@ -88,39 +85,36 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                     }));
                 }
                 /**
-                 * transactionCompleteに必要な処理を実行する。
+                 * 完了を監視するIndexedDBトランザクションを基にtransaction・Completeを導出する。
                  *
-                 * @param transactionValue transactionValueとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param transactionValue 完了を監視するIndexedDBトランザクション
+                 * @returns 完了を監視するIndexedDBトランザクションを基にtransaction・Completeを導出する処理の完了時に解決するPromise
                  */
                 function transactionComplete(transactionValue: IDBTransaction): Promise<void> {
                     return new Promise((/**
-                     * 呼び出し元から要求された処理を実行する。
+                     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
                      *
-                     * @param resolve resolveとして使用する値
-                     * @param reject rejectとして使用する値
+                     * @param resolve 非同期処理を正常完了させるPromise関数
+                     * @param reject 非同期処理を失敗として終了させるPromise関数
                      */
-                    function commentRuleCallback7(resolve, reject) {
+                    function settlePromise7(resolve, reject) {
                         transactionValue.addEventListener("complete", (/**
-                         * DOMから通知されたイベントを処理する。
+                         * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleDomEvent8() {
                             return resolve();
                         }), { once: true });
                         transactionValue.addEventListener("error", (/**
-                         * DOMから通知されたイベントを処理する。
+                         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleDomEvent9() {
                             return reject(transactionValue.error);
                         }), { once: true });
                         transactionValue.addEventListener("abort", (/**
-                         * DOMから通知されたイベントを処理する。
+                         * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
                          *
-                         * @returns 呼び出し元で使用する処理結果
                          */
                         function handleDomEvent10() {
                             return reject(transactionValue.error);
@@ -130,9 +124,9 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
             }), fixtures.slice(offset, offset + SEED_BATCH_SIZE));
         }
         const repository = await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns 非同期処理の結果
+         * @returns ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す処理の完了時に解決するPromise
          */
         async function evaluateCallback11() {
             const modulePath = "/src/infrastructure/indexeddb/dexie-worksheet-repository.ts";
@@ -148,9 +142,9 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                 heapAfterBytes: readHeapUsed(),
             };
             /**
-             * readHeapUsedで必要な値を取得する。
+             * Heap・Usedを入力データまたは現在の状態から取り出す。
              *
-             * @returns 呼び出し元で使用する処理結果
+             * @returns 条件に応じて選択した値から算出した数値
              */
             function readHeapUsed(): number | null {
                 return "memory" in performance
@@ -190,9 +184,9 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
             repository,
             ui: { firstPageRenderMs, pageChangeMs, searchMs },
             browser: await page.evaluate((/**
-             * evaluateへ渡す処理を実行する。
+             * ブラウザーの対応APIからheap使用量を取得し、未対応時はnullを返す。
              *
-             * @returns 呼び出し元で使用する処理結果
+             * @returns ブラウザー内で取得または計測した値
              */
             function evaluateCallback12() {
                 return ({
@@ -221,11 +215,11 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
     }));
 }
 /**
- * readPositiveNumberで必要な値を取得する。
+ * 環境変数の文字列を正の数として検証し、不正な場合は安全な既定値へ戻す。
  *
- * @param value 処理対象の値
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・Positive・番号で判定または変換する入力値
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 設定値が不正な場合に採用する既定値から算出した数値
  */
 function readPositiveNumber(value: string | undefined, fallback: number): number {
     if (value === undefined)

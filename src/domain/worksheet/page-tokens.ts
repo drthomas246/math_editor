@@ -14,20 +14,20 @@ export const MARGINS_MM: Record<MarginPreset, number> = {
     veryNarrow: 5,
 };
 export const mmToPt = (/**
- * mmToPtに必要な処理を実行する。
+ * ミリメートル値をPDFレイアウトで使うポイント値へ換算する。
  *
- * @param millimeters millimetersとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param millimeters ポイントへ変換するミリメートル値
+  * @returns ポイントへ変換するミリメートル値と72を乗算した値と25.4で除算した値から算出した数値
  */
 function mmToPtImplementation1(millimeters: number): number {
     return millimeters * 72 / 25.4;
 });
 /**
- * getPrintableAreaで必要な値を取得する。
+ * 幅・Mm・ミリメートル単位の高さ・margin・Mmを持つオブジェクトを一つの結果へまとめる。
  *
- * @param size sizeとして使用する値
- * @param margin marginとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param size 適用または検証する寸法
+ * @param margin ページへ適用する余白設定
+ * @returns 幅・Mm・ミリメートル単位の高さ・margin・Mmを持つオブジェクト
  */
 export function getPrintableArea(size: PageSize, margin: MarginPreset) {
     const page = PAGE_SIZES_MM[size];

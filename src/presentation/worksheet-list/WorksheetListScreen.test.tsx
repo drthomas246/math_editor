@@ -9,30 +9,29 @@ import { database } from "../../infrastructure/indexeddb/database";
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
 import { WorksheetListScreen } from "./WorksheetListScreen";
 beforeEach((/**
- * 各テストケースに必要な前提条件を準備する。
+ * 各テストが互いに影響しない初期状態とモックを準備する。
  *
- * @returns 非同期処理の結果
+ * @returns 各テストが互いに影響しない初期状態とモックを準備する処理の完了時に解決するPromise
  */
 async function prepareTestCase1() {
     await database.worksheets.clear();
     await database.assets.clear();
 }));
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 呼び出し元で使用する処理結果
  */
 function cleanUpTestCase2() {
     return vi.restoreAllMocks();
 }));
 describe("WorksheetListScreen", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「WorksheetListScreen」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite3() {
     it("個別JSONを利用者が直接保存できるリンクとして準備する", (/**
-     * 期待する振る舞いを検証する。
+     * 「個別JSONを利用者が直接保存できるリンクとして準備する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase4() {
         const worksheet = createWorksheet();
@@ -47,9 +46,9 @@ function defineTestSuite3() {
         expect(download).toHaveAttribute("download", expect.stringMatching(/^JSON出力テスト_\d{8}-\d{4}\.json$/u));
     }));
     it("全体バックアップを利用者が直接保存できるリンクとして準備する", (/**
-     * 期待する振る舞いを検証する。
+     * 「全体バックアップを利用者が直接保存できるリンクとして準備する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase5() {
         await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
@@ -61,31 +60,30 @@ function defineTestSuite3() {
         expect(download).toHaveAttribute("download", expect.stringMatching(/^math-worksheet-backup-\d{8}-\d{4}\.json$/u));
     }));
     it("全体バックアップ中は操作を無効化して多重実行を防ぐ", (/**
-     * 期待する振る舞いを検証する。
+     * 「全体バックアップ中は操作を無効化して多重実行を防ぐ」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
         let release: (() => void) | undefined;
         const assets = vi.spyOn(database.assets, "bulkGet").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「全体バックアップ中は操作を無効化して多重実行を防ぐ」で外部依存から返すPromiseの新しいインスタンスを固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns Promiseの新しいインスタンス
          */
         function mockImplementationCallback7() {
             return new Promise((/**
-             * 呼び出し元から要求された処理を実行する。
+             * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
              *
-             * @param resolve resolveとして使用する値
+             * @param resolve 非同期処理を正常完了させるPromise関数
              */
-            function commentRuleCallback8(resolve) {
+            function settlePromise8(resolve) {
                 release = (/**
-                 * 呼び出し元から要求された処理を実行する。
+                 * 外部イベントの結果を待機中のPromiseへ通知する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
-                function commentRuleCallback9() {
+                function applyDeferredOperation9() {
                     return resolve([]);
                 });
             })) as ReturnType<typeof database.assets.bulkGet>;
@@ -101,9 +99,9 @@ function defineTestSuite3() {
         expect(await screen.findByRole("link", { name: "JSONをダウンロード" })).toBeInTheDocument();
     }));
     it("全体バックアップの失敗をダイアログ内に表示して再実行できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「全体バックアップの失敗をダイアログ内に表示して再実行できる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase10() {
         await worksheetRepository.create({ worksheet: createWorksheet(), assets: [] });
@@ -115,9 +113,9 @@ function defineTestSuite3() {
         expect(screen.getByRole("button", { name: "全体をエクスポート" })).toBeEnabled();
     }));
     it("全体バックアップは参照されるAssetだけをIndexedDBから取得する", (/**
-     * 期待する振る舞いを検証する。
+     * 「全体バックアップは参照されるAssetだけをIndexedDBから取得する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase11() {
         const worksheet = createWorksheet();
@@ -141,9 +139,9 @@ function defineTestSuite3() {
         expect(bulkGet).toHaveBeenCalledWith([referencedAsset.id]);
     }));
     it("ゴミ箱移動の失敗を捕捉し、ダイアログから再実行できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「ゴミ箱移動の失敗を捕捉し、ダイアログから再実行できる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase12() {
         const worksheet = createWorksheet();
@@ -160,9 +158,9 @@ function defineTestSuite3() {
         expect(trash).toHaveBeenCalledOnce();
     }));
     it("ゴミ箱移動の取り消し失敗を捕捉して再実行できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「ゴミ箱移動の取り消し失敗を捕捉して再実行できる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase13() {
         const worksheet = createWorksheet();
@@ -180,25 +178,25 @@ function defineTestSuite3() {
         expect(restore).toHaveBeenCalledOnce();
     }));
     it("インポート中は操作を無効化してcreateManyの多重実行を防ぐ", (/**
-     * 期待する振る舞いを検証する。
+     * 「インポート中は操作を無効化してcreateManyの多重実行を防ぐ」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase14() {
         const backup = await createSingleBackup(createWorksheet(), []);
         let release: (() => void) | undefined;
         const createMany = vi.spyOn(worksheetRepository, "createMany").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「インポート中は操作を無効化してcreateManyの多重実行を防ぐ」で外部依存から返すPromiseの新しいインスタンスを固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns Promiseの新しいインスタンス
          */
         function mockImplementationCallback15() {
             return new Promise((/**
-             * 呼び出し元から要求された処理を実行する。
+             * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
              *
-             * @param resolve resolveとして使用する値
+             * @param resolve 非同期処理を正常完了させるPromise関数
              */
-            function commentRuleCallback16(resolve) {
+            function settlePromise16(resolve) {
                 release = resolve;
             }));
         }));
@@ -215,9 +213,9 @@ function defineTestSuite3() {
         expect(await screen.findByText("1件をインポートしました")).toBeInTheDocument();
     }));
     it("インポート画像のMIME偽装をcreateMany前に拒否する", (/**
-     * 期待する振る舞いを検証する。
+     * 「インポート画像のMIME偽装をcreateMany前に拒否する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase17() {
         const worksheet = createWorksheet();
@@ -243,9 +241,9 @@ function defineTestSuite3() {
         expect(createMany).not.toHaveBeenCalled();
     }));
     it("プリントの操作メニューを外側の操作で閉じる", (/**
-     * 期待する振る舞いを検証する。
+     * 「プリントの操作メニューを外側の操作で閉じる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase18() {
         const worksheet = createWorksheet();
@@ -259,9 +257,9 @@ function defineTestSuite3() {
         expect(screen.queryByRole("button", { name: "JSONエクスポート" })).not.toBeInTheDocument();
     }));
     it("空状態と主要操作を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「空状態と主要操作を表示する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase19() {
         render(<MemoryRouter><WorksheetListScreen /></MemoryRouter>);
@@ -272,9 +270,9 @@ function defineTestSuite3() {
         expect(screen.getAllByRole("button", { name: /インポート/u }).length).toBeGreaterThan(0);
     }));
     it("正規化した題名検索で一覧を絞り込む", (/**
-     * 期待する振る舞いを検証する。
+     * 「正規化した題名検索で一覧を絞り込む」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase20() {
         const worksheet = createWorksheet();
@@ -285,9 +283,8 @@ function defineTestSuite3() {
         expect(await screen.findByRole("button", { name: "１年Ａ組" })).toBeInTheDocument();
         await userEvent.type(screen.getByRole("textbox", { name: "題名で検索" }), "1年a組");
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「正規化した題名検索で一覧を絞り込む」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback21() {
             return expect(screen.getByRole("button", { name: "１年Ａ組" })).toBeInTheDocument();

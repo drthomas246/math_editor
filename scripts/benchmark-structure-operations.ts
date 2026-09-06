@@ -22,25 +22,25 @@ const duplicateTargetId = fixture199.problems[Math.floor(fixture199.problems.len
 const appendAfterId = fixture199.problems.at(-1)!.id;
 const measurements = {
     addProblemAt199: measure((/**
-     * measureへ渡す処理を実行する。
+     * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns add・問題の結果
      */
     function measureCallback1() {
         return addProblem(fixture199, appendAfterId);
     })),
     duplicateProblemAt199: measure((/**
-     * measureへ渡す処理を実行する。
+     * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns duplicate・問題の結果
      */
     function measureCallback2() {
         return duplicateProblem(fixture199, duplicateTargetId);
     })),
     moveProblemAt200: measure((/**
-     * measureへ渡す処理を実行する。
+     * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns move・問題の結果
      */
     function measureCallback3() {
         return moveProblem(fixture200, middleProblemId, 0);
@@ -71,33 +71,33 @@ if (resultPath) {
 }
 const failures = Object.entries(measurements)
     .filter((/**
- * 対象要素を結果へ残すか判定する。
+ * measurementのp95・MsがMAX・P95・MS以上である要素だけを後続処理へ残す。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput コールバックの呼び出し元から渡される入力情報
+ * @returns measurementのp95・MsがMAX・P95・MS以上である場合はtrue
  */
-function filterItem4(parameter1) {
-    let [, measurement] = parameter1;
+function filterItem4(callbackInput) {
+    let [, measurement] = callbackInput;
     return measurement.p95Ms >= MAX_P95_MS;
 }))
     .map((/**
- * 各要素を画面表示または別形式へ変換する。
+ * 各生成物または計測項目を識別する名前とmeasurementの組を画面表示またはレポート用の文字列へ変換する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput コールバックの呼び出し元から渡される入力情報
+ * @returns 画面表示またはレポート用の文字列
  */
-function mapItem5(parameter1) {
-    let [name, measurement] = parameter1;
+function mapItem5(callbackInput) {
+    let [name, measurement] = callbackInput;
     return `${name}: ${measurement.p95Ms.toFixed(1)}ms`;
 }));
 if (failures.length > 0) {
     throw new Error(`構造操作のp95が${MAX_P95_MS}ms以上です: ${failures.join(", ")}`);
 }
 /**
- * measureで必要な値を取得する。
+ * 対象操作をウォームアップ後に繰り返し実行し、代表値とp95処理時間を算出する。
  *
- * @param operation operationとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param operation 計測または適用する操作
+ * @returns durations・Ms・median・Ms・p95・Ms・max・Ms・heap・Delta・Bytesを持つオブジェクト
  */
 function measure(operation: () => WorksheetCommandResult): Measurement {
     for (let iteration = 0; iteration < WARMUP_ITERATIONS; iteration += 1) {
@@ -113,11 +113,11 @@ function measure(operation: () => WorksheetCommandResult): Measurement {
     }
     collectGarbage();
     const sorted = [...durationsMs].sort((/**
-     * 表示順を決めるため二つの要素を比較する。
+     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
      *
-     * @param left leftとして使用する値
-     * @param right rightとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param left 並び順を比較する左側の値
+     * @param right 並び順を比較する右側の値
+     * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
      */
     function compareItems6(left, right) {
         return left - right;
@@ -131,10 +131,10 @@ function measure(operation: () => WorksheetCommandResult): Measurement {
     };
 }
 /**
- * assertSuccessfulResultに必要な処理を実行する。
+ * assert・Successful・結果が永続化・表示・テストの制約を満たすか検証する。
  *
  * @param result 処理によって得られた結果
- * @returns 呼び出し元で使用する処理結果
+ * @returns 結果の処理対象となるプリント
  */
 function assertSuccessfulResult(result: WorksheetCommandResult): Worksheet {
     if (!result.ok)
@@ -145,17 +145,18 @@ function assertSuccessfulResult(result: WorksheetCommandResult): Worksheet {
     return result.worksheet;
 }
 /**
- * percentileに必要な処理を実行する。
+ * percentileをmaxで処理し、その結果を呼び出し元へ反映する。
  *
- * @param sortedValues sortedValuesとして使用する値
- * @param ratio ratioとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param sortedValues 昇順に並べた計測値一覧
+ * @param ratio 幅や高さへ適用する倍率
+ * percentileをmaxで処理し、その結果を呼び出し元へ反映する。
+  * @returns 二つの値を比較した結果から算出した数値
  */
 function percentile(sortedValues: readonly number[], ratio: number): number {
     return sortedValues[Math.max(0, Math.ceil(sortedValues.length * ratio) - 1)] ?? 0;
 }
 /**
- * collectGarbageで必要な値を取得する。
+ * Garbageを入力データまたは現在の状態から取り出す。
  */
 function collectGarbage(): void {
     const gc = (globalThis as typeof globalThis & {
@@ -164,11 +165,11 @@ function collectGarbage(): void {
     gc?.();
 }
 /**
- * readPositiveNumberで必要な値を取得する。
+ * 環境変数の文字列を正の数として検証し、不正な場合は安全な既定値へ戻す。
  *
- * @param value 処理対象の値
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・Positive・番号で判定または変換する入力値
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 設定値が不正な場合に採用する既定値から算出した数値
  */
 function readPositiveNumber(value: string | undefined, fallback: number): number {
     if (value === undefined)

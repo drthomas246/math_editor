@@ -11,11 +11,11 @@ const CACHE_LIMIT = 2000;
 const markupCache = new Map<string, string>();
 const ariaLabelCache = new Map<string, string>();
 /**
- * renderMathMarkupに対応する画面表示を更新する。
+ * 数式・Markupの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param latex latexとして使用する値
- * @param block blockとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param latex 描画または保存するLaTeX式
+ * @param block 処理対象のリッチテキストブロック
+ * @returns cachedとして得た文字列。変換できない場合は関数固有の既定値
  */
 export function renderMathMarkup(latex: string, block: boolean): string {
     const key = `${block ? "block" : "inline"}:${latex}`;
@@ -35,10 +35,10 @@ export function renderMathMarkup(latex: string, block: boolean): string {
     }
 }
 /**
- * getMathAriaLabelで必要な値を取得する。
+ * 数式・Aria・表示名を入力データまたは現在の状態から取り出す。
  *
- * @param latex latexとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param latex 描画または保存するLaTeX式
+ * @returns cachedとして得た文字列。変換できない場合は関数固有の既定値
  */
 export function getMathAriaLabel(latex: string): string {
     const cached = ariaLabelCache.get(latex);
@@ -54,13 +54,13 @@ export function getMathAriaLabel(latex: string): string {
     }
 }
 export const MathFormula = memo((/**
- * MathFormulaコンポーネントを表示する。
+ * LaTeX式をMathLiveで静的描画し、読み上げ用ラベルと描画キャッシュを適用する。
  *
- * @param parameter1 parameter1として使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param callbackInput let・{・latex・ブロック・=・false・テキスト・寸法・=・"normal"・class・名前・=・""をまとめて受け取るコールバック入力
+ * @returns 数式・Formulaを表示するReact要素
  */
-function MathFormula(parameter1: Props) {
-    let { latex, block = false, textSize = "normal", className = "" } = parameter1;
+function MathFormula(callbackInput: Props) {
+    let { latex, block = false, textSize = "normal", className = "" } = callbackInput;
     const markup = renderMathMarkup(latex, block);
     const Tag = block ? "div" : "span";
     const classes = ["math-formula", block ? "math-formula-block" : "math-formula-inline", `math-size-${textSize}`, className]
@@ -72,11 +72,11 @@ function MathFormula(parameter1: Props) {
     return <Tag className={classes} role="math" aria-label={getMathAriaLabel(latex)} dangerouslySetInnerHTML={{ __html: markup }}/>;
 }));
 /**
- * cacheValueに必要な処理を実行する。
+ * cache・値を適用候補となる次の値で処理し、その結果を呼び出し元へ反映する。
  *
- * @param cache cacheとして使用する値
- * @param key keyとして使用する値
- * @param value 処理対象の値
+ * @param cache 再利用する計算結果のキャッシュ
+ * @param key 保存先または要素を特定するキー
+ * @param value cache・値で判定または変換する入力値
  */
 function cacheValue(cache: Map<string, string>, key: string, value: string): void {
     if (cache.size >= CACHE_LIMIT) {

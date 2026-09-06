@@ -8,16 +8,16 @@ type ManualHeaderProps = {
     onClearQuery: () => void;
 };
 /**
- * ManualHeaderコンポーネントを表示する。
+ * マニュアル検索欄・検索解除・アプリへ戻る操作を表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・ヘッダーへ渡す表示情報と操作
+ * @returns マニュアル・ヘッダーを表示するReact要素
  */
 export function ManualHeader(props: ManualHeaderProps) {
     let { query, resultCount, onQueryChange, onClearQuery } = props;
     const inputRef = useRef<HTMLInputElement>(null);
     const handleKeyDown = (/**
-     * handleKeyDownに対応するイベントまたは通知を処理する。
+     * キー・Downの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
      *
      * @param event 発生したイベント
      */
@@ -39,10 +39,9 @@ export function ManualHeader(props: ManualHeaderProps) {
         <label className="manual-search">
           <Search size={17}/>
           <input ref={inputRef} value={query} onChange={(/**
-     * onChangeで発生した画面イベントを処理する。
+     * 「マニュアルを検索」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
      *
      * @param event 発生したイベント
-     * @returns 呼び出し元で使用する処理結果
      */
     function handleChange2(event) {
         return onQueryChange(event.target.value);

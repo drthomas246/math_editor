@@ -1,8 +1,8 @@
 import type { AnswerAreaBlock, BasicRichTextDocument, BoxBlock, ContentBlock, GoalBlock, PageBreakBlock, ProblemBlock, RichTextBlock, SpacerBlock, SubQuestion, SubQuestionGroupBlock, TableBlock, TableCell, TableRow, Worksheet, } from "./worksheet";
 export const createId = (/**
- * createIdで必要な値を作成する。
+ * Idを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function createIdImplementation1(): string {
     return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -10,9 +10,9 @@ function createIdImplementation1(): string {
         : `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 });
 export const emptyDocument = (/**
- * emptyDocumentに必要な処理を実行する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function emptyDocumentImplementation2(): BasicRichTextDocument {
     return ({
@@ -27,9 +27,9 @@ function emptyDocumentImplementation2(): BasicRichTextDocument {
     });
 });
 export const emptySolutionDocument = (/**
- * emptySolutionDocumentに必要な処理を実行する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function emptySolutionDocumentImplementation3() {
     return ({
@@ -44,9 +44,9 @@ function emptySolutionDocumentImplementation3() {
     });
 });
 export const createRichTextBlock = (/**
- * createRichTextBlockで必要な値を作成する。
+ * リッチ・テキスト・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・処理対象のリッチテキスト文書・解答・文書を持つオブジェクト
  */
 function createRichTextBlockImplementation4(): RichTextBlock {
     return ({
@@ -57,9 +57,9 @@ function createRichTextBlockImplementation4(): RichTextBlock {
     });
 });
 export const createProblem = (/**
- * createProblemで必要な値を作成する。
+ * 問題を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・問題または例題の種別・numbering・検証または変換するファイル内容を持つオブジェクト
  */
 function createProblemImplementation5(): ProblemBlock {
     return ({
@@ -74,10 +74,10 @@ function createProblemImplementation5(): ProblemBlock {
     });
 });
 export const createWorksheet = (/**
- * createWorksheetで必要な値を作成する。
+ * プリントを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param now nowとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param now 作成日時と更新日時へ記録する基準時刻
+ * @returns schema・Version・対象を一意に特定する識別子・プリントまたはテストへ設定する題名・用紙サイズと余白を含むページ設定・プリントへ適用するヘッダー設定を持つオブジェクト
  */
 function createWorksheetImplementation6(now = new Date()): Worksheet {
     const timestamp = now.toISOString();
@@ -108,9 +108,9 @@ function createWorksheetImplementation6(now = new Date()): Worksheet {
     };
 });
 export const createBoxBlock = (/**
- * createBoxBlockで必要な値を作成する。
+ * Box・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・プリントまたはテストへ設定する題名・preset・処理対象のリッチテキスト文書を持つオブジェクト
  */
 function createBoxBlockImplementation7(): BoxBlock {
     return ({
@@ -123,9 +123,9 @@ function createBoxBlockImplementation7(): BoxBlock {
     });
 });
 export const createGoalBlock = (/**
- * createGoalBlockで必要な値を作成する。
+ * Goal・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・処理対象のリッチテキスト文書を持つオブジェクト
  */
 function createGoalBlockImplementation8(): GoalBlock {
     return ({
@@ -135,9 +135,9 @@ function createGoalBlockImplementation8(): GoalBlock {
     });
 });
 export const createAnswerAreaBlock = (/**
- * createAnswerAreaBlockで必要な値を作成する。
+ * 解答・Area・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・解答欄の表示領域を持つオブジェクト
  */
 function createAnswerAreaBlockImplementation9(): AnswerAreaBlock {
     return ({
@@ -152,9 +152,9 @@ function createAnswerAreaBlockImplementation9(): AnswerAreaBlock {
     });
 });
 export const createSpacerBlock = (/**
- * createSpacerBlockで必要な値を作成する。
+ * Spacer・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・作成または検証する表の行数・行一覧を持つオブジェクト
  */
 function createSpacerBlockImplementation10(): SpacerBlock {
     return ({
@@ -164,9 +164,9 @@ function createSpacerBlockImplementation10(): SpacerBlock {
     });
 });
 export const createPageBreakBlock = (/**
- * createPageBreakBlockで必要な値を作成する。
+ * ページ・Break・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別を持つオブジェクト
  */
 function createPageBreakBlockImplementation11(): PageBreakBlock {
     return ({
@@ -175,9 +175,9 @@ function createPageBreakBlockImplementation11(): PageBreakBlock {
     });
 });
 export const createSubQuestion = (/**
- * createSubQuestionで必要な値を作成する。
+ * Sub・Questionを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・numbering・処理対象の問題本文または解説・解答・内容・解答欄の表示領域を持つオブジェクト
  */
 function createSubQuestionImplementation12(): SubQuestion {
     return ({
@@ -196,9 +196,9 @@ function createSubQuestionImplementation12(): SubQuestion {
     });
 });
 export const createSubQuestionGroup = (/**
- * createSubQuestionGroupで必要な値を作成する。
+ * Sub・Question・グループを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・numbering・作成する表の列数・itemsを持つオブジェクト
  */
 function createSubQuestionGroupImplementation13(): SubQuestionGroupBlock {
     return ({
@@ -210,10 +210,10 @@ function createSubQuestionGroupImplementation13(): SubQuestionGroupBlock {
     });
 });
 const createCell = (/**
- * createCellで必要な値を作成する。
+ * セルを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param text textとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param text 文書または画面へ設定する文字列
+ * @returns 対象を一意に特定する識別子・処理対象のリッチテキスト文書・行・Span・列・Spanを持つオブジェクト
  */
 function createCellImplementation14(text = ""): TableCell {
     return ({
@@ -233,30 +233,30 @@ function createCellImplementation14(text = ""): TableCell {
     });
 });
 export const createTableBlock = (/**
- * createTableBlockで必要な値を作成する。
+ * 表・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param rows rowsとして使用する値
- * @param columns columnsとして使用する値
- * @param template templateとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param rows 作成または検証する表の行数・行一覧
+ * @param columns 作成する表の列数
+ * @param template 新しい問題へ適用する初期テンプレート
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・作成または検証する表の行数・行一覧・列・Widths・Percent・ヘッダー・行を持つオブジェクト
  */
 function createTableBlockImplementation15(rows = 3, columns = 4, template: "general" | "function" | "frequency" = "general"): TableBlock {
     const rowValues: TableRow[] = Array.from({ length: rows }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとに対象を一意に特定する識別子・cellsを持つオブジェクトを生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
-     * @param rowIndex rowIndexとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+     * @param rowIndex 表内での行位置
+     * @returns 対象を一意に特定する識別子・cellsを持つオブジェクト
      */
     function fromCallback16(_, rowIndex) {
         return ({
             id: createId(),
             cells: Array.from({ length: columns }, (/**
-             * fromへ渡す処理を実行する。
+             * 配列位置ごとにcreate・セルの結果を生成し、fixtureまたはバイナリの要素として格納する。
              *
-             * @param _ _として使用する値
-             * @param columnIndex columnIndexとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
+             * @param columnIndex 表内での列位置
+             * @returns create・セルの結果
              */
             function fromCallback17(_, columnIndex) {
                 if (template === "function" && columnIndex === 0) {
@@ -274,9 +274,9 @@ function createTableBlockImplementation15(rows = 3, columns = 4, template: "gene
         type: "table",
         rows: rowValues,
         columnWidthsPercent: Array.from({ length: columns }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに100と作成する表の列数で除算した値を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 100と作成する表の列数で除算した値
          */
         function fromCallback18() {
             return 100 / columns;
@@ -285,10 +285,10 @@ function createTableBlockImplementation15(rows = 3, columns = 4, template: "gene
     };
 });
 export const createContentBlock = (/**
- * createContentBlockで必要な値を作成する。
+ * 内容・ブロックを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param type typeとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param type 作成または検証する要素種別
+ * @returns create・リッチ・テキスト・ブロックの結果
  */
 function createContentBlockImplementation19(type: ContentBlock["type"]): ContentBlock {
     switch (type) {

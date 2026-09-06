@@ -4,18 +4,18 @@ import { fileURLToPath } from "node:url";
 import { AssetRecordSchema, MathWorksheetArchiveSchema, MathWorksheetFileSchema, TableCellRichTextDocumentSchema, WorksheetSchema, } from "../src/domain/worksheet/worksheet.schema";
 const timestamp = "2026-08-09T10:00:00+09:00";
 const emptyDocument = (/**
- * emptyDocumentに必要な処理を実行する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 function emptyDocumentImplementation1() {
     return ({ type: "doc", content: [] });
 });
 const createProblem = (/**
- * createProblemで必要な値を作成する。
+ * 問題を識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
  * @param id 対象を識別するID
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・numbering・検証または変換するファイル内容・solutionを持つオブジェクト
  */
 function createProblemImplementation2(id: string) {
     return ({
@@ -29,11 +29,11 @@ function createProblemImplementation2(id: string) {
     });
 });
 const createWorksheet = (/**
- * createWorksheetで必要な値を作成する。
+ * プリントを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
  * @param id 対象を識別するID
- * @param title titleとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param title プリントまたはテストへ設定する題名
+ * @returns schema・Version・対象を一意に特定する識別子・プリントまたはテストへ設定する題名・用紙サイズと余白を含むページ設定・プリントへ適用するヘッダー設定を持つオブジェクト
  */
 function createWorksheetImplementation3(id: string, title = `プリント ${id}`) {
     return ({
@@ -97,20 +97,20 @@ const validFile = {
     ],
 } as const;
 /**
- * expectValidに必要な処理を実行する。
+ * expect・Validをsafe・Parseで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @param message messageとして使用する値
+ * @param value expect・Validで判定または変換する入力値
+ * @param message 失敗時に表示する説明
  */
 function expectValid(value: unknown, message: string): void {
     const result = MathWorksheetFileSchema.safeParse(value);
     assert.equal(result.success, true, result.success ? message : `${message}: ${result.error.message}`);
 }
 /**
- * expectInvalidに必要な処理を実行する。
+ * expect・Invalidをequalで処理し、その結果を呼び出し元へ反映する。
  *
- * @param value 処理対象の値
- * @param message messageとして使用する値
+ * @param value expect・Invalidで判定または変換する入力値
+ * @param message 失敗時に表示する説明
  */
 function expectInvalid(value: unknown, message: string): void {
     assert.equal(MathWorksheetFileSchema.safeParse(value).success, false, message);
@@ -426,11 +426,11 @@ noProblemsFile.assets = [];
 expectInvalid(noProblemsFile, "0問のWorksheetを拒否する必要がある");
 const problemLimitWorksheet = createWorksheet("worksheet-problem-limit");
 problemLimitWorksheet.problems = Array.from({ length: 200 }, (/**
- * fromへ渡す処理を実行する。
+ * 配列位置ごとにcreate・問題の結果を生成し、fixtureまたはバイナリの要素として格納する。
  *
- * @param _ _として使用する値
+ * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
  * @param index 対象となる位置
- * @returns 呼び出し元で使用する処理結果
+ * @returns create・問題の結果
  */
 function fromCallback4(_, index) {
     return createProblem(`problem-${index + 1}`);
@@ -447,11 +447,11 @@ const contentLimitFile = {
     assets: [],
 } as Record<string, any>;
 contentLimitFile.worksheet.problems[0].contents = Array.from({ length: 100 }, (/**
- * fromへ渡す処理を実行する。
+ * 配列位置ごとに対象を一意に特定する識別子・作成または検証する要素種別・作成または検証する表の行数・行一覧を持つオブジェクトを生成し、fixtureまたはバイナリの要素として格納する。
  *
- * @param _ _として使用する値
+ * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
  * @param index 対象となる位置
- * @returns 呼び出し元で使用する処理結果
+ * @returns 対象を一意に特定する識別子・作成または検証する要素種別・作成または検証する表の行数・行一覧を持つオブジェクト
  */
 function fromCallback5(_, index) {
     return ({
@@ -482,11 +482,11 @@ subQuestionLimitFile.worksheet.problems[0].contents = [
         numbering: { format: "paren" },
         columns: 2,
         items: Array.from({ length: 100 }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに対象を一意に特定する識別子・処理対象の問題本文または解説・解答欄の表示領域・solution・要素または列へ適用する幅を持つオブジェクトを生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param _ _として使用する値
+         * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 対象を一意に特定する識別子・処理対象の問題本文または解説・解答欄の表示領域・solution・要素または列へ適用する幅を持つオブジェクト
          */
         function fromCallback6(_, index) {
             return ({
@@ -542,9 +542,9 @@ mergedTableFile.worksheet.problems[0].contents = [
 ];
 expectValid(mergedTableFile, "20×20以内の結合表を受理する必要がある");
 mergedTableFile.worksheet.problems[0].contents[0].columnWidthsPercent = Array.from({ length: 21 }, (/**
- * fromへ渡す処理を実行する。
+ * 配列位置ごとに100と21で除算した値を生成し、fixtureまたはバイナリの要素として格納する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 100と21で除算した値
  */
 function fromCallback7() {
     return 100 / 21;
@@ -572,11 +572,11 @@ const archiveAtLimit = {
     version: 1,
     exportedAt: timestamp,
     worksheets: Array.from({ length: 2000 }, (/**
-     * fromへ渡す処理を実行する。
+     * 配列位置ごとにcreate・プリントの結果を生成し、fixtureまたはバイナリの要素として格納する。
      *
-     * @param _ _として使用する値
+     * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
      * @param index 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns create・プリントの結果
      */
     function fromCallback8(_, index) {
         return createWorksheet(`archive-worksheet-${index + 1}`);

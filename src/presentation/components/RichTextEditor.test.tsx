@@ -7,13 +7,13 @@ import "../../styles.css";
 import { RichTextEditor } from "./RichTextEditor";
 import { normalizeEditorDocument } from "./rich-text-editor-extensions";
 describe("RichTextEditor", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「RichTextEditor」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("1つの文章欄で入力色を切り替え、解答色を文字のmarkとして保存する", (/**
-     * 期待する振る舞いを検証する。
+     * 「1つの文章欄で入力色を切り替え、解答色を文字のmarkとして保存する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase2() {
         const user = userEvent.setup();
@@ -36,7 +36,7 @@ function defineTestSuite1() {
         expect(onTable).toHaveBeenCalledWith("answer");
     }));
     it("斜体字形を持たない日本語フォントでも斜体を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「斜体字形を持たない日本語フォントでも斜体を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const italicDocument: BasicRichTextDocument = {
@@ -57,12 +57,12 @@ function defineTestSuite1() {
         ["箇条書き", "ul"],
         ["番号付きリスト", "ol"],
     ])("%sへ切り替えても末尾に削除不能な空の入力行を追加しない", (/**
-     * 呼び出し元から要求された処理を実行する。
+     * Parameterized・Caseが永続化・表示・テストの制約を満たすか検証する。
      *
-     * @param buttonName buttonNameとして使用する値
-     * @param listSelector listSelectorとして使用する値
+     * @param buttonName 操作対象のツールバーボタン名
+     * @param listSelector 対象リストを取得するCSSセレクター
      */
-    function commentRuleCallback4(buttonName, listSelector) {
+    function verifyParameterizedCase4(buttonName, listSelector) {
         const document: BasicRichTextDocument = {
             type: "doc",
             content: [{ type: "paragraph", attrs: { textAlign: "left" }, content: [] }],
@@ -74,7 +74,7 @@ function defineTestSuite1() {
         expect(editorContent.querySelectorAll(":scope > p")).toHaveLength(0);
     }));
     it("LaTeXを文字列へ潰さず行内・独立数式として描画する", (/**
-     * 期待する振る舞いを検証する。
+     * 「LaTeXを文字列へ潰さず行内・独立数式として描画する」という仕様を操作結果から検証する。
      */
     function runTestCase5() {
         const mathDocument: BasicRichTextDocument = {
@@ -104,7 +104,7 @@ function defineTestSuite1() {
         expect(blockMath?.querySelector(".ML__latex")).not.toBeNull();
     }));
     it("挿入済みの数式を開き直して内容と文字サイズを変更する", (/**
-     * 期待する振る舞いを検証する。
+     * 「挿入済みの数式を開き直して内容と文字サイズを変更する」という仕様を操作結果から検証する。
      */
     function runTestCase6() {
         const mathDocument: BasicRichTextDocument = {
@@ -144,7 +144,7 @@ function defineTestSuite1() {
         expect(view.queryByRole("dialog", { name: "数式を編集" })).not.toBeInTheDocument();
     }));
     it("TipTapのJSONを保存スキーマへ正規化して数式を保持する", (/**
-     * 期待する振る舞いを検証する。
+     * 「TipTapのJSONを保存スキーマへ正規化して数式を保持する」という仕様を操作結果から検証する。
      */
     function runTestCase7() {
         expect(normalizeEditorDocument({
@@ -162,7 +162,7 @@ function defineTestSuite1() {
         });
     }));
     it("行内数式をカーソル位置の段落内へ前後の半角スペース付きで挿入する", (/**
-     * 期待する振る舞いを検証する。
+     * 「行内数式をカーソル位置の段落内へ前後の半角スペース付きで挿入する」という仕様を操作結果から検証する。
      */
     function runTestCase8() {
         const document: BasicRichTextDocument = {
@@ -187,7 +187,7 @@ function defineTestSuite1() {
         });
     }));
     it("本文内の表は選択中のセルだけをWYSIWYG化し、ほかのセルは完成形で表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「本文内の表は選択中のセルだけをWYSIWYG化し、ほかのセルは完成形で表示する」という仕様を操作結果から検証する。
      */
     function runTestCase9() {
         const imageId = crypto.randomUUID();
@@ -239,10 +239,10 @@ function defineTestSuite1() {
         fireEvent.click(view.getByRole("button", { name: "挿入" }));
         const mathDocument = onChange.mock.lastCall?.[0] as BasicRichTextDocument;
         const updatedTable = mathDocument.content.find((/**
-         * 検索条件に一致する要素か判定する。
+         * ノードの作成または検証する要素種別が「richTable」と一致する最初の要素を検索する。
          *
-         * @param node 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @returns ノードの作成または検証する要素種別が「richTable」と一致する場合はtrue
          */
         function findItem10(node) {
             return node.type === "richTable";
@@ -270,7 +270,7 @@ function defineTestSuite1() {
         expect(normalizeEditorDocument(document as JSONContent)).toEqual(document);
     }));
     it("小問本文内の表でセルを選び、横結合してから分割できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「小問本文内の表でセルを選び、横結合してから分割できる」という仕様を操作結果から検証する。
      */
     function runTestCase11() {
         const firstCellId = crypto.randomUUID();
@@ -284,11 +284,11 @@ function defineTestSuite1() {
                         rows: [{
                                 id: crypto.randomUUID(),
                                 cells: [firstCellId, secondCellId].map((/**
-                                 * 各要素を画面表示または別形式へ変換する。
+                                 * 各対象を一意に特定する識別子を対象を一意に特定する識別子・処理対象のリッチテキスト文書・行・Span・列・Spanを持つオブジェクトへ変換する。
                                  *
                                  * @param id 対象を識別するID
                                  * @param index 対象となる位置
-                                 * @returns 呼び出し元で使用する処理結果
+                                 * @returns 対象を一意に特定する識別子・処理対象のリッチテキスト文書・行・Span・列・Spanを持つオブジェクト
                                  */
                                 function mapItem12(id, index) {
                                     return ({
@@ -313,10 +313,10 @@ function defineTestSuite1() {
         fireEvent.blur(rowHeight);
         const heightDocument = onChange.mock.lastCall?.[0] as BasicRichTextDocument;
         const heightTable = heightDocument.content.find((/**
-         * 検索条件に一致する要素か判定する。
+         * ノードの作成または検証する要素種別が「richTable」と一致する最初の要素を検索する。
          *
-         * @param node 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @returns ノードの作成または検証する要素種別が「richTable」と一致する場合はtrue
          */
         function findItem13(node) {
             return node.type === "richTable";
@@ -328,10 +328,10 @@ function defineTestSuite1() {
         fireEvent.blur(columnWidth);
         const widthDocument = onChange.mock.lastCall?.[0] as BasicRichTextDocument;
         const widthTable = widthDocument.content.find((/**
-         * 検索条件に一致する要素か判定する。
+         * ノードの作成または検証する要素種別が「richTable」と一致する最初の要素を検索する。
          *
-         * @param node 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @returns ノードの作成または検証する要素種別が「richTable」と一致する場合はtrue
          */
         function findItem14(node) {
             return node.type === "richTable";
@@ -341,10 +341,10 @@ function defineTestSuite1() {
         fireEvent.click(view.getByRole("button", { name: "右のセルと横結合" }));
         const mergedDocument = onChange.mock.lastCall?.[0] as BasicRichTextDocument;
         const mergedTable = mergedDocument.content.find((/**
-         * 検索条件に一致する要素か判定する。
+         * ノードの作成または検証する要素種別が「richTable」と一致する最初の要素を検索する。
          *
-         * @param node 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @returns ノードの作成または検証する要素種別が「richTable」と一致する場合はtrue
          */
         function findItem15(node) {
             return node.type === "richTable";
@@ -358,10 +358,10 @@ function defineTestSuite1() {
         fireEvent.click(view.getByRole("button", { name: "結合セルを分割" }));
         const splitDocument = onChange.mock.lastCall?.[0] as BasicRichTextDocument;
         const splitTable = splitDocument.content.find((/**
-         * 検索条件に一致する要素か判定する。
+         * ノードの作成または検証する要素種別が「richTable」と一致する最初の要素を検索する。
          *
-         * @param node 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param node 走査または変換するリッチテキストノード
+         * @returns ノードの作成または検証する要素種別が「richTable」と一致する場合はtrue
          */
         function findItem16(node) {
             return node.type === "richTable";
@@ -369,7 +369,7 @@ function defineTestSuite1() {
         expect(splitTable?.type === "richTable" ? splitTable.attrs.rows[0]?.cells : null).toHaveLength(2);
     }));
     it("表セル用エディターはカーソル位置へ行内数式だけを挿入する", (/**
-     * 期待する振る舞いを検証する。
+     * 「表セル用エディターはカーソル位置へ行内数式だけを挿入する」という仕様を操作結果から検証する。
      */
     function runTestCase17() {
         const document: BasicRichTextDocument = {
@@ -396,7 +396,7 @@ function defineTestSuite1() {
         });
     }));
     it("画像URLの追加時に破棄済みエディターへアクセスしない", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像URLの追加時に破棄済みエディターへアクセスしない」という仕様を操作結果から検証する。
      */
     function runTestCase18() {
         const imageId = crypto.randomUUID();
@@ -412,9 +412,9 @@ function defineTestSuite1() {
         const editorElement = view.container.querySelector(".ProseMirror");
         expect(view.container.querySelector(".editor-missing-asset")).not.toBeNull();
         expect((/**
-         * expectへ渡す処理を実行する。
+         * expectをrerenderで処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns rerenderの結果
          */
         function expectCallback19() {
             return view.rerender(<RichTextEditor document={document} assetUrls={new Map([[assetId, "blob:added-image"]])} onChange={vi.fn()}/>);
@@ -423,7 +423,7 @@ function defineTestSuite1() {
         expect(view.container.querySelector('[data-image-ref] img')).toHaveAttribute("src", "blob:added-image");
     }));
     it("本文内の画像から現在の配置・サイズを指定して編集を開始する", (/**
-     * 期待する振る舞いを検証する。
+     * 「本文内の画像から現在の配置・サイズを指定して編集を開始する」という仕様を操作結果から検証する。
      */
     function runTestCase20() {
         const imageId = crypto.randomUUID();
@@ -447,7 +447,7 @@ function defineTestSuite1() {
         });
     }));
     it("コンパクト表示でも指定された挿入ボタンを表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「コンパクト表示でも指定された挿入ボタンを表示する」という仕様を操作結果から検証する。
      */
     function runTestCase21() {
         const document: BasicRichTextDocument = {

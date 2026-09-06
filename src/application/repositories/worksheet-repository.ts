@@ -13,79 +13,79 @@ export type SaveWorksheetOptions = {
 };
 export interface WorksheetRepository {
     /**
-     * listに必要な処理を実行する。
+     * ごみ箱内を含む保存済みプリントを更新日時順で読み込む。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns スキーマ検証済みのプリント一覧と、破損により除外した件数
      */
     list(): Promise<WorksheetListResult>;
     /**
-     * getで必要な値を取得する。
+     * 指定したプリントと、その本文から参照される画像アセットを読み込む。
      *
-     * @param id 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
+     * @param id 読み込むプリントの識別子
+     * @returns プリントと画像アセット。対象が存在しない場合はnull
      */
     get(id: string): Promise<WorksheetWithAssets | null>;
     /**
-     * createで必要な値を作成する。
+     * 新しいプリントと画像アセットを一つのトランザクションで保存する。
      *
-     * @param data 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param data 初回保存するプリントと画像アセット
+     * @returns 保存が完了したときに解決するPromise
      */
     create(data: WorksheetWithAssets): Promise<void>;
     /**
-     * saveの対象となるデータを保存または出力する。
+     * 編集済みプリントを保存し、設定に応じて未参照アセットを整理する。
      *
-     * @param worksheet worksheetとして使用する値
-     * @param options optionsとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param worksheet 永続化する最新のプリント
+     * @param options 未参照アセットの削除方法と履歴上保持するアセット
+     * @returns 保存とアセット整理が完了したときに解決するPromise
      */
     save(worksheet: Worksheet, options?: SaveWorksheetOptions): Promise<void>;
     /**
-     * trashに必要な処理を実行する。
+     * 指定したプリントへ削除日時を設定してごみ箱へ移す。
      *
-     * @param id 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
+     * @param id ごみ箱へ移すプリントの識別子
+     * @returns 削除日時を反映して保存したプリント
      */
     trash(id: string): Promise<Worksheet>;
     /**
-     * restoreに必要な処理を実行する。
+     * ごみ箱内のプリントから削除日時を取り除いて一覧へ戻す。
      *
-     * @param id 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
+     * @param id 復元するプリントの識別子
+     * @returns 復元状態を反映して保存したプリント
      */
     restore(id: string): Promise<Worksheet>;
     /**
-     * deletePermanentlyの対象となる要素を削除または解放する。
+     * 指定したプリントと所有する画像アセットをIndexedDBから完全に削除する。
      *
-     * @param id 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
+     * @param id 完全に削除するプリントの識別子
+     * @returns 削除トランザクションが完了したときに解決するPromise
      */
     deletePermanently(id: string): Promise<void>;
     /**
-     * emptyTrashに必要な処理を実行する。
+     * ごみ箱内の全プリントと、それらが所有する画像アセットを完全に削除する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 完全に削除したプリントの件数
      */
     emptyTrash(): Promise<number>;
     /**
-     * duplicateで必要な値を作成する。
+     * プリントと参照画像を新しい識別子で複製し、独立して編集できる状態にする。
      *
-     * @param id 対象を識別するID
-     * @returns 呼び出し元で使用する処理結果
+     * @param id 複製元となるプリントの識別子
+     * @returns 新しい識別子と題名を持つ複製済みプリント
      */
     duplicate(id: string): Promise<Worksheet>;
     /**
-     * putAssetに必要な処理を実行する。
+     * 画像アセットと、その参照を含む最新プリントを同じトランザクションで保存する。
      *
-     * @param asset assetとして使用する値
-     * @param worksheet worksheetとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param asset 追加または差し替えで保存する画像アセット
+     * @param worksheet アセット参照を反映したプリント
+     * @returns 両方の保存が完了したときに解決するPromise
      */
     putAsset(asset: AssetRecord, worksheet: Worksheet): Promise<void>;
     /**
-     * countで必要な値を取得する。
+     * ごみ箱内を含む保存済みプリントの総数を取得する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns IndexedDBに保存されているプリント件数
      */
     count(): Promise<number>;
 }

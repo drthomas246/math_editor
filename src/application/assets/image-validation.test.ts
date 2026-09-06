@@ -1,28 +1,27 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assertImageByteSize, IMAGE_VALIDATION_LIMITS, validateImageBlob } from "./image-validation";
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 呼び出し元で使用する処理結果
  */
 function cleanUpTestCase1() {
     return vi.unstubAllGlobals();
 }));
 describe("validateImageBlob", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「validateImageBlob」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite2() {
     it("MIME、シグネチャ、デコード結果、記録寸法が一致する画像を受け入れる", (/**
-     * 期待する振る舞いを検証する。
+     * 「MIME、シグネチャ、デコード結果、記録寸法が一致する画像を受け入れる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase3() {
         const close = vi.fn();
         vi.stubGlobal("createImageBitmap", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「MIME、シグネチャ、デコード結果、記録寸法が一致する画像を受け入れる」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @returns 非同期処理の結果
+         * @returns 「MIME、シグネチャ、デコード結果、記録寸法が一致する画像を受け入れる」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback4() {
             return ({ width: 320, height: 240, close });
@@ -34,9 +33,9 @@ function defineTestSuite2() {
         expect(close).toHaveBeenCalledOnce();
     }));
     it("宣言MIMEとファイルシグネチャが違う画像をデコード前に拒否する", (/**
-     * 期待する振る舞いを検証する。
+     * 「宣言MIMEとファイルシグネチャが違う画像をデコード前に拒否する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase5() {
         const decode = vi.fn();
@@ -47,16 +46,16 @@ function defineTestSuite2() {
         expect(decode).not.toHaveBeenCalled();
     }));
     it("バックアップの記録寸法と実寸が違う画像を拒否してbitmapを解放する", (/**
-     * 期待する振る舞いを検証する。
+     * 「バックアップの記録寸法と実寸が違う画像を拒否してbitmapを解放する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         const close = vi.fn();
         vi.stubGlobal("createImageBitmap", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「バックアップの記録寸法と実寸が違う画像を拒否してbitmapを解放する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @returns 非同期処理の結果
+         * @returns 「バックアップの記録寸法と実寸が違う画像を拒否してbitmapを解放する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback7() {
             return ({ width: 320, height: 240, close });
@@ -69,15 +68,15 @@ function defineTestSuite2() {
         expect(close).toHaveBeenCalledOnce();
     }));
     it("画像1点の容量と画素数の上限を適用する", (/**
-     * 期待する振る舞いを検証する。
+     * 「画像1点の容量と画素数の上限を適用する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase8() {
         expect((/**
-         * expectへ渡す処理を実行する。
+         * expectをassert・画像・Byte・寸法で処理し、その結果を呼び出し元へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns assert・画像・Byte・寸法の結果
          */
         function expectCallback9() {
             return assertImageByteSize(IMAGE_VALIDATION_LIMITS.bytesPerImage + 1);
@@ -85,9 +84,9 @@ function defineTestSuite2() {
             .toThrow("画像は1点10MiB以下にしてください。");
         const close = vi.fn();
         vi.stubGlobal("createImageBitmap", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「画像1点の容量と画素数の上限を適用する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @returns 非同期処理の結果
+         * @returns 「画像1点の容量と画素数の上限を適用する」で外部依存から返す要素または列へ適用する幅・要素またはページの高さ・対象を閉じる操作を持つオブジェクトを固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback10() {
             return ({ width: 10000, height: 4001, close });

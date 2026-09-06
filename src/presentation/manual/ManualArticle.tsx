@@ -10,10 +10,10 @@ type ManualArticleProps = {
     headingRef: RefObject<HTMLHeadingElement | null>;
 };
 /**
- * ManualArticleコンポーネントを表示する。
+ * 選択中のマニュアル章本文と前後章への移動リンクを表示する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・Articleへ渡す表示情報と操作
+ * @returns マニュアル・Articleを表示するReact要素
  */
 export function ManualArticle(props: ManualArticleProps) {
     let { chapter, previous, next, headingRef } = props;

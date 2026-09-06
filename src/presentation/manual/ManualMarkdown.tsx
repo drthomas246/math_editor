@@ -5,11 +5,11 @@ import remarkGfm from "remark-gfm";
 import { resolveManualAsset } from "../../manual/manual-assets";
 const SAFE_WEB_URL = /^https?:\/\//iu;
 export const transformManualUrl: UrlTransform = (/**
- * transformManualUrlに必要な処理を実行する。
+ * transform・マニュアル・URLをresolve・マニュアル・アセットで処理し、その結果を呼び出し元へ反映する。
  *
- * @param url urlとして使用する値
- * @param key keyとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param url 安全性の検証または解放を行うURL
+ * @param key 保存先または要素を特定するキー
+ * @returns 二つの値を比較した結果
  */
 function transformManualUrlImplementation1(url, key) {
     if (key === "src")
@@ -21,17 +21,17 @@ function transformManualUrlImplementation1(url, key) {
     return "";
 });
 /**
- * textFromChildrenに必要な処理を実行する。
+ * テキスト・From・Childrenをjoinで処理し、その結果を呼び出し元へ反映する。
  *
- * @param children childrenとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param children Markdown要素内の子コンテンツ
+ * @returns 区切り文字で連結した文字列として得た文字列。変換できない場合は関数固有の既定値
  */
 function textFromChildren(children: ReactNode): string {
     return Children.toArray(children).map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各走査中の子ノードをStringの結果へ変換する。
      *
-     * @param child childとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param child 走査中の子ノード
+     * @returns Stringの結果
      */
     function mapItem2(child) {
         if (typeof child === "string" || typeof child === "number")
@@ -45,13 +45,13 @@ function textFromChildren(children: ReactNode): string {
 }
 const manualMarkdownComponents = {
     /**
-     * aに必要な処理を実行する。
+     * 左側の要素の情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・href・=・""・childrenをまとめて受け取るコールバック入力
+     * @returns 左側の要素を表示するReact要素
      */
-    a(parameter1) {
-        let { href = "", children } = parameter1;
+    a(callbackInput) {
+        let { href = "", children } = callbackInput;
         if (href === "/help" || href.startsWith("/help/") || (href.startsWith("/") && !href.startsWith("//"))) {
             return <Link to={href}>{children}</Link>;
         }
@@ -61,13 +61,13 @@ const manualMarkdownComponents = {
         return <>{children}</>;
     },
     /**
-     * pに必要な処理を実行する。
+     * pの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・ノード・childrenをまとめて受け取るコールバック入力
+     * @returns pを表示するReact要素
      */
-    p(parameter1) {
-        let { node, children } = parameter1;
+    p(callbackInput) {
+        let { node, children } = callbackInput;
         const onlyChild = node?.children.length === 1 ? node.children[0] : undefined;
         const imageOnly = onlyChild?.type === "element" && onlyChild.tagName === "img";
         if (!imageOnly)
@@ -77,33 +77,33 @@ const manualMarkdownComponents = {
         return <figure className="manual-figure">{children}{caption && <figcaption>{caption}</figcaption>}</figure>;
     },
     /**
-     * imgに必要な処理を実行する。
+     * imgの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・src・=・""・alt・=・""をまとめて受け取るコールバック入力
+     * @returns imgを表示するReact要素
      */
-    img(parameter1) {
-        let { src = "", alt = "" } = parameter1;
+    img(callbackInput) {
+        let { src = "", alt = "" } = callbackInput;
         return <ManualImage src={src} alt={alt}/>;
     },
     /**
-     * tableに必要な処理を実行する。
+     * 編集または検証の対象となる表の情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @returns 編集または検証の対象となる表を表示するReact要素
      */
-    table(parameter1) {
-        let { children } = parameter1;
+    table(callbackInput) {
+        let { children } = callbackInput;
         return <div className="manual-table-scroll"><table>{children}</table></div>;
     },
     /**
-     * blockquoteに必要な処理を実行する。
+     * blockquoteの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @returns blockquoteを表示するReact要素
      */
-    blockquote(parameter1) {
-        let { children } = parameter1;
+    blockquote(callbackInput) {
+        let { children } = callbackInput;
         const label = textFromChildren(children).trimStart();
         const kind = label.startsWith("重要")
             ? "important"
@@ -111,21 +111,21 @@ const manualMarkdownComponents = {
         return <blockquote className={`manual-callout manual-callout-${kind}`}>{children}</blockquote>;
     },
     /**
-     * preに必要な処理を実行する。
+     * preの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @returns preを表示するReact要素
      */
-    pre(parameter1) {
-        let { children } = parameter1;
+    pre(callbackInput) {
+        let { children } = callbackInput;
         return <pre className="manual-code-block">{children}</pre>;
     },
 } satisfies Components;
 /**
- * ManualImageコンポーネントを表示する。
+ * マニュアル・画像の情報と操作を、画面へ組み込むReact要素として構成する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・画像へ渡す表示情報と操作
+ * @returns マニュアル・画像を表示するReact要素
  */
 function ManualImage(props: {
     src: string;
@@ -136,19 +136,17 @@ function ManualImage(props: {
     if (failed)
         return <span className="manual-image-missing" role="img" aria-label={alt || "画像を表示できません"}>{alt || "画像を表示できません"}</span>;
     return <img src={src} alt={alt} onError={(/**
-     * onErrorで発生した画面イベントを処理する。
-     *
-     * @returns 呼び出し元で使用する処理結果
+     * img要素から画面操作を受け、Failedを操作内容に合う状態へ更新する。
      */
     function handleError3() {
         return setFailed(true);
     })}/>;
 }
 /**
- * ManualMarkdownコンポーネントを表示する。
+ * マニュアルMarkdownを安全なリンクと画像だけを許可したReact要素へ変換する。
  *
- * @param props 表示や操作に必要な設定
- * @returns 呼び出し元で使用する処理結果
+ * @param props マニュアル・Markdownへ渡す表示情報と操作
+ * @returns マニュアル・Markdownを表示するReact要素
  */
 export function ManualMarkdown(props: {
     markdown: string;

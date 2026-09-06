@@ -10,29 +10,29 @@ import { TrashScreen } from "./TrashScreen";
 let database: MathWorksheetDatabase;
 let repository: DexieWorksheetRepository;
 beforeEach((/**
- * 各テストケースに必要な前提条件を準備する。
+ * 各テストが互いに影響しない初期状態とモックを準備する。
  */
 function prepareTestCase1() {
     database = new MathWorksheetDatabase(`trash-screen-${crypto.randomUUID()}`);
     repository = new DexieWorksheetRepository(database);
 }));
 afterEach((/**
- * 各テストケースで使用した状態を後片付けする。
+ * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
  *
- * @returns 非同期処理の結果
+ * @returns 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する処理の完了時に解決するPromise
  */
 async function cleanUpTestCase2() {
     vi.restoreAllMocks();
     await database.delete();
 }));
 describe("TrashScreen", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「TrashScreen」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite3() {
     it("読み込み失敗を表示し、loadingを解除して再読み込みできる", (/**
-     * 期待する振る舞いを検証する。
+     * 「読み込み失敗を表示し、loadingを解除して再読み込みできる」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase4() {
         const actualList = repository.list.bind(repository);
@@ -47,9 +47,9 @@ function defineTestSuite3() {
         expect(list).toHaveBeenCalledTimes(2);
     }));
     it("復元失敗を表示し、操作中状態を解除する", (/**
-     * 期待する振る舞いを検証する。
+     * 「復元失敗を表示し、操作中状態を解除する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase5() {
         const worksheet = await createTrashedWorksheet("復元失敗テスト");
@@ -63,9 +63,9 @@ function defineTestSuite3() {
         expect((await repository.get(worksheet.id))?.worksheet.deletedAt).not.toBeNull();
     }));
     it("完全削除失敗をモーダルに表示し、再操作できる状態へ戻す", (/**
-     * 期待する振る舞いを検証する。
+     * 「完全削除失敗をモーダルに表示し、再操作できる状態へ戻す」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase6() {
         const worksheet = await createTrashedWorksheet("削除失敗テスト");
@@ -82,9 +82,9 @@ function defineTestSuite3() {
         expect(await repository.get(worksheet.id)).not.toBeNull();
     }));
     it("空にする処理の失敗をモーダルに表示し、再操作できる状態へ戻す", (/**
-     * 期待する振る舞いを検証する。
+     * 「空にする処理の失敗をモーダルに表示し、再操作できる状態へ戻す」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase7() {
         const worksheet = await createTrashedWorksheet("空にする失敗テスト");
@@ -102,18 +102,18 @@ function defineTestSuite3() {
     }));
 }));
 /**
- * renderScreenに対応する画面表示を更新する。
+ * 画面の内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns renderの結果
  */
 function renderScreen() {
     return render(<MemoryRouter><TrashScreen repository={repository}/></MemoryRouter>);
 }
 /**
- * createTrashedWorksheetで必要な値を作成する。
+ * Trashed・プリントを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param title titleとして使用する値
- * @returns 非同期処理の結果
+ * @param title プリントまたはテストへ設定する題名
+ * @returns Trashed・プリントを識別子・初期値・関連データが揃った新しい値として組み立てる処理の完了時に解決するPromise
  */
 async function createTrashedWorksheet(title: string): Promise<Worksheet> {
     const worksheet = createWorksheet();

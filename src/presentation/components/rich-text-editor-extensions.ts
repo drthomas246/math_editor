@@ -4,15 +4,20 @@ import type { ContentColor } from "../../domain/worksheet/rich-text";
 import type { BasicRichTextDocument, ImagePlacement, ImageWidthPercent, RichTextMark, TableCellRichTextDocument, TableRow } from "../../domain/worksheet/worksheet";
 import { applyTableOperation, getTableCellLocation, getTableOperationAvailability, setTableColumnWidth, setTableRowHeight, type TableOperation, type TableOperationAvailability } from "../../domain/worksheet/table-operations";
 import { getMathAriaLabel, renderMathMarkup } from "./MathFormula";
+
+// --------------------
+// 選択範囲と共通型
+// --------------------
+
 export type MathTextSize = "small" | "normal" | "large" | "xLarge";
 /**
- * insertMathAtSelectionの対象となる要素を追加する。
+ * 数式・位置・選択を現在の編集結果へ反映する。
  *
- * @param editor editorとして使用する値
- * @param latex latexとして使用する値
- * @param block blockとして使用する値
- * @param textSize textSizeとして使用する値
- * @param color colorとして使用する値
+ * @param editor 操作対象のTipTapエディタ
+ * @param latex 描画または保存するLaTeX式
+ * @param block 処理対象のリッチテキストブロック
+ * @param textSize 数式または本文へ適用する文字サイズ
+ * @param color 文字または数式へ適用する色
  */
 export function insertMathAtSelection(editor: Editor, latex: string, block: boolean, textSize: MathTextSize, color: ContentColor = "problem"): void {
     const math = { type: block ? "blockMath" : "inlineMath", attrs: { latex, textSize, answerColor: color === "answer" } };
@@ -23,10 +28,10 @@ export function insertMathAtSelection(editor: Editor, latex: string, block: bool
 }
 const COLORABLE_NODE_TYPES = new Set(["inlineMath", "blockMath", "imageRef", "richTable"]);
 /**
- * setSelectionContentColorの対象となる状態を更新する。
+ * 選択・内容・色を現在の編集結果へ反映する。
  *
- * @param editor editorとして使用する値
- * @param color colorとして使用する値
+ * @param editor 操作対象のTipTapエディタ
+ * @param color 文字または数式へ適用する色
  */
 export function setSelectionContentColor(editor: Editor, color: ContentColor): void {
     if (editor.isDestroyed)
@@ -35,11 +40,11 @@ export function setSelectionContentColor(editor: Editor, color: ContentColor): v
     let transaction = editor.state.tr;
     let changedNode = false;
     editor.state.doc.nodesBetween(selection.from, selection.to, (/**
-     * nodesBetweenへ渡す処理を実行する。
+     * ノードを走査し、数式・文字色・選択範囲の判定へ反映する。
      *
-     * @param node 処理対象の値
+     * @param node 走査または変換するリッチテキストノード
      * @param position 対象となる位置
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 条件成立を示すtrue
      */
     function nodesBetweenCallback1(node, position) {
         if (!COLORABLE_NODE_TYPES.has(node.type.name))
@@ -57,10 +62,10 @@ export function setSelectionContentColor(editor: Editor, color: ContentColor): v
         chain.unsetMark("answerColor").run();
 }
 /**
- * getSelectionContentColorで必要な値を取得する。
+ * 選択・内容・色を入力データまたは現在の状態から取り出す。
  *
- * @param editor editorとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param editor 操作対象のTipTapエディタ
+ * @returns 「answer」
  */
 export function getSelectionContentColor(editor: Editor): ContentColor {
     if (editor.isActive("answerColor"))
@@ -68,10 +73,10 @@ export function getSelectionContentColor(editor: Editor): ContentColor {
     const { selection } = editor.state;
     let answerNodeSelected = false;
     editor.state.doc.nodesBetween(selection.from, selection.to, (/**
-     * nodesBetweenへ渡す処理を実行する。
+     * ノードを走査し、数式・文字色・選択範囲の判定へ反映する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns 解答・ノード・Selectedが成立しないこと
      */
     function nodesBetweenCallback2(node) {
         if (COLORABLE_NODE_TYPES.has(node.type.name) && node.attrs.answerColor === true)
@@ -80,6 +85,10 @@ export function getSelectionContentColor(editor: Editor): ContentColor {
     }));
     return answerNodeSelected ? "answer" : "problem";
 }
+// --------------------
+// 数式ノード
+// --------------------
+
 export type EditableMathRef = {
     editor: Editor;
     position: number;
@@ -91,38 +100,38 @@ type MathNodeOptions = {
     onEdit: ((math: EditableMathRef) => void) | null;
 };
 /**
- * isMathTextSizeで表される条件を判定する。
+ * 数式・テキスト・寸法が仕様上の条件を満たすか判定する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value is・数式・テキスト・寸法で判定または変換する入力値
+ * @returns 変換・検証・保存の対象となる値が「small」と一致するまたは変換・検証・保存の対象となる値が「normal」と一致するまたは変換・検証・保存の対象となる値が「large」と一致するまたは変換・検証・保存の対象となる値が「xLarge」と一致する場合はtrue
  */
 function isMathTextSize(value: unknown): value is MathTextSize {
     return value === "small" || value === "normal" || value === "large" || value === "xLarge";
 }
 /**
- * readStringAttributeで必要な値を取得する。
+ * String・Attributeを入力データまたは現在の状態から取り出す。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・String・Attributeで判定または変換する入力値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function readStringAttribute(value: unknown): string {
     return typeof value === "string" ? value : "";
 }
 /**
- * createMathNodeViewで必要な値を作成する。
+ * 数式・ノード・Viewを識別子・初期値・関連データが揃った新しい値として組み立てる。
  *
- * @param block blockとして使用する値
- * @param onEdit onEditとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param block 処理対象のリッチテキストブロック
+ * @param onEdit 編集開始を親へ通知する処理
+ * @returns 呼び出し元が後で実行する関数
  */
 function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
     return (/**
-     * 呼び出し元から要求された処理を実行する。
+     * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・ノード・操作対象のTipTapエディタ・get・Posをまとめて受け取るコールバック入力
+     * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
      */
-    function commentRuleCallback3(parameter1: {
+    function applyDeferredOperation3(callbackInput: {
         node: {
             type: {
                 name: string;
@@ -132,12 +141,12 @@ function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
         editor: Editor;
         getPos: () => number | undefined;
     }) {
-        let { node, editor, getPos } = parameter1;
+        let { node, editor, getPos } = callbackInput;
         const dom = document.createElement(block ? "div" : "span");
         const render = (/**
-         * renderに対応する画面表示を更新する。
+         * domのclass・名前を値を埋め込んだ表示文字列へ更新する。
          *
-         * @param attrs attrsとして使用する値
+         * @param attrs ノードへ設定する属性
          */
         function renderImplementation4(attrs: Record<string, unknown>) {
             const latex = readStringAttribute(attrs.latex);
@@ -160,7 +169,7 @@ function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
                 editButton.textContent = "編集";
                 editButton.setAttribute("aria-label", "数式を編集");
                 editButton.addEventListener("click", (/**
-                 * DOMから通知されたイベントを処理する。
+                 * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
                  *
                  * @param event 発生したイベント
                  */
@@ -179,34 +188,34 @@ function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
         return {
             dom,
             ignoreMutation: (/**
-             * ignoreMutationに必要な処理を実行する。
+             * TipTapが再解析すべきDOM変更か、ノードビュー内部だけの変更かを判定する。
              *
-             * @returns 呼び出し元で使用する処理結果
+             * @returns 条件成立を示すtrue
              */
             function ignoreMutationCallback6() {
                 return true;
             }),
             selectNode: (/**
-             * selectNodeで必要な値を取得する。
+             * TipTapでノードが選択されたことをDOMの選択表示へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
+             * @returns addの結果
              */
             function selectNodeCallback7() {
                 return dom.classList.add("math-node-selected");
             }),
             deselectNode: (/**
-             * deselectNodeに必要な処理を実行する。
+             * TipTapのノード選択解除をDOMの通常表示へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
+             * @returns removeの結果
              */
             function deselectNodeCallback8() {
                 return dom.classList.remove("math-node-selected");
             }),
             update: (/**
-             * updateの対象となる状態を更新する。
+             * ProseMirrorノードまたはアプリ状態の変更を既存DOMへ反映できるか判定し、可能な場合は更新する。
              *
-             * @param nextNode nextNodeとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param nextNode 置換後に比較するProseMirrorノード
+             * @returns 条件不成立を示すfalse
              */
             function updateCallback9(nextNode: typeof node) {
                 if (nextNode.type.name !== node.type.name)
@@ -216,10 +225,10 @@ function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
                 return true;
             }),
             stopEvent: (/**
-             * stopEventに必要な処理を実行する。
+             * ノード内の編集操作をTipTap本体へ伝播させるべきか判定する。
              *
              * @param event 発生したイベント
-             * @returns 呼び出し元で使用する処理結果
+             * @returns 二つの値を比較した結果
              */
             function stopEventCallback10(event: Event) {
                 return event.target instanceof HTMLElement && Boolean(event.target.closest(".math-node-edit-button"));
@@ -234,17 +243,17 @@ export const InlineMath = Node.create<MathNodeOptions>({
     atom: true,
     selectable: true,
     /**
-     * addOptionsの対象となる要素を追加する。
+     * TipTap拡張へ既定の編集コールバックと表示設定を登録する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 編集開始を親へ通知する処理を持つオブジェクト
      */
     addOptions() {
         return { onEdit: null };
     },
     /**
-     * addAttributesの対象となる要素を追加する。
+     * TipTapノードへ保存・復元に必要な寸法や色の属性を定義する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 描画または保存するLaTeX式・数式または本文へ適用する文字サイズ・解答へ適用する文字色を持つオブジェクト
      */
     addAttributes() {
         return {
@@ -254,27 +263,27 @@ export const InlineMath = Node.create<MathNodeOptions>({
         };
     },
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: '[data-math-node="inline"]' }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["span", mergeAttributes(HTMLAttributes, { "data-math-node": "inline" })];
     },
     /**
-     * addNodeViewの対象となる要素を追加する。
+     * TipTapノードの編集状態とプレビュー状態を切り替えるDOMビューを作る。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns create・数式・ノード・Viewの結果
      */
     addNodeView() {
         return createMathNodeView(false, this.options.onEdit);
@@ -286,17 +295,17 @@ export const BlockMath = Node.create<MathNodeOptions>({
     atom: true,
     selectable: true,
     /**
-     * addOptionsの対象となる要素を追加する。
+     * TipTap拡張へ既定の編集コールバックと表示設定を登録する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 編集開始を親へ通知する処理を持つオブジェクト
      */
     addOptions() {
         return { onEdit: null };
     },
     /**
-     * addAttributesの対象となる要素を追加する。
+     * TipTapノードへ保存・復元に必要な寸法や色の属性を定義する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 描画または保存するLaTeX式・数式または本文へ適用する文字サイズ・解答へ適用する文字色を持つオブジェクト
      */
     addAttributes() {
         return {
@@ -306,32 +315,36 @@ export const BlockMath = Node.create<MathNodeOptions>({
         };
     },
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: '[data-math-node="block"]' }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["div", mergeAttributes(HTMLAttributes, { "data-math-node": "block" })];
     },
     /**
-     * addNodeViewの対象となる要素を追加する。
+     * TipTapノードの編集状態とプレビュー状態を切り替えるDOMビューを作る。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns create・数式・ノード・Viewの結果
      */
     addNodeView() {
         return createMathNodeView(true, this.options.onEdit);
     },
 });
+// --------------------
+// 画像ノード
+// --------------------
+
 type ImageRefOptions = {
     assetUrls: ReadonlyMap<string, string>;
     onEdit: ((image: EditableImageRef) => void) | null;
@@ -350,17 +363,17 @@ export const ImageRef = Node.create<ImageRefOptions>({
     atom: true,
     selectable: true,
     /**
-     * addOptionsの対象となる要素を追加する。
+     * TipTap拡張へ既定の編集コールバックと表示設定を登録する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns アセット識別子と表示URLの対応表・編集開始を親へ通知する処理を持つオブジェクト
      */
     addOptions() {
         return { assetUrls: new Map(), onEdit: null };
     },
     /**
-     * addAttributesの対象となる要素を追加する。
+     * TipTapノードへ保存・復元に必要な寸法や色の属性を定義する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 対象を一意に特定する識別子・アセット・Id・画像の代替テキスト・画像を本文の前後どちらへ置くかの指定・表全体に対する列幅の割合を持つオブジェクト
      */
     addAttributes() {
         return {
@@ -373,46 +386,46 @@ export const ImageRef = Node.create<ImageRefOptions>({
         };
     },
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: "[data-image-ref]" }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["div", mergeAttributes(HTMLAttributes, { "data-image-ref": "" })];
     },
     /**
-     * addNodeViewの対象となる要素を追加する。
+     * TipTapノードの編集状態とプレビュー状態を切り替えるDOMビューを作る。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 呼び出し元が後で実行する関数
      */
     addNodeView() {
         // 名前付きコールバックでもTipTap拡張の設定参照を維持するためthisを退避する。
         // oxlint-disable-next-line typescript/no-this-alias
-        const commentRuleThis11 = this;
+        const instanceContext11 = this;
         const assetUrls = this.options.assetUrls;
         return (/**
-         * 呼び出し元から要求された処理を実行する。
+         * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput let・{・ノードをまとめて受け取るコールバック入力
+         * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
          */
-        function commentRuleCallback12(parameter1) {
-            let { node } = parameter1;
+        function applyDeferredOperation12(callbackInput) {
+            let { node } = callbackInput;
             const dom = document.createElement("div");
             const render = (/**
-             * renderに対応する画面表示を更新する。
+             * domのclass・名前を値を埋め込んだ表示文字列へ更新する。
              *
-             * @param attrs attrsとして使用する値
+             * @param attrs ノードへ設定する属性
              */
             function renderImplementation13(attrs: Record<string, unknown>) {
                 const id = readStringAttribute(attrs.id);
@@ -426,7 +439,7 @@ export const ImageRef = Node.create<ImageRefOptions>({
                 dom.dataset.imageId = id;
                 dom.dataset.assetId = assetId;
                 dom.style.width = `${widthPercent}%`;
-                dom.title = commentRuleThis11.options.onEdit ? "画像を編集" : "";
+                dom.title = instanceContext11.options.onEdit ? "画像を編集" : "";
                 dom.contentEditable = "false";
                 dom.replaceChildren();
                 if (url) {
@@ -441,21 +454,21 @@ export const ImageRef = Node.create<ImageRefOptions>({
                     missing.textContent = "画像を読み込めません";
                     dom.append(missing);
                 }
-                if (commentRuleThis11.options.onEdit) {
+                if (instanceContext11.options.onEdit) {
                     const editButton = document.createElement("button");
                     editButton.type = "button";
                     editButton.className = "editor-image-edit-button";
                     editButton.textContent = "編集";
                     editButton.setAttribute("aria-label", "画像を編集");
                     editButton.addEventListener("click", (/**
-                     * DOMから通知されたイベントを処理する。
+                     * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
                      *
                      * @param event 発生したイベント
                      */
                     function handleDomEvent14(event) {
                         event.preventDefault();
                         event.stopPropagation();
-                        commentRuleThis11.options.onEdit?.({
+                        instanceContext11.options.onEdit?.({
                             id,
                             assetId,
                             alt: readStringAttribute(attrs.alt),
@@ -471,34 +484,34 @@ export const ImageRef = Node.create<ImageRefOptions>({
             return {
                 dom,
                 ignoreMutation: (/**
-                 * ignoreMutationに必要な処理を実行する。
+                 * TipTapが再解析すべきDOM変更か、ノードビュー内部だけの変更かを判定する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns 条件成立を示すtrue
                  */
                 function ignoreMutationCallback15() {
                     return true;
                 }),
                 selectNode: (/**
-                 * selectNodeで必要な値を取得する。
+                 * TipTapでノードが選択されたことをDOMの選択表示へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns addの結果
                  */
                 function selectNodeCallback16() {
                     return dom.classList.add("selected");
                 }),
                 deselectNode: (/**
-                 * deselectNodeに必要な処理を実行する。
+                 * TipTapのノード選択解除をDOMの通常表示へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns removeの結果
                  */
                 function deselectNodeCallback17() {
                     return dom.classList.remove("selected");
                 }),
                 update: (/**
-                 * updateの対象となる状態を更新する。
+                 * ProseMirrorノードまたはアプリ状態の変更を既存DOMへ反映できるか判定し、可能な場合は更新する。
                  *
-                 * @param nextNode nextNodeとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param nextNode 置換後に比較するProseMirrorノード
+                 * @returns 条件不成立を示すfalse
                  */
                 function updateCallback18(nextNode) {
                     if (nextNode.type.name !== node.type.name)
@@ -508,10 +521,10 @@ export const ImageRef = Node.create<ImageRefOptions>({
                     return true;
                 }),
                 stopEvent: (/**
-                 * stopEventに必要な処理を実行する。
+                 * ノード内の編集操作をTipTap本体へ伝播させるべきか判定する。
                  *
                  * @param event 発生したイベント
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns 二つの値を比較した結果
                  */
                 function stopEventCallback19(event) {
                     return event.target instanceof HTMLElement && Boolean(event.target.closest(".editor-image-edit-button"));
@@ -520,6 +533,10 @@ export const ImageRef = Node.create<ImageRefOptions>({
         });
     },
 });
+// --------------------
+// 表ノードとセル編集
+// --------------------
+
 export type RichTableCellEditorController = {
     applyTableOperation: (operation: TableOperation) => boolean;
     deactivate: () => void;
@@ -551,31 +568,27 @@ export const RichTable = Node.create<RichTableOptions>({
     atom: true,
     selectable: true,
     /**
-     * addOptionsの対象となる要素を追加する。
+     * TipTap拡張へ既定の編集コールバックと表示設定を登録する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns アセット識別子と表示URLの対応表・on・セル・Focus・on・セル・状態・Change・on・Edit・数式を持つオブジェクト
      */
     addOptions() {
         return { assetUrls: new Map(), onCellFocus: (/**
-             * onCellFocusに対応するイベントまたは通知を処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * セル・Focusの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
              */
             function onCellFocusCallback20() {
                 return undefined;
             }), onCellStateChange: (/**
-             * onCellStateChangeに対応するイベントまたは通知を処理する。
-             *
-             * @returns 呼び出し元で使用する処理結果
+             * セル・状態・Changeの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
              */
             function onCellStateChangeCallback21() {
                 return undefined;
             }), onEditMath: null };
     },
     /**
-     * addAttributesの対象となる要素を追加する。
+     * TipTapノードへ保存・復元に必要な寸法や色の属性を定義する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 対象を一意に特定する識別子・作成または検証する表の行数・行一覧・列・Widths・Percent・ヘッダー・行・解答へ適用する文字色を持つオブジェクト
      */
     addAttributes() {
         return {
@@ -587,60 +600,60 @@ export const RichTable = Node.create<RichTableOptions>({
         };
     },
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: "[data-rich-table]" }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["div", mergeAttributes(HTMLAttributes, { "data-rich-table": "" })];
     },
     /**
-     * addNodeViewの対象となる要素を追加する。
+     * TipTapノードの編集状態とプレビュー状態を切り替えるDOMビューを作る。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 呼び出し元が後で実行する関数
      */
     addNodeView() {
         // 名前付きコールバックでもTipTap拡張の設定参照を維持するためthisを退避する。
         // oxlint-disable-next-line typescript/no-this-alias
-        const commentRuleThis22 = this;
+        const instanceContext22 = this;
         return (/**
-         * 呼び出し元から要求された処理を実行する。
+         * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput let・{・ノード・操作対象のTipTapエディタ・get・Posをまとめて受け取るコールバック入力
+         * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
          */
-        function commentRuleCallback23(parameter1) {
-            let { node, editor: outerEditor, getPos } = parameter1;
+        function applyDeferredOperation23(callbackInput) {
+            let { node, editor: outerEditor, getPos } = callbackInput;
             const dom = document.createElement("div");
             const cellElements = new Map<string, HTMLTableCellElement>();
             let activeCellId: string | null = null;
             let cellEditor: Editor | null = null;
             let structureKey = "";
             const findCell = (/**
-             * findCellで必要な値を取得する。
+             * 処理対象の表セル・表内での行位置・行内でのセル位置を持つオブジェクトを一つの結果へまとめる。
              *
              * @param cellId 対象を識別するID
-             * @returns 呼び出し元で使用する処理結果
+             * @returns 処理対象の表セル・表内での行位置・行内でのセル位置を持つオブジェクト
              */
             function findCellImplementation24(cellId: string) {
                 const rows = Array.isArray(node.attrs.rows) ? node.attrs.rows as TableRow[] : [];
                 const columnWidthsPercent = Array.isArray(node.attrs.columnWidthsPercent) ? node.attrs.columnWidthsPercent as number[] : [];
                 for (const [rowIndex, row] of rows.entries()) {
                     const cellIndex = row.cells.findIndex((/**
-                     * 検索条件に一致する要素か判定する。
+                     * 各処理対象の表セルが探している位置の要素か判定する。
                      *
-                     * @param cell cellとして使用する値
-                     * @returns 呼び出し元で使用する処理結果
+                     * @param cell 処理対象の表セル
+                     * @returns 処理対象の表セルの対象を一意に特定する識別子がセル・Idと一致する場合はtrue
                      */
                     function findItemIndex25(cell) {
                         return cell.id === cellId;
@@ -653,10 +666,10 @@ export const RichTable = Node.create<RichTableOptions>({
                 return null;
             });
             const updateCellDocument = (/**
-             * updateCellDocumentの対象となる状態を更新する。
+             * 処理対象の表セルの処理対象のリッチテキスト文書を表セルへ設定するリッチテキスト文書へ更新する。
              *
              * @param cellId 対象を識別するID
-             * @param documentValue documentValueとして使用する値
+             * @param documentValue 表セルへ設定するリッチテキスト文書
              */
             function updateCellDocumentImplementation26(cellId: string, documentValue: TableCellRichTextDocument) {
                 const position = getPos();
@@ -665,10 +678,10 @@ export const RichTable = Node.create<RichTableOptions>({
                 const nextRows = structuredClone(Array.isArray(node.attrs.rows) ? node.attrs.rows as TableRow[] : []);
                 for (const row of nextRows) {
                     const cell = row.cells.find((/**
-                     * 検索条件に一致する要素か判定する。
+                     * 要素の対象を一意に特定する識別子がセル・Idと一致する最初の要素を検索する。
                      *
-                     * @param item 処理対象の値
-                     * @returns 呼び出し元で使用する処理結果
+                     * @param item 配列処理で現在参照している要素
+                     * @returns 要素の対象を一意に特定する識別子がセル・Idと一致する場合はtrue
                      */
                     function findItem27(item) {
                         return item.id === cellId;
@@ -681,7 +694,7 @@ export const RichTable = Node.create<RichTableOptions>({
                 }
             });
             const showCellPreview = (/**
-             * showCellPreviewに対応する画面表示を更新する。
+             * show・セル・プレビューをfind・セルで処理し、その結果を呼び出し元へ反映する。
              *
              * @param cellId 対象を識別するID
              */
@@ -694,11 +707,10 @@ export const RichTable = Node.create<RichTableOptions>({
                 button.type = "button";
                 button.className = "table-cell-select editor-table-cell-select";
                 button.setAttribute("aria-label", `${location.rowIndex + 1}行${location.cellIndex + 1}列を編集`);
-                renderTableCellDocumentPreview(button, location.cell.document, commentRuleThis22.options.assetUrls);
+                renderTableCellDocumentPreview(button, location.cell.document, instanceContext22.options.assetUrls);
                 button.addEventListener("click", (/**
-                 * DOMから通知されたイベントを処理する。
+                 * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
                 function handleDomEvent29() {
                     return activateCell(cellId);
@@ -707,7 +719,7 @@ export const RichTable = Node.create<RichTableOptions>({
                 tableCell.replaceChildren(button);
             });
             const deactivateCell = (/**
-             * deactivateCellに必要な処理を実行する。
+             * deactivate・セルをdestroyで処理し、その結果を呼び出し元へ反映する。
              */
             function deactivateCellImplementation30() {
                 const previousCellId = activeCellId;
@@ -718,7 +730,7 @@ export const RichTable = Node.create<RichTableOptions>({
                     showCellPreview(previousCellId);
             });
             const activateCell = (/**
-             * activateCellに必要な処理を実行する。
+             * activate・セルをfocusで処理し、その結果を呼び出し元へ反映する。
              *
              * @param cellId 対象を識別するID
              */
@@ -755,8 +767,8 @@ export const RichTable = Node.create<RichTableOptions>({
                         ParagraphTextAlign,
                         TextSize,
                         AnswerColor,
-                        InlineMath.configure({ onEdit: commentRuleThis22.options.onEditMath }),
-                        ImageRef.configure({ assetUrls: commentRuleThis22.options.assetUrls }),
+                        InlineMath.configure({ onEdit: instanceContext22.options.onEditMath }),
+                        ImageRef.configure({ assetUrls: instanceContext22.options.assetUrls }),
                     ],
                     content: normalizeTableCellEditorDocument(location.cell.document as JSONContent) as unknown as JSONContent,
                     editorProps: {
@@ -766,29 +778,29 @@ export const RichTable = Node.create<RichTableOptions>({
                         },
                     },
                     onUpdate: (/**
-                     * onUpdateに対応するイベントまたは通知を処理する。
+                     * 更新の通知内容を、対応する編集状態・DOM・永続処理へ反映する。
                      *
-                     * @param parameter1 parameter1として使用する値
+                     * @param callbackInput let・{・エディタをまとめて受け取るコールバック入力
                      */
-                    function onUpdateCallback32(parameter1) {
-                        let { editor: currentEditor } = parameter1;
+                    function onUpdateCallback32(callbackInput) {
+                        let { editor: currentEditor } = callbackInput;
                         updateCellDocument(cellId, normalizeTableCellEditorDocument(currentEditor.getJSON()));
                     }),
                     onSelectionUpdate: (/**
-                     * onSelectionUpdateに対応するイベントまたは通知を処理する。
+                     * 選択・更新の通知内容を、対応する編集状態・DOM・永続処理へ反映する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
+                     * @returns on・セル・状態・Changeの結果
                      */
                     function onSelectionUpdateCallback33() {
-                        return commentRuleThis22.options.onCellStateChange();
+                        return instanceContext22.options.onCellStateChange();
                     }),
                     onTransaction: (/**
-                     * onTransactionに対応するイベントまたは通知を処理する。
+                     * Transactionの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
+                     * @returns on・セル・状態・Changeの結果
                      */
                     function onTransactionCallback34() {
-                        return commentRuleThis22.options.onCellStateChange();
+                        return instanceContext22.options.onCellStateChange();
                     }),
                 });
                 cellEditor = nestedEditor;
@@ -798,10 +810,10 @@ export const RichTable = Node.create<RichTableOptions>({
                 };
                 const currentLocation = getTableCellLocation(currentTable, cellId);
                 const commitTableData = (/**
-                 * commitTableDataの対象となる状態を更新する。
+                 * commit・表・データを現在の編集結果へ反映する。
                  *
-                 * @param nextTable nextTableとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param nextTable 編集操作を適用した後の表
+                 * @returns 条件不成立を示すfalse
                  */
                 function commitTableDataImplementation35(nextTable: {
                     rows: TableRow[];
@@ -820,10 +832,10 @@ export const RichTable = Node.create<RichTableOptions>({
                 });
                 const controller: RichTableCellEditorController = {
                     applyTableOperation: (/**
-                     * applyTableOperationの対象となる状態を更新する。
+                     * 表・操作を現在の編集結果へ反映する。
                      *
-                     * @param operation operationとして使用する値
-                     * @returns 呼び出し元で使用する処理結果
+                     * @param operation 計測または適用する操作
+                     * @returns commit・表・データの結果
                      */
                     function applyTableOperationCallback36(operation) {
                         const latestTable = {
@@ -834,36 +846,36 @@ export const RichTable = Node.create<RichTableOptions>({
                         return commitTableData(result);
                     }),
                     deactivate: (/**
-                     * deactivateに必要な処理を実行する。
+                     * deactivateをdeactivate・セルで処理し、その結果を呼び出し元へ反映する。
                      */
                     function deactivateCallback37() {
                         if (activeCellId === cellId)
                             deactivateCell();
                     }),
                     insertMath: (/**
-                     * insertMathの対象となる要素を追加する。
+                     * 数式を現在の編集結果へ反映する。
                      *
-                     * @param latex latexとして使用する値
-                     * @param textSize textSizeとして使用する値
-                     * @param color colorとして使用する値
+                     * @param latex 描画または保存するLaTeX式
+                     * @param textSize 数式または本文へ適用する文字サイズ
+                     * @param color 文字または数式へ適用する色
                      */
                     function insertMathCallback38(latex, textSize, color) {
                         if (!nestedEditor.isDestroyed)
                             insertMathAtSelection(nestedEditor, latex, false, textSize, color);
                     }),
                     isActive: (/**
-                     * isActiveで表される条件を判定する。
+                     * nested・エディタのis・Destroyedが存在しないかつis・有効状態の結果が真になるかを判定する。
                      *
-                     * @param name nameとして使用する値
-                     * @returns 呼び出し元で使用する処理結果
+                     * @param name 生成物または計測項目を識別する名前
+                     * @returns nested・エディタのis・Destroyedが存在しないかつis・有効状態の結果が真になる場合はtrue
                      */
                     function isActiveCallback39(name) {
                         return !nestedEditor.isDestroyed && nestedEditor.isActive(name);
                     }),
                     setContentColor: (/**
-                     * setContentColorの対象となる状態を更新する。
+                     * 内容・色を現在の編集結果へ反映する。
                      *
-                     * @param color colorとして使用する値
+                     * @param color 文字または数式へ適用する色
                      */
                     function setContentColorCallback40(color) {
                         if (nestedEditor.isDestroyed)
@@ -875,9 +887,9 @@ export const RichTable = Node.create<RichTableOptions>({
                             chain.unsetMark("answerColor").run();
                     }),
                     setTextSize: (/**
-                     * setTextSizeの対象となる状態を更新する。
+                     * テキスト・寸法を現在の編集結果へ反映する。
                      *
-                     * @param size sizeとして使用する値
+                     * @param size 適用または検証する寸法
                      */
                     function setTextSizeCallback41(size) {
                         if (nestedEditor.isDestroyed)
@@ -893,10 +905,10 @@ export const RichTable = Node.create<RichTableOptions>({
                         columnWidthPercent: currentLocation ? currentTable.columnWidthsPercent[currentLocation.column] ?? 100 : 100,
                         canResizeColumn: currentTable.columnWidthsPercent.length > 1,
                         setRowHeightMm: (/**
-                         * setRowHeightMmの対象となる状態を更新する。
+                         * 行・高さ・Mmを現在の編集結果へ反映する。
                          *
-                         * @param heightMm heightMmとして使用する値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param heightMm ミリメートル単位の高さ
+                         * @returns 条件に応じて選択した値
                          */
                         function setRowHeightMmCallback42(heightMm) {
                             const latestTable = {
@@ -907,10 +919,10 @@ export const RichTable = Node.create<RichTableOptions>({
                             return latestLocation ? commitTableData(setTableRowHeight(latestTable, latestLocation.row, heightMm)) : false;
                         }),
                         setColumnWidthPercent: (/**
-                         * setColumnWidthPercentの対象となる状態を更新する。
+                         * 列・幅・Percentを現在の編集結果へ反映する。
                          *
-                         * @param widthPercent widthPercentとして使用する値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param widthPercent 表全体に対する列幅の割合
+                         * @returns 条件に応じて選択した値
                          */
                         function setColumnWidthPercentCallback43(widthPercent) {
                             const latestTable = {
@@ -922,36 +934,36 @@ export const RichTable = Node.create<RichTableOptions>({
                         }),
                     },
                     toggleBold: (/**
-                     * toggleBoldに対応する画面表示を更新する。
+                     * Boldをrunで処理し、その結果を呼び出し元へ反映する。
                      */
                     function toggleBoldCallback44() { if (!nestedEditor.isDestroyed)
                         nestedEditor.chain().focus().toggleBold().run(); }),
                     toggleItalic: (/**
-                     * toggleItalicに対応する画面表示を更新する。
+                     * Italicをrunで処理し、その結果を呼び出し元へ反映する。
                      */
                     function toggleItalicCallback45() { if (!nestedEditor.isDestroyed)
                         nestedEditor.chain().focus().toggleItalic().run(); }),
                     toggleUnderline: (/**
-                     * toggleUnderlineに対応する画面表示を更新する。
+                     * Underlineをrunで処理し、その結果を呼び出し元へ反映する。
                      */
                     function toggleUnderlineCallback46() { if (!nestedEditor.isDestroyed)
                         nestedEditor.chain().focus().toggleUnderline().run(); }),
                 };
                 nestedEditor.on("focus", (/**
-                 * onへ渡す処理を実行する。
+                 * onの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns on・セル・Focusの結果
                  */
                 function onCallback47() {
-                    return commentRuleThis22.options.onCellFocus(controller);
+                    return instanceContext22.options.onCellFocus(controller);
                 }));
-                commentRuleThis22.options.onCellFocus(controller);
+                instanceContext22.options.onCellFocus(controller);
                 nestedEditor.commands.focus("end");
             });
             const render = (/**
-             * renderに対応する画面表示を更新する。
+             * セル・エディタを対象が存在しないことを示すnullへ更新する。
              *
-             * @param attrs attrsとして使用する値
+             * @param attrs ノードへ設定する属性
              */
             function renderImplementation48(attrs: Record<string, unknown>) {
                 cellEditor?.destroy();
@@ -999,34 +1011,34 @@ export const RichTable = Node.create<RichTableOptions>({
             return {
                 dom,
                 ignoreMutation: (/**
-                 * ignoreMutationに必要な処理を実行する。
+                 * TipTapが再解析すべきDOM変更か、ノードビュー内部だけの変更かを判定する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns 条件成立を示すtrue
                  */
                 function ignoreMutationCallback49() {
                     return true;
                 }),
                 selectNode: (/**
-                 * selectNodeで必要な値を取得する。
+                 * TipTapでノードが選択されたことをDOMの選択表示へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns addの結果
                  */
                 function selectNodeCallback50() {
                     return dom.classList.add("selected");
                 }),
                 deselectNode: (/**
-                 * deselectNodeに必要な処理を実行する。
+                 * TipTapのノード選択解除をDOMの通常表示へ反映する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns removeの結果
                  */
                 function deselectNodeCallback51() {
                     return dom.classList.remove("selected");
                 }),
                 update: (/**
-                 * updateの対象となる状態を更新する。
+                 * ProseMirrorノードまたはアプリ状態の変更を既存DOMへ反映できるか判定し、可能な場合は更新する。
                  *
-                 * @param nextNode nextNodeとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param nextNode 置換後に比較するProseMirrorノード
+                 * @returns 条件不成立を示すfalse
                  */
                 function updateCallback52(nextNode) {
                     if (nextNode.type.name !== node.type.name)
@@ -1051,18 +1063,18 @@ export const RichTable = Node.create<RichTableOptions>({
                     return true;
                 }),
                 stopEvent: (/**
-                 * stopEventに必要な処理を実行する。
+                 * ノード内の編集操作をTipTap本体へ伝播させるべきか判定する。
                  *
                  * @param event 発生したイベント
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns 二つの値を比較した結果
                  */
                 function stopEventCallback53(event) {
                     return event.target instanceof globalThis.Node && dom.contains(event.target);
                 }),
                 destroy: (/**
-                 * destroyの対象となる要素を削除または解放する。
+                 * ノードビューが登録したエディタ・DOM・イベント購読を破棄する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
+                 * @returns destroyの結果
                  */
                 function destroyCallback54() {
                     return cellEditor?.destroy();
@@ -1071,20 +1083,24 @@ export const RichTable = Node.create<RichTableOptions>({
         });
     },
 });
+// --------------------
+// 表セルプレビュー
+// --------------------
+
 /**
- * renderTableCellDocumentPreviewに対応する画面表示を更新する。
+ * 表・セル・文書・プレビューの内容と操作を、アクセシブルな画面要素として構成する。
  *
- * @param container containerとして使用する値
- * @param documentValue documentValueとして使用する値
- * @param assetUrls assetUrlsとして使用する値
+ * @param container イベント境界または表示領域となる要素
+ * @param documentValue 表セルへ設定するリッチテキスト文書
+ * @param assetUrls アセット識別子と表示URLの対応表
  */
 function renderTableCellDocumentPreview(container: HTMLElement, documentValue: TableCellRichTextDocument, assetUrls: ReadonlyMap<string, string>): void {
     container.replaceChildren();
     const visible = documentValue.content.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかのノードが要求条件を満たすか判定する。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns ノードの作成または検証する要素種別が「imageRef」と一致するまたはノードの処理対象の問題本文または解説のlengthが0より大きい場合はtrue
      */
     function hasMatchingItem55(node) {
         return node.type === "imageRef" || node.content.length > 0;
@@ -1153,10 +1169,10 @@ function renderTableCellDocumentPreview(container: HTMLElement, documentValue: T
     }
 }
 /**
- * getTableStructureKeyで必要な値を取得する。
+ * 表・Structure・キーを入力データまたは現在の状態から取り出す。
  *
- * @param attrs attrsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param attrs ノードへ設定する属性
+ * @returns JSON文字列として得た文字列。変換できない場合は関数固有の既定値
  */
 function getTableStructureKey(attrs: Record<string, unknown>): string {
     const rows = Array.isArray(attrs.rows) ? attrs.rows as TableRow[] : [];
@@ -1166,20 +1182,20 @@ function getTableStructureKey(attrs: Record<string, unknown>): string {
         answerColor: Boolean(attrs.answerColor),
         widths,
         rows: rows.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各処理対象の表の行を対象を一意に特定する識別子・ミリメートル単位の高さ・cellsを持つオブジェクトへ変換する。
          *
-         * @param row rowとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param row 処理対象の表の行
+         * @returns 対象を一意に特定する識別子・ミリメートル単位の高さ・cellsを持つオブジェクト
          */
         function mapItem56(row) {
             return ({
                 id: row.id,
                 heightMm: row.heightMm ?? null,
                 cells: row.cells.map((/**
-                 * 各要素を画面表示または別形式へ変換する。
+                 * 各処理対象の表セルを対象を一意に特定する識別子・行・Span・列・Spanを持つオブジェクトへ変換する。
                  *
-                 * @param cell cellとして使用する値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param cell 処理対象の表セル
+                 * @returns 対象を一意に特定する識別子・行・Span・列・Spanを持つオブジェクト
                  */
                 function mapItem57(cell) {
                     return ({ id: cell.id, rowSpan: cell.rowSpan, columnSpan: cell.columnSpan });
@@ -1188,12 +1204,16 @@ function getTableStructureKey(attrs: Record<string, unknown>): string {
         })),
     });
 }
+// --------------------
+// 段落と文字装飾
+// --------------------
+
 export const ParagraphTextAlign = Extension.create({
     name: "worksheetParagraphTextAlign",
     /**
-     * addGlobalAttributesの対象となる要素を追加する。
+     * Global・Attributesを現在の編集結果へ反映する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     addGlobalAttributes() {
         return [{
@@ -1202,19 +1222,19 @@ export const ParagraphTextAlign = Extension.create({
                     textAlign: {
                         default: "left",
                         parseHTML: (/**
-                         * parseHTMLの入力値を必要な形式へ変換する。
+                         * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
                          *
-                         * @param element 処理対象の値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param element 走査または監視の対象となる要素
+                         * @returns 二つの値を比較した結果
                          */
                         function parseHTMLCallback58(element) {
                             return element.style.textAlign || "left";
                         }),
                         renderHTML: (/**
-                         * renderHTMLに対応する画面表示を更新する。
+                         * TipTapノードの属性を安全なHTML属性へ変換して出力する。
                          *
-                         * @param attributes attributesとして使用する値
-                         * @returns 呼び出し元で使用する処理結果
+                         * @param attributes DOMへ出力する属性
+                         * @returns 表示対象へ適用する見た目の設定を持つオブジェクト
                          */
                         function renderHTMLCallback59(attributes) {
                             return ({ style: `text-align: ${String(attributes.textAlign ?? "left")}` });
@@ -1227,19 +1247,19 @@ export const ParagraphTextAlign = Extension.create({
 export const TextSize = Mark.create({
     name: "textSize",
     /**
-     * addAttributesの対象となる要素を追加する。
+     * TipTapノードへ保存・復元に必要な寸法や色の属性を定義する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 適用または検証する寸法を持つオブジェクト
      */
     addAttributes() {
         return {
             size: {
                 default: "large",
                 parseHTML: (/**
-                 * parseHTMLの入力値を必要な形式へ変換する。
+                 * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
                  *
-                 * @param element 処理対象の値
-                 * @returns 呼び出し元で使用する処理結果
+                 * @param element 走査または監視の対象となる要素
+                 * @returns 二つの値を比較した結果
                  */
                 function parseHTMLCallback60(element) {
                     return element.getAttribute("data-text-size") ?? "large";
@@ -1248,21 +1268,21 @@ export const TextSize = Mark.create({
         };
     },
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: "span[data-text-size]" }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["span", mergeAttributes(HTMLAttributes, {
                 "data-text-size": HTMLAttributes.size,
                 class: `text-size-${String(HTMLAttributes.size)}`,
@@ -1272,32 +1292,36 @@ export const TextSize = Mark.create({
 export const AnswerColor = Mark.create({
     name: "answerColor",
     /**
-     * parseHTMLの入力値を必要な形式へ変換する。
+     * DOM属性を検証し、TipTapノードが保持する型付き属性へ復元する。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 後続処理が順番に扱う結果の配列
      */
     parseHTML() {
         return [{ tag: "span[data-answer-color]" }];
     },
     /**
-     * renderHTMLに対応する画面表示を更新する。
+     * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
+     * @returns 後続処理が順番に扱う結果の配列
      */
-    renderHTML(parameter1) {
-        let { HTMLAttributes } = parameter1;
+    renderHTML(callbackInput) {
+        let { HTMLAttributes } = callbackInput;
         return ["span", mergeAttributes(HTMLAttributes, {
                 "data-answer-color": "true",
                 class: "answer-color",
             }), 0];
     },
 });
+// --------------------
+// 文書正規化
+// --------------------
+
 /**
- * normalizeMarksの入力値を必要な形式へ変換する。
+ * ProseMirrorの文字装飾から、保存スキーマが許可する種類と属性だけを重複なく取り出す。
  *
- * @param marks marksとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param marks リッチテキストへ適用する文字装飾一覧
+ * @returns 保存可能な文字装飾一覧。装飾がない場合はundefined
  */
 function normalizeMarks(marks: JSONContent["marks"]): RichTextMark[] | undefined {
     if (!marks)
@@ -1322,10 +1346,10 @@ function normalizeMarks(marks: JSONContent["marks"]): RichTextMark[] | undefined
     return normalized.length ? normalized : undefined;
 }
 /**
- * normalizeInlineNodeの入力値を必要な形式へ変換する。
+ * 種別・文書または画面へ設定する文字列・値を持つオブジェクトを一つの結果へまとめる。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns 作成または検証する要素種別・文書または画面へ設定する文字列・値を持つオブジェクトとして得た文字列。変換できない場合は関数固有の既定値
  */
 function normalizeInlineNode(node: JSONContent): Record<string, unknown> | null {
     if (node.type === "text" && typeof node.text === "string" && node.text.length > 0) {
@@ -1344,20 +1368,20 @@ function normalizeInlineNode(node: JSONContent): Record<string, unknown> | null 
     return null;
 }
 /**
- * normalizeParagraphの入力値を必要な形式へ変換する。
+ * 種別・属性・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns 作成または検証する要素種別・ノードへ設定する属性・処理対象の問題本文または解説を持つオブジェクトとして得た文字列。変換できない場合は関数固有の既定値
  */
 function normalizeParagraph(node: JSONContent): Record<string, unknown> {
     const textAlign = ["left", "center", "right"].includes(String(node.attrs?.textAlign))
         ? String(node.attrs?.textAlign)
         : "left";
     const content = (node.content ?? []).map(normalizeInlineNode).filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 要素がnullと異なる要素だけを後続処理へ残す。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素がnullと異なる場合はtrue
      */
     function filterItem61(item) {
         return item !== null;
@@ -1365,18 +1389,18 @@ function normalizeParagraph(node: JSONContent): Record<string, unknown> {
     return { type: "paragraph", attrs: { textAlign }, content };
 }
 /**
- * normalizeListItemの入力値を必要な形式へ変換する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクトとして得た文字列。変換できない場合は関数固有の既定値
  */
 function normalizeListItem(node: JSONContent): Record<string, unknown> {
     const content = (node.content ?? [])
         .filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 走査中の子ノードの作成または検証する要素種別が「paragraph」と一致する要素だけを後続処理へ残す。
      *
-     * @param child childとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param child 走査中の子ノード
+     * @returns 走査中の子ノードの作成または検証する要素種別が「paragraph」と一致する場合はtrue
      */
     function filterItem62(child) {
         return child.type === "paragraph";
@@ -1388,10 +1412,10 @@ function normalizeListItem(node: JSONContent): Record<string, unknown> {
     };
 }
 /**
- * normalizeBlockNodeの入力値を必要な形式へ変換する。
+ * ブロック・ノードを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param node 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param node 走査または変換するリッチテキストノード
+ * @returns normalize・Paragraphの結果として得た文字列。変換できない場合は関数固有の既定値
  */
 function normalizeBlockNode(node: JSONContent): Record<string, unknown> | null {
     if (node.type === "paragraph")
@@ -1399,10 +1423,10 @@ function normalizeBlockNode(node: JSONContent): Record<string, unknown> | null {
     if (node.type === "bulletList" || node.type === "orderedList") {
         const content = (node.content ?? [])
             .filter((/**
-         * 対象要素を結果へ残すか判定する。
+         * 走査中の子ノードの作成または検証する要素種別が「listItem」と一致する要素だけを後続処理へ残す。
          *
-         * @param child childとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param child 走査中の子ノード
+         * @returns 走査中の子ノードの作成または検証する要素種別が「listItem」と一致する場合はtrue
          */
         function filterItem63(child) {
             return child.type === "listItem";
@@ -1461,20 +1485,20 @@ function normalizeBlockNode(node: JSONContent): Record<string, unknown> | null {
     return null;
 }
 /**
- * isImagePlacementで表される条件を判定する。
+ * 画像・配置が仕様上の条件を満たすか判定する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value is・画像・配置で判定または変換する入力値
+ * @returns 変換・検証・保存の対象となる値が「block」と一致するまたは変換・検証・保存の対象となる値が「floatLeft」と一致するまたは変換・検証・保存の対象となる値が「floatRight」と一致する場合はtrue
  */
 function isImagePlacement(value: unknown): value is "block" | "floatLeft" | "floatRight" {
     return value === "block" || value === "floatLeft" || value === "floatRight";
 }
 /**
- * normalizeImageWidthの入力値を必要な形式へ変換する。
+ * 画像・幅を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @param placement placementとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value normalize・画像・幅で判定または変換する入力値
+ * @param placement 画像を本文の前後どちらへ置くかの指定
+ * @returns 条件に応じて選択した値
  */
 function normalizeImageWidth(value: unknown, placement: "block" | "floatLeft" | "floatRight"): 25 | 33 | 50 | 66 | 75 | 100 {
     const allowed = placement === "block" ? [25, 33, 50, 66, 75, 100] : [25, 33, 50];
@@ -1482,17 +1506,17 @@ function normalizeImageWidth(value: unknown, placement: "block" | "floatLeft" | 
     return (allowed.includes(width) ? width : 50) as 25 | 33 | 50 | 66 | 75 | 100;
 }
 /**
- * normalizeEditorDocumentの入力値を必要な形式へ変換する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 export function normalizeEditorDocument(document: JSONContent): BasicRichTextDocument {
     const content = (document.content ?? []).map(normalizeBlockNode).filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * 要素がnullと異なる要素だけを後続処理へ残す。
      *
-     * @param item 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param item 配列処理で現在参照している要素
+     * @returns 要素がnullと異なる場合はtrue
      */
     function filterItem64(item) {
         return item !== null;
@@ -1503,18 +1527,18 @@ export function normalizeEditorDocument(document: JSONContent): BasicRichTextDoc
     };
 }
 /**
- * normalizeTableCellEditorDocumentの入力値を必要な形式へ変換する。
+ * 種別・内容を持つオブジェクトを一つの結果へまとめる。
  *
- * @param document documentとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param document 処理対象のリッチテキスト文書
+ * @returns 作成または検証する要素種別・処理対象の問題本文または解説を持つオブジェクト
  */
 export function normalizeTableCellEditorDocument(document: JSONContent): TableCellRichTextDocument {
     const normalized = normalizeEditorDocument(document);
     const content = normalized.content.filter((/**
-     * 対象要素を結果へ残すか判定する。
+     * ノードの作成または検証する要素種別が「paragraph」と一致するまたはノードの作成または検証する要素種別が「imageRef」と一致する要素だけを後続処理へ残す。
      *
-     * @param node 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param node 走査または変換するリッチテキストノード
+     * @returns ノードの作成または検証する要素種別が「paragraph」と一致するまたはノードの作成または検証する要素種別が「imageRef」と一致する場合はtrue
      */
     function filterItem65(node) {
         return node.type === "paragraph" || node.type === "imageRef";

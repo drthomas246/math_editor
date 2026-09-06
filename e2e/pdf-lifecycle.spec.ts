@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 test("1ページPDFを実ブラウザで生成してダウンロードできる", (/**
- * 期待する振る舞いを検証する。
+ * 「1ページPDFを実ブラウザで生成してダウンロードできる」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase1({ page }) {
     test.setTimeout(60000);

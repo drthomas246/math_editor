@@ -12,9 +12,9 @@ const SUPPORTED_IMAGE_MIME_TYPES = new Set<ImageMimeType>([
 ]);
 export class ImageValidationError extends Error {
     /**
-     * 利用に必要な初期状態を設定する。
+     * このインスタンスの生成物または計測項目を識別する名前を「ImageValidationError」へ更新する。
      *
-     * @param message messageとして使用する値
+     * @param message 失敗時に表示する説明
      */
     constructor(message: string) {
         super(message);
@@ -26,9 +26,9 @@ export type ValidatedImageDimensions = {
     height: number;
 };
 /**
- * assertImageByteSizeに必要な処理を実行する。
+ * assert・画像・Byte・寸法が永続化・表示・テストの制約を満たすか検証する。
  *
- * @param byteLength byteLengthとして使用する値
+ * @param byteLength 許容するバイト数
  */
 export function assertImageByteSize(byteLength: number): void {
     if (byteLength > IMAGE_VALIDATION_LIMITS.bytesPerImage) {
@@ -36,11 +36,11 @@ export function assertImageByteSize(byteLength: number): void {
     }
 }
 /**
- * validateImageBlobに必要な処理を実行する。
+ * 画像・Blobが永続化または画面表示の制約を満たすか検証する。
  *
- * @param blob blobとして使用する値
- * @param expectedDimensions expectedDimensionsとして使用する値
- * @returns 非同期処理の結果
+ * @param blob 検証または保存するバイナリデータ
+ * @param expectedDimensions ファイル情報から期待される画像寸法
+ * @returns 要素または列へ適用する幅・要素またはページの高さを持つオブジェクトを一つの結果へまとめる処理の完了時に解決するPromise
  */
 export async function validateImageBlob(blob: Blob, expectedDimensions?: ValidatedImageDimensions): Promise<ValidatedImageDimensions> {
     if (!SUPPORTED_IMAGE_MIME_TYPES.has(blob.type as ImageMimeType)) {
@@ -74,11 +74,11 @@ export async function validateImageBlob(blob: Blob, expectedDimensions?: Validat
     }
 }
 /**
- * hasMatchingFileSignatureで表される条件を判定する。
+ * Matching・ファイル・Signatureが仕様上の条件を満たすか判定する。
  *
- * @param blob blobとして使用する値
- * @param mimeType mimeTypeとして使用する値
- * @returns 非同期処理の結果
+ * @param blob 検証または保存するバイナリデータ
+ * @param mimeType 画像ファイルのMIME形式
+ * @returns matchesの結果が真になるかを判定する処理の完了時に解決するPromise
  */
 async function hasMatchingFileSignature(blob: Blob, mimeType: ImageMimeType): Promise<boolean> {
     const bytes = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
@@ -93,20 +93,20 @@ async function hasMatchingFileSignature(blob: Blob, mimeType: ImageMimeType): Pr
     }
 }
 /**
- * matchesで表される条件を判定する。
+ * 画像の先頭バイトが期待するファイル署名と一致するか検証する。
  *
- * @param bytes bytesとして使用する値
- * @param signature signatureとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param bytes 検証または変換するバイト列
+ * @param signature 画像形式を識別する先頭バイト列
+ * @returns 検証または変換するバイト列の要素数が画像形式を識別する先頭バイト列の要素数以上であるかつeveryの結果が真になる場合はtrue
  */
 function matches(bytes: Uint8Array, signature: readonly number[]): boolean {
     return bytes.length >= signature.length
         && signature.every((/**
-         * すべての要素に求める条件を満たすか判定する。
+         * すべての変換・検証・保存の対象となる値に共通して要求する条件を検証する。
          *
-         * @param value 処理対象の値
+         * @param value is・Matching・Item1で判定または変換する入力値
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 検証または変換するバイト列内の指定位置の値が変換・検証・保存の対象となる値と一致する場合はtrue
          */
         function isMatchingItem1(value, index) {
             return bytes[index] === value;

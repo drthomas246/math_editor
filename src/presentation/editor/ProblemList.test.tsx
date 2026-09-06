@@ -4,57 +4,57 @@ import { createProblem, createWorksheet } from "../../domain/worksheet/worksheet
 import { useEditorStore } from "./editor-store";
 import { ProblemList } from "./ProblemList";
 const { renderCounts } = vi.hoisted((/**
- * hoistedへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すrender・Countsを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns render・Countsを持つオブジェクト
  */
 function hoistedCallback1() {
     return ({ renderCounts: new Map<string, number>() });
 }));
 vi.mock("./ProblemCard", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返す問題・カードを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 問題・カードを持つオブジェクト
  */
 function mockCallback2() {
     return ({
         ProblemCard: (/**
-         * ProblemCardコンポーネントを表示する。
+         * 一問分の種類・本文・解説・画像・表・小問を編集し、並べ替えや複製操作も提供する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput let・{・問題をまとめて受け取るコールバック入力
+         * @returns 問題・カードを表示するReact要素
          */
-        function ProblemCardCallback3(parameter1: {
+        function ProblemCardCallback3(callbackInput: {
             problem: {
                 id: string;
             };
         }) {
-            let { problem } = parameter1;
+            let { problem } = callbackInput;
             renderCounts.set(problem.id, (renderCounts.get(problem.id) ?? 0) + 1);
             return <article data-testid={`problem-${problem.id}`}/>;
         }),
     });
 }));
 describe("ProblemList", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「ProblemList」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite4() {
     afterEach((/**
-     * 各テストケースで使用した状態を後片付けする。
+     * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
      */
     function cleanUpTestCase5() {
         useEditorStore.getState().clear();
         renderCounts.clear();
     }));
     it("本文更新では対象Problemだけを再描画する", (/**
-     * 期待する振る舞いを検証する。
+     * 「本文更新では対象Problemだけを再描画する」という仕様を操作結果から検証する。
      */
     function runTestCase6() {
         const worksheet = createWorksheet();
         worksheet.problems = Array.from({ length: 20 }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとにcreate・問題の結果を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns create・問題の結果
          */
         function fromCallback7() {
             return createProblem();
@@ -64,15 +64,14 @@ function defineTestSuite4() {
         const view = render(<ProblemList assetUrls={new Map()} onAddImage={vi.fn()} onUpdateImage={vi.fn()} onToast={vi.fn()}/>);
         const initialCounts = new Map(renderCounts);
         act((/**
-         * actへ渡す処理を実行する。
+         * 「本文更新では対象Problemだけを再描画する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function actCallback8() {
             return useEditorStore.getState().mutate("本文を編集", (/**
-             * mutateへ渡す処理を実行する。
+             * 処理対象の問題本文または解説の処理対象のリッチテキスト文書の内容を順序を保った要素一覧へ更新する。
              *
-             * @param draft draftとして使用する値
+             * @param draft Immerが提供する更新中の状態
              */
             function mutateCallback9(draft) {
                 const content = draft.problems[10]?.contents[0];

@@ -3,18 +3,18 @@ import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { generateWorksheetPdf } from "./generate-pdf";
 import { OVERSIZED_PAGINATION_ERROR, OVERSIZED_PAGINATION_MESSAGE } from "./pdf-pagination-guard";
 const htmlToImage = vi.hoisted((/**
- * hoistedへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すcanvas・To・Blob・get・Font・Embed・CSS・to・Canvasを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns canvas・To・Blob・get・Font・Embed・CSS・to・Canvasを持つオブジェクト
  */
 function hoistedCallback1() {
     const canvasToBlob = vi.fn((/**
-     * fnへ渡す処理を実行する。
+     * 「対象機能」で外部依存から返す条件成立後に実行する処理の結果を固定し、検証を決定的にする。
      *
-     * @param callback callbackとして使用する値
-     * @param type typeとして使用する値
-     * @param quality qualityとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param callback 条件成立後に実行する処理
+     * @param type 作成または検証する要素種別
+     * @param quality PDF画像へ適用する圧縮品質
+     * @returns 条件成立後に実行する処理の結果
      */
     function fnCallback2(callback: BlobCallback, type?: string, quality?: number) {
         return callback(new Blob([`${type}:${quality}`], { type: type ?? "application/octet-stream" }));
@@ -22,21 +22,21 @@ function hoistedCallback1() {
     return {
         canvasToBlob,
         getFontEmbedCSS: vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「対象機能」で外部依存から返す「@font-face{font-family:KaTeX_Main}」を固定し、検証を決定的にする。
          *
-         * @param _node _nodeとして使用する値
-         * @param _options _optionsとして使用する値
-         * @returns 非同期処理の結果
+         * @param _node コールバックの契約上受け取るが、この処理では参照しないノード
+         * @param _options コールバックの契約上受け取るが、この処理では参照しないoptions
+         * @returns 「対象機能」で外部依存から返す「@font-face{font-family:KaTeX_Main}」を固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback3(_node: HTMLElement, _options?: Record<string, unknown>) {
             return "@font-face{font-family:KaTeX_Main}";
         })),
         toCanvas: vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「対象機能」で外部依存から返すto・Blobを持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @param _node _nodeとして使用する値
-         * @param _options _optionsとして使用する値
-         * @returns 非同期処理の結果
+         * @param _node コールバックの契約上受け取るが、この処理では参照しないノード
+         * @param _options コールバックの契約上受け取るが、この処理では参照しないoptions
+         * @returns 「対象機能」で外部依存から返すto・Blobを持つオブジェクトを固定し、検証を決定的にする処理の完了時に解決するPromise
          */
         async function fnCallback4(_node: HTMLElement, _options?: Record<string, unknown>) {
             return ({
@@ -46,22 +46,22 @@ function hoistedCallback1() {
     };
 }));
 const reactPdf = vi.hoisted((/**
- * hoistedへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すPDFを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns PDFを持つオブジェクト
  */
 function hoistedCallback5() {
     return ({
         pdf: vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「対象機能」で外部依存から返すto・Blobを持つオブジェクトを固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns to・Blobを持つオブジェクト
          */
         function fnCallback6() {
             return ({ toBlob: vi.fn((/**
-                 * fnへ渡す処理を実行する。
+                 * 「対象機能」で外部依存から返すBlobの新しいインスタンスを固定し、検証を決定的にする。
                  *
-                 * @returns 非同期処理の結果
+                 * @returns 「対象機能」で外部依存から返すBlobの新しいインスタンスを固定し、検証を決定的にする処理の完了時に解決するPromise
                  */
                 async function fnCallback7() {
                     return new Blob(["pdf"]);
@@ -70,17 +70,17 @@ function hoistedCallback5() {
     });
 }));
 vi.mock("html-to-image", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返すhtml・To・画像を固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns html・To・画像
  */
 function mockCallback8() {
     return htmlToImage;
 }));
 vi.mock("@react-pdf/renderer", (/**
- * mockへ渡す処理を実行する。
+ * 「対象機能」で外部依存から返す文書・画像・ページ・Style・Sheet・PDFを持つオブジェクトを固定し、検証を決定的にする。
  *
- * @returns 呼び出し元で使用する処理結果
+ * @returns 文書・画像・ページ・Style・Sheet・PDFを持つオブジェクト
  */
 function mockCallback9() {
     return ({
@@ -88,10 +88,10 @@ function mockCallback9() {
         Image: "Image",
         Page: "Page",
         StyleSheet: { create: (/**
-             * createで必要な値を作成する。
+             * 新しいプリントと画像アセットを同じトランザクションで保存する。
              *
-             * @param styles stylesとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param styles PDFレンダラーへ渡すスタイル定義
+             * @returns PDFレンダラーへ渡すスタイル定義
              */
             function createCallback10<T>(styles: T) {
                 return styles;
@@ -100,11 +100,11 @@ function mockCallback9() {
     });
 }));
 describe("generateWorksheetPdf", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「generateWorksheetPdf」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite11() {
     beforeEach((/**
-     * 各テストケースに必要な前提条件を準備する。
+     * 各テストが互いに影響しない初期状態とモックを準備する。
      */
     function prepareTestCase12() {
         htmlToImage.getFontEmbedCSS.mockClear();
@@ -112,10 +112,10 @@ function defineTestSuite11() {
         htmlToImage.canvasToBlob.mockClear();
         reactPdf.pdf.mockClear();
         vi.stubGlobal("requestAnimationFrame", (/**
-         * stubGlobalへ渡す処理を実行する。
+         * stub・Globalを条件成立後に実行する処理で処理し、その結果を呼び出し元へ反映する。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
+         * @returns 1
          */
         function stubGlobalCallback13(callback: FrameRequestCallback) {
             callback(0);
@@ -123,25 +123,24 @@ function defineTestSuite11() {
         }));
     }));
     afterEach((/**
-     * 各テストケースで使用した状態を後片付けする。
+     * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
      */
     function cleanUpTestCase14() {
         vi.unstubAllGlobals();
     }));
     it("embeds the preview's web fonts in every PDF page image", (/**
-     * 期待する振る舞いを検証する。
+     * 「embeds the preview's web fonts in every PDF page image」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase15() {
         const previewRoot = document.createElement("div");
         previewRoot.className = "preview-pages";
         const pages = [document.createElement("div"), document.createElement("div")];
         pages.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各ブラウザー操作と描画確認に使うPlaywrightページについてappendを実行し、対応関係または検証状態を更新する。
          *
-         * @param page pageとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param page ブラウザー操作と描画確認に使うPlaywrightページ
          */
         function processItem16(page) {
             return previewRoot.append(page);
@@ -164,9 +163,9 @@ function defineTestSuite11() {
         }
     }));
     it("rejects oversized preview content before rasterizing a PDF page", (/**
-     * 期待する振る舞いを検証する。
+     * 「rejects oversized preview content before rasterizing a PDF page」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase17() {
         const previewRoot = document.createElement("div");
@@ -181,18 +180,18 @@ function defineTestSuite11() {
         expect(reactPdf.pdf).not.toHaveBeenCalled();
     }));
     it("rejects when a browser cannot encode the page canvas", (/**
-     * 期待する振る舞いを検証する。
+     * 「rejects when a browser cannot encode the page canvas」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase18() {
         const page = document.createElement("div");
         document.body.append(page);
         htmlToImage.canvasToBlob.mockImplementationOnce((/**
-         * mockImplementationOnceへ渡す処理を実行する。
+         * 「rejects when a browser cannot encode the page canvas」で外部依存から返す条件成立後に実行する処理の結果を固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
+         * @returns 条件成立後に実行する処理の結果
          */
         function mockImplementationOnceCallback19(callback) {
             return callback(null);

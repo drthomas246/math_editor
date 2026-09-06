@@ -9,10 +9,10 @@ const MAX_GENERATION_MS = readPositiveNumber(process.env.PDF_BENCHMARK_MAX_GENER
 const MAX_MILLISECONDS_PER_PAGE = readPositiveNumber(process.env.PDF_BENCHMARK_MAX_MS_PER_PAGE, DEFAULT_MAX_MILLISECONDS_PER_PAGE);
 const scenarios = [
     ...PAGE_COUNTS.map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各生成するPDFのページ数を対象を一意に特定する識別子・生成する負荷データの規模区分・生成するPDFのページ数・descriptionを持つオブジェクトへ変換する。
      *
-     * @param pageCount pageCountとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param pageCount 生成するPDFのページ数
+     * @returns 対象を一意に特定する識別子・生成する負荷データの規模区分・生成するPDFのページ数・descriptionを持つオブジェクト
      */
     function mapItem1(pageCount) {
         return ({
@@ -31,11 +31,11 @@ const scenarios = [
 ];
 for (const scenario of scenarios) {
     test(`${scenario.description}を含むPDFの生成時間・heap・成功を計測する`, (/**
-     * 期待する振る舞いを検証する。
+     * 「${scenario.description}を含むPDFの生成時間・heap・成功を計測する」という仕様を操作結果から検証する。
      *
      * @param page Playwrightが提供するブラウザーページ
      * @param testInfo 実行中のテスト情報
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase2({ page }, testInfo) {
         test.setTimeout(MAX_GENERATION_MS + 240000);
@@ -130,42 +130,40 @@ for (const scenario of scenarios) {
     }));
 }
 /**
- * seedWorksheetに必要な処理を実行する。
+ * seed・プリントをgotoで処理し、その結果を呼び出し元へ反映する。
  *
- * @param page pageとして使用する値
- * @param fixture fixtureとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @param fixture ブラウザーへ投入する性能測定用データ一式
+ * @returns seed・プリントをgotoで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 async function seedWorksheet(page: Page, fixture: PdfBenchmarkFixture): Promise<void> {
     await page.goto("/");
     await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 非同期処理の結果
+     * @param callbackInput let・{・プリント・プリントに関連付ける画像アセット一覧をまとめて受け取るコールバック入力
+     * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
      */
-    async function evaluateCallback3(parameter1) {
-        let { worksheet, assets } = parameter1;
+    async function evaluateCallback3(callbackInput) {
+        let { worksheet, assets } = callbackInput;
         const database = await new Promise<IDBDatabase>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback4(resolve, reject) {
+        function settlePromise4(resolve, reject) {
             const request = indexedDB.open("math-worksheet-db");
             request.addEventListener("success", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent5() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent6() {
                 return reject(request.error);
@@ -175,18 +173,18 @@ async function seedWorksheet(page: Page, fixture: PdfBenchmarkFixture): Promise<
         transaction.objectStore("worksheets").put(worksheet);
         const assetStore = transaction.objectStore("assets");
         assets.forEach((/**
-         * 各要素へ必要な処理を適用する。
+         * 各処理対象の画像アセットについてatobを実行し、対応関係または検証状態を更新する。
          *
-         * @param asset assetとして使用する値
+         * @param asset 処理対象の画像アセット
          */
         function processItem7(asset) {
             const { dataBase64, ...metadata } = asset;
             const binary = atob(dataBase64);
             const bytes = Uint8Array.from(binary, (/**
-             * fromへ渡す処理を実行する。
+             * 配列位置ごとにchar・結果理由・Atの結果を生成し、fixtureまたはバイナリの要素として格納する。
              *
-             * @param character characterとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param character 検査中の一文字
+             * @returns char・コード・位置の結果
              */
             function fromCallback8(character) {
                 return character.charCodeAt(0);
@@ -194,32 +192,29 @@ async function seedWorksheet(page: Page, fixture: PdfBenchmarkFixture): Promise<
             assetStore.put({ ...metadata, blob: new Blob([bytes], { type: asset.mimeType }) });
         }));
         await new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback9(resolve, reject) {
+        function settlePromise9(resolve, reject) {
             transaction.addEventListener("complete", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent10() {
                 return resolve();
             }), { once: true });
             transaction.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent11() {
                 return reject(transaction.error);
             }), { once: true });
             transaction.addEventListener("abort", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent12() {
                 return reject(transaction.error);
@@ -234,23 +229,24 @@ type HeapSampleState = {
     timer: number;
 };
 /**
- * startHeapSamplingに必要な処理を実行する。
+ * PDF生成前のJavaScript heap使用量をChromiumの開発者プロトコルで計測開始する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns PDF生成前のJavaScript heap使用量をChromiumの開発者プロトコルで計測開始する処理の完了時に解決するPromise
  */
 async function startHeapSampling(page: Page): Promise<void> {
     await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザーの対応APIからheap使用量を取得し、未対応時はnullを返す。
+      * @returns ブラウザー内で取得または計測した値
      */
     function evaluateCallback13() {
         const target = window as typeof window & {
             __pdfBenchmarkHeap?: HeapSampleState;
         };
         const read = (/**
-         * readで必要な値を取得する。
+         * readを入力データまたは現在の状態から取り出す。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 条件に応じて選択した値から算出した数値
          */
         function readImplementation14(): number | null {
             return "memory" in performance
@@ -264,7 +260,7 @@ async function startHeapSampling(page: Page): Promise<void> {
         const baselineBytes = read();
         const samples = baselineBytes === null ? [] : [baselineBytes];
         const timer = window.setInterval((/**
-         * setIntervalへ渡す処理を実行する。
+         * Intervalを現在の編集結果へ反映する。
          */
         function setIntervalCallback15() {
             const value = read();
@@ -275,10 +271,10 @@ async function startHeapSampling(page: Page): Promise<void> {
     }));
 }
 /**
- * stopHeapSamplingに必要な処理を実行する。
+ * heap計測を終了し、PDF生成中の使用量サンプルを回収する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns heap計測を終了し、PDF生成中の使用量サンプルを回収する処理の完了時に解決するPromise
  */
 async function stopHeapSampling(page: Page): Promise<{
     baselineBytes: number | null;
@@ -291,9 +287,9 @@ async function stopHeapSampling(page: Page): Promise<{
     }
     try {
         return await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーの対応APIからheap使用量を取得し、未対応時はnullを返す。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns ブラウザー内で取得または計測した値
          */
         function evaluateCallback16() {
             const target = window as typeof window & {
@@ -329,10 +325,10 @@ async function stopHeapSampling(page: Page): Promise<{
     }
 }
 /**
- * browserIdentityに必要な処理を実行する。
+ * 性能測定結果へ添付するブラウザー名とバージョンを取得する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns 性能測定結果へ添付するブラウザー名とバージョンを取得する処理の完了時に解決するPromise
  */
 async function browserIdentity(page: Page): Promise<{
     userAgent: string;
@@ -341,9 +337,9 @@ async function browserIdentity(page: Page): Promise<{
         return { userAgent: "browser page closed" };
     try {
         return await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザー内のDOMまたはWeb APIを操作し、Node側では取得できない検証値を返す。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns ブラウザー内で取得または計測した値
          */
         function evaluateCallback17() {
             return ({ userAgent: navigator.userAgent });
@@ -354,10 +350,10 @@ async function browserIdentity(page: Page): Promise<{
     }
 }
 /**
- * readPdfPerformanceMeasuresで必要な値を取得する。
+ * PDF・Performance・Measuresを入力データまたは現在の状態から取り出す。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns PDF・Performance・Measuresを入力データまたは現在の状態から取り出す処理の完了時に解決するPromise
  */
 async function readPdfPerformanceMeasures(page: Page): Promise<{
     fonts: number | null;
@@ -365,16 +361,16 @@ async function readPdfPerformanceMeasures(page: Page): Promise<{
     assembly: number | null;
 }> {
     return page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザー内のDOMまたはWeb APIを操作し、Node側では取得できない検証値を返す。
      *
-     * @returns 呼び出し元で使用する処理結果
+     * @returns ブラウザー内で取得または計測した値
      */
     function evaluateCallback18() {
         const duration = (/**
-         * durationに必要な処理を実行する。
+         * 一回の編集操作に要したミリ秒数を表操作を適用する位置で処理し、その結果を呼び出し元へ反映する。
          *
-         * @param name nameとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param name 生成物または計測項目を識別する名前
+          * @returns 二つの値を比較した結果から算出した数値
          */
         function durationImplementation19(name: string): number | null {
             return performance.getEntriesByName(name, "measure").at(-1)?.duration ?? null;
@@ -387,12 +383,12 @@ async function readPdfPerformanceMeasures(page: Page): Promise<{
     }));
 }
 /**
- * attachResultに必要な処理を実行する。
+ * 性能測定結果を後から比較できるJSONとしてPlaywrightレポートへ添付する。
  *
- * @param testInfo testInfoとして使用する値
+ * @param testInfo 計測結果を添付するPlaywrightテスト情報
  * @param scenarioId 対象を識別するID
  * @param result 処理によって得られた結果
- * @returns 非同期処理の結果
+ * @returns 性能測定結果を後から比較できるJSONとしてPlaywrightレポートへ添付する処理の完了時に解決するPromise
  */
 async function attachResult(testInfo: TestInfo, scenarioId: string, result: unknown): Promise<void> {
     await testInfo.attach(`pdf-${scenarioId}-benchmark.json`, {
@@ -401,46 +397,46 @@ async function attachResult(testInfo: TestInfo, scenarioId: string, result: unkn
     });
 }
 /**
- * formatBytesの入力値を必要な形式へ変換する。
+ * Bytesを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・Bytesで判定または変換する入力値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function formatBytes(value: number | null): string {
     return value === null ? "unavailable" : `${(value / 1024 / 1024).toFixed(1)}MiB`;
 }
 /**
- * formatMillisecondsの入力値を必要な形式へ変換する。
+ * Millisecondsを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・Millisecondsで判定または変換する入力値
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 function formatMilliseconds(value: number | null): string {
     return value === null ? "unavailable" : `${value.toFixed(1)}ms`;
 }
 /**
- * readPageCountsで必要な値を取得する。
+ * ページ・Countsを入力データまたは現在の状態から取り出す。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・ページ・Countsで判定または変換する入力値
+ * @returns 順序を保った要素一覧から算出した数値
  */
 function readPageCounts(value: string | undefined): number[] {
     if (value === undefined)
         return [50, 100];
     const values = value.split(",").map((/**
-     * 各要素を画面表示または別形式へ変換する。
+     * 各キーと値の組を番号の結果へ変換する。
      *
-     * @param entry 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param entry キーと値の組
+     * @returns 番号の結果
      */
     function mapItem20(entry) {
         return Number(entry.trim());
     }));
     if (values.length === 0 || values.some((/**
-     * 条件に一致する要素か判定する。
+     * いずれかのentryが要求条件を満たすか判定する。
      *
-     * @param entry 処理対象の値
-     * @returns 呼び出し元で使用する処理結果
+     * @param entry キーと値の組
+     * @returns is・Integerの結果が存在しないまたはキーと値の組が0以下であるまたはキーと値の組が200より大きい場合はtrue
      */
     function hasMatchingItem21(entry) {
         return !Number.isInteger(entry) || entry <= 0 || entry > 200;
@@ -450,11 +446,11 @@ function readPageCounts(value: string | undefined): number[] {
     return [...new Set(values)];
 }
 /**
- * readPositiveNumberで必要な値を取得する。
+ * 環境変数の文字列を正の数として検証し、不正な場合は安全な既定値へ戻す。
  *
- * @param value 処理対象の値
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・Positive・番号で判定または変換する入力値
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 設定値が不正な場合に採用する既定値から算出した数値
  */
 function readPositiveNumber(value: string | undefined, fallback: number): number {
     if (value === undefined)
@@ -466,11 +462,11 @@ function readPositiveNumber(value: string | undefined, fallback: number): number
     return parsed;
 }
 /**
- * readPositiveIntegerで必要な値を取得する。
+ * 環境変数の文字列を正の整数として検証し、不正な場合は安全な既定値へ戻す。
  *
- * @param value 処理対象の値
- * @param fallback fallbackとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value read・Positive・Integerで判定または変換する入力値
+ * @param fallback 設定値が不正な場合に採用する既定値
+ * @returns 設定値が不正な場合に採用する既定値から算出した数値
  */
 function readPositiveInteger(value: string | undefined, fallback: number): number {
     if (value === undefined)

@@ -5,11 +5,11 @@ import { createAnswerAreaBlock, createBoxBlock, createRichTextBlock, createSubQu
 import "../../styles.css";
 import { ProblemCard } from "./ProblemCard";
 describe("ProblemCard", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「ProblemCard」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     it("静的な内容と教師用の解説をキーボードで選択でき、装飾グリップを操作要素にしない", (/**
-     * 期待する振る舞いを検証する。
+     * 「静的な内容と教師用の解説をキーボードで選択でき、装飾グリップを操作要素にしない」という仕様を操作結果から検証する。
      */
     function runTestCase2() {
         const worksheet = createWorksheet();
@@ -33,7 +33,7 @@ function defineTestSuite1() {
         expect(view.container.querySelector(".drag-handle")).toHaveAttribute("aria-hidden", "true");
     }));
     it("選択中の内容または教師用解説だけにTipTapエディターを生成する", (/**
-     * 期待する振る舞いを検証する。
+     * 「選択中の内容または教師用解説だけにTipTapエディターを生成する」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         const worksheet = createWorksheet();
@@ -74,7 +74,7 @@ function defineTestSuite1() {
         expect(view.container.querySelector(".solution-editor-static")).toBeInTheDocument();
     }));
     it("文字入力をWorksheet全体Commandではなく部分Immer更新へ渡す", (/**
-     * 期待する振る舞いを検証する。
+     * 「文字入力をWorksheet全体Commandではなく部分Immer更新へ渡す」という仕様を操作結果から検証する。
      */
     function runTestCase4() {
         const worksheet = createWorksheet();
@@ -86,13 +86,13 @@ function defineTestSuite1() {
         fireEvent.change(view.getByPlaceholderText("題名（空欄可）"), { target: { value: "重要" } });
         expect(onMutate).toHaveBeenCalledWith("囲み枠の題名", expect.any(Function), { historyGroup: `text:${problem.id}:content:${box.id}:title` });
         const mutation = onMutate.mock.calls.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 画面表示やテスト識別に使う名称が「囲み枠の題名」と一致する最初の要素を検索する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput コールバックの呼び出し元から渡される入力情報
+         * @returns 画面表示やテスト識別に使う名称が「囲み枠の題名」と一致する場合はtrue
          */
-        function findItem5(parameter1) {
-            let [label] = parameter1;
+        function findItem5(callbackInput) {
+            let [label] = callbackInput;
             return label === "囲み枠の題名";
         }))?.[1];
         const updated = produce(worksheet, mutation);
@@ -100,7 +100,7 @@ function defineTestSuite1() {
         expect(updated.problems[0]).not.toBe(worksheet.problems[0]);
     }));
     it("カード見出しで問題から例題へ変更する", (/**
-     * 期待する振る舞いを検証する。
+     * 「カード見出しで問題から例題へ変更する」という仕様を操作結果から検証する。
      */
     function runTestCase6() {
         const worksheet = createWorksheet();
@@ -111,7 +111,7 @@ function defineTestSuite1() {
         expect(onCommit).toHaveBeenCalledWith("問題の種類を変更", expect.objectContaining({ problems: [expect.objectContaining({ kind: "example" })] }));
     }));
     it("内容の追加から画像と表を除き、選択中の内容のツールバーには残す", (/**
-     * 期待する振る舞いを検証する。
+     * 「内容の追加から画像と表を除き、選択中の内容のツールバーには残す」という仕様を操作結果から検証する。
      */
     function runTestCase7() {
         const worksheet = createWorksheet();
@@ -132,7 +132,7 @@ function defineTestSuite1() {
         expect(view.container.querySelectorAll(".content-card-static")).toHaveLength(1);
     }));
     it("問題メニューと内容追加メニューを外側の操作で閉じる", (/**
-     * 期待する振る舞いを検証する。
+     * 「問題メニューと内容追加メニューを外側の操作で閉じる」という仕様を操作結果から検証する。
      */
     function runTestCase8() {
         const worksheet = createWorksheet();
@@ -148,7 +148,7 @@ function defineTestSuite1() {
         expect(view.container.querySelector(".add-content-popover")).not.toBeInTheDocument();
     }));
     it("生徒用解答欄の1つの文章欄で問題色・解答色を選んで数式と表を入力できる", (/**
-     * 期待する振る舞いを検証する。
+     * 「生徒用解答欄の1つの文章欄で問題色・解答色を選んで数式と表を入力できる」という仕様を操作結果から検証する。
      */
     function runTestCase9() {
         const worksheet = createWorksheet();
@@ -170,13 +170,13 @@ function defineTestSuite1() {
         const tableDialog = view.getByRole("dialog", { name: "表を挿入" });
         fireEvent.click(within(tableDialog).getByRole("button", { name: "挿入" }));
         const insertedWorksheet = onCommit.mock.calls.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 画面表示やテスト識別に使う名称が「表を挿入」と一致する最初の要素を検索する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput コールバックの呼び出し元から渡される入力情報
+         * @returns 画面表示やテスト識別に使う名称が「表を挿入」と一致する場合はtrue
          */
-        function findItem10(parameter1) {
-            let [label] = parameter1;
+        function findItem10(callbackInput) {
+            let [label] = callbackInput;
             return label === "表を挿入";
         }))?.[1];
         const insertedArea = insertedWorksheet?.problems[0]?.contents[0];
@@ -186,7 +186,7 @@ function defineTestSuite1() {
         });
     }));
     it("教師用の解説に数式、画像、表の挿入操作を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「教師用の解説に数式、画像、表の挿入操作を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase11() {
         const worksheet = createWorksheet();
@@ -225,13 +225,13 @@ function defineTestSuite1() {
         const tableDialog = view.getByRole("dialog", { name: "表を挿入" });
         fireEvent.click(within(tableDialog).getByRole("button", { name: "挿入" }));
         const insertedWorksheet = onCommit.mock.calls.find((/**
-         * 検索条件に一致する要素か判定する。
+         * 画面表示やテスト識別に使う名称が「表を挿入」と一致する最初の要素を検索する。
          *
-         * @param parameter1 parameter1として使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callbackInput コールバックの呼び出し元から渡される入力情報
+         * @returns 画面表示やテスト識別に使う名称が「表を挿入」と一致する場合はtrue
          */
-        function findItem12(parameter1) {
-            let [label] = parameter1;
+        function findItem12(callbackInput) {
+            let [label] = callbackInput;
             return label === "表を挿入";
         }))?.[1];
         expect(insertedWorksheet?.problems[0]?.solution?.content.at(-1)?.type).toBe("richTable");

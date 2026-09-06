@@ -13,39 +13,40 @@ const EXPECTED_VALIDATOR_PATH = "scripts/validate_math_worksheet.mjs";
 const VALIDATOR_METADATA_PATTERN = /^\/\* math-editor-validator-metadata (\{[^\r\n]+\}) \*\/$/mu;
 type JsonObject = Record<string, unknown>;
 /**
- * isObjectで表される条件を判定する。
+ * Objectが仕様上の条件を満たすか判定する。
  *
- * @param value 処理対象の値
- * @returns 呼び出し元で使用する処理結果
+ * @param value is・Objectで判定または変換する入力値
+ * 値が配列とnullを除くJSONオブジェクトか判定する。
+  * @returns 変換・検証・保存の対象となる値の型が「object」と一致するかつ変換・検証・保存の対象となる値が対象が存在しないことを示すnullと異なるかつis・Arrayの結果が存在しない場合はtrue
  */
 function isObject(value: unknown): value is JsonObject {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 /**
- * normalizeNewlinesの入力値を必要な形式へ変換する。
+ * 環境差による比較失敗を避けるため、改行コードをLFへ統一する。
  *
- * @param contents contentsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param contents 検証または変換するファイル内容
+ * @returns replaceの結果として得た文字列。変換できない場合は関数固有の既定値
  */
 function normalizeNewlines(contents: string): string {
     return contents.replace(/\r\n?/gu, "\n");
 }
 /**
- * sha256に必要な処理を実行する。
+ * shaをto・Upper・Caseで処理し、その結果を呼び出し元へ反映する。
  *
- * @param contents contentsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param contents 検証または変換するファイル内容
+ * @returns to・Upper・Caseの結果として得た文字列。変換できない場合は関数固有の既定値
  */
 function sha256(contents: string): string {
     return createHash("sha256").update(contents, "utf8").digest("hex").toUpperCase();
 }
 /**
- * parseJsonの入力値を必要な形式へ変換する。
+ * Jsonを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param contents contentsとして使用する値
- * @param label labelとして使用する値
- * @param errors errorsとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param contents 検証または変換するファイル内容
+ * @param label 画面表示やテスト識別に使う名称
+ * @param errors 検出した不整合の追加先
+ * @returns スキーマ検証済みのデータ
  */
 function parseJson(contents: string, label: string, errors: string[]): unknown {
     try {
@@ -57,12 +58,12 @@ function parseJson(contents: string, label: string, errors: string[]): unknown {
     }
 }
 /**
- * expectEqualに必要な処理を実行する。
+ * expect・Equalをpushで処理し、その結果を呼び出し元へ反映する。
  *
- * @param actual actualとして使用する値
- * @param expected expectedとして使用する値
- * @param message messageとして使用する値
- * @param errors errorsとして使用する値
+ * @param actual 実際に生成された内容
+ * @param expected 検証で期待する値
+ * @param message 失敗時に表示する説明
+ * @param errors 検出した不整合の追加先
  */
 function expectEqual(actual: unknown, expected: unknown, message: string, errors: string[]): void {
     if (actual !== expected) {
@@ -70,22 +71,22 @@ function expectEqual(actual: unknown, expected: unknown, message: string, errors
     }
 }
 /**
- * readValidatorSchemaVersionで必要な値を取得する。
+ * Validator・Schema・Versionを入力データまたは現在の状態から取り出す。
  *
- * @param errors errorsとして使用する値
- * @returns 非同期処理の結果
+ * @param errors 検出した不整合の追加先
+ * @returns Validator・Schema・Versionを入力データまたは現在の状態から取り出す処理の完了時に解決するPromise
  */
 async function readValidatorSchemaVersion(errors: string[]): Promise<unknown> {
     const result = await new Promise<{
         stdout: string;
         stderr: string;
     }>((/**
-     * 呼び出し元から要求された処理を実行する。
+     * コールバック型APIの完了と失敗を、呼び出し側がawaitできるPromiseへ変換する。
      *
-     * @param resolve resolveとして使用する値
-     * @param reject rejectとして使用する値
+     * @param resolve 非同期処理を正常完了させるPromise関数
+     * @param reject 非同期処理を失敗として終了させるPromise関数
      */
-    function commentRuleCallback1(resolve, reject) {
+    function settlePromise1(resolve, reject) {
         const child = spawn(process.execPath, [validatorPath], {
             stdio: ["ignore", "pipe", "pipe"],
         });
@@ -94,35 +95,34 @@ async function readValidatorSchemaVersion(errors: string[]): Promise<unknown> {
         child.stdout.setEncoding("utf8");
         child.stderr.setEncoding("utf8");
         child.stdout.on("data", (/**
-         * onへ渡す処理を実行する。
+         * onの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
          *
-         * @param chunk chunkとして使用する値
+         * @param chunk ハッシュ計算へ順番に入力するデータ断片
          */
         function onCallback2(chunk: string) {
             stdout += chunk;
         }));
         child.stderr.on("data", (/**
-         * onへ渡す処理を実行する。
+         * onの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
          *
-         * @param chunk chunkとして使用する値
+         * @param chunk ハッシュ計算へ順番に入力するデータ断片
          */
         function onCallback3(chunk: string) {
             stderr += chunk;
         }));
         child.on("error", reject);
         child.on("close", (/**
-         * onへ渡す処理を実行する。
+         * onの通知内容を、対応する編集状態・DOM・永続処理へ反映する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function onCallback4() {
             return resolve({ stdout, stderr });
         }));
     })).catch((/**
-     * 非同期処理で発生した失敗を処理する。
+     * 非同期処理の失敗を利用者向けのエラー状態または終了コードへ変換する。
      *
      * @param error 処理中に発生したエラー
-     * @returns 呼び出し元で使用する処理結果
+     * @returns 対象が存在しないことを示すnull
      */
     function handleRejectedValue5(error: unknown) {
         errors.push(`Validatorを実行できません: ${error instanceof Error ? error.message : String(error)}`);
@@ -200,10 +200,9 @@ else {
 if (errors.length > 0) {
     console.error("AI SkillのSchema同梱物が同期されていません:");
     errors.forEach((/**
-     * 各要素へ必要な処理を適用する。
+     * 各エラーについてエラーを実行し、対応関係または検証状態を更新する。
      *
      * @param error 処理中に発生したエラー
-     * @returns 呼び出し元で使用する処理結果
      */
     function processItem6(error) {
         return console.error(`- ${error}`);

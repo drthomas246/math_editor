@@ -5,24 +5,24 @@ import { plainTextToDocument } from "../../domain/worksheet/rich-text";
 import { createAnswerAreaBlock, createGoalBlock, createProblem, createSubQuestionGroup, createTableBlock, createWorksheet, emptyDocument } from "../../domain/worksheet/worksheet.defaults";
 import { WorksheetPreview } from "./WorksheetPreview";
 describe("WorksheetPreview header", (/**
- * 関連するテストケースをまとめて定義する。
+ * 「WorksheetPreview header」に関するテスト条件と検証例をまとめる。
  */
 function defineTestSuite1() {
     afterEach((/**
-     * 各テストケースで使用した状態を後片付けする。
+     * 各テストで変更したDOM・モック・永続状態を次のテスト前に復元する。
      */
     function cleanUpTestCase2() {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
     }));
     it("places the year, class, and number lines before their labels", (/**
-     * 期待する振る舞いを検証する。
+     * 「places the year, class, and number lines before their labels」という仕様を操作結果から検証する。
      */
     function runTestCase3() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「places the year, class, and number lines before their labels」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 1
          */
         function fnCallback4() {
             return 1;
@@ -31,19 +31,19 @@ function defineTestSuite1() {
         const { container } = render(<WorksheetPreview worksheet={createWorksheet()} mode="questions" zoom={1} assetUrls={new Map()}/>);
         const fields = Array.from(container.querySelectorAll<HTMLElement>(".preview-page-wrap .paper-fields span"));
         expect(fields.map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各寸法を書き換える画像フィールドを寸法を書き換える画像フィールドのテキスト・内容へ変換する。
          *
-         * @param field fieldとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param field 寸法を書き換える画像フィールド
+         * @returns 寸法を書き換える画像フィールドのテキスト・内容
          */
         function mapItem5(field) {
             return field.textContent;
         }))).toEqual(["年", "組", "番", "名前"]);
         expect(fields.slice(0, 3).map((/**
-         * 各要素を画面表示または別形式へ変換する。
+         * 各寸法を書き換える画像フィールドを寸法を書き換える画像フィールドのfirst・要素・子要素のtag・名前へ変換する。
          *
-         * @param field fieldとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param field 寸法を書き換える画像フィールド
+         * @returns 寸法を書き換える画像フィールドのfirst・要素・子要素のtag・名前
          */
         function mapItem6(field) {
             return field.firstElementChild?.tagName;
@@ -51,13 +51,13 @@ function defineTestSuite1() {
         expect(fields[3]?.lastElementChild?.tagName).toBe("I");
     }));
     it("問題と例題の種類および独立した番号を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「問題と例題の種類および独立した番号を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase7() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「問題と例題の種類および独立した番号を表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 1
          */
         function fnCallback8() {
             return 1;
@@ -69,10 +69,10 @@ function defineTestSuite1() {
         worksheet.problems[3]!.kind = "example";
         const { container } = render(<WorksheetPreview worksheet={worksheet} mode="questions" zoom={1} assetUrls={new Map()}/>);
         const headings = Array.from(container.querySelectorAll<HTMLElement>(".preview-page-wrap .paper-problem-number"), (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに処理対象の要素のテキスト・内容を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param element 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param element 走査または監視の対象となる要素
+         * @returns 処理対象の要素のテキスト・内容
          */
         function fromCallback9(element) {
             return element.textContent;
@@ -80,13 +80,13 @@ function defineTestSuite1() {
         expect(headings).toEqual(["問1.", "例1.", "問2.", "例2."]);
     }));
     it("プリント設定で選んだ小問番号形式を表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「プリント設定で選んだ小問番号形式を表示する」という仕様を操作結果から検証する。
      */
     function runTestCase10() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「プリント設定で選んだ小問番号形式を表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 1
          */
         function fnCallback11() {
             return 1;
@@ -97,10 +97,10 @@ function defineTestSuite1() {
         worksheet.problems[0]!.contents = [createSubQuestionGroup()];
         const { container } = render(<WorksheetPreview worksheet={worksheet} mode="questions" zoom={1} assetUrls={new Map()}/>);
         const numbers = Array.from(container.querySelectorAll<HTMLElement>(".preview-page-wrap .paper-subquestion b"), (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに処理対象の要素のテキスト・内容を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param element 処理対象の値
-         * @returns 呼び出し元で使用する処理結果
+         * @param element 走査または監視の対象となる要素
+         * @returns 処理対象の要素のテキスト・内容
          */
         function fromCallback12(element) {
             return element.textContent;
@@ -108,13 +108,13 @@ function defineTestSuite1() {
         expect(numbers).toEqual(["①", "②"]);
     }));
     it("問題のみは黒だけ、解答付きは黒と赤およびめあてを表示する", (/**
-     * 期待する振る舞いを検証する。
+     * 「問題のみは黒だけ、解答付きは黒と赤およびめあてを表示する」という仕様を操作結果から検証する。
      */
     function runTestCase13() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「問題のみは黒だけ、解答付きは黒と赤およびめあてを表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 1
          */
         function fnCallback14() {
             return 1;
@@ -179,13 +179,13 @@ function defineTestSuite1() {
         expect(answerPage?.querySelector(".paper-table")).toBeInTheDocument();
     }));
     it("問題のみでも下線付き解答色テキストの幅と下線を残す", (/**
-     * 期待する振る舞いを検証する。
+     * 「問題のみでも下線付き解答色テキストの幅と下線を残す」という仕様を操作結果から検証する。
      */
     function runTestCase15() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「問題のみでも下線付き解答色テキストの幅と下線を残す」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 1
          */
         function fnCallback16() {
             return 1;
@@ -219,32 +219,29 @@ function defineTestSuite1() {
         expect(withAnswers.container.querySelector(".preview-page-wrap .answer-color")).toHaveTextContent("下線上の解答");
     }));
     it("同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する", (/**
-     * 期待する振る舞いを検証する。
+     * 「同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase17() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する」で外部依存から返すset・Timeoutの結果を固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
          */
         function fnCallback18(callback: FrameRequestCallback) {
             return window.setTimeout((/**
-             * 指定時間後に必要な処理を実行する。
+             * 連続操作が落ち着いてから、保留中の保存または表示更新を実行する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleScheduledTask19() {
                 return callback(0);
             }), 0);
         })));
         vi.stubGlobal("cancelAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する」で外部依存から返すclear・Timeoutの結果を固定し、検証を決定的にする。
          *
          * @param id 対象を識別するID
-         * @returns 呼び出し元で使用する処理結果
          */
         function fnCallback20(id: number) {
             return window.clearTimeout(id);
@@ -252,18 +249,16 @@ function defineTestSuite1() {
         const worksheet = createWorksheet();
         const view = render(<WorksheetPreview worksheet={worksheet} mode="questions" zoom={1} assetUrls={new Map()}/>);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback21() {
             return expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true");
         }));
         view.rerender(<WorksheetPreview worksheet={worksheet} mode="questionsAndAnswers" zoom={1} assetUrls={new Map()}/>);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「同じWorksheetのまま問題＋解答へ切り替えても再度ページ分割する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback22() {
             return expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true");
@@ -271,32 +266,29 @@ function defineTestSuite1() {
         expect(view.container.querySelectorAll(".preview-page-wrap")).toHaveLength(2);
     }));
     it("計測DOMを外す前にResizeObserverを停止する", (/**
-     * 期待する振る舞いを検証する。
+     * 「計測DOMを外す前にResizeObserverを停止する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase23() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「計測DOMを外す前にResizeObserverを停止する」で外部依存から返すset・Timeoutの結果を固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
          */
         function fnCallback24(callback: FrameRequestCallback) {
             return window.setTimeout((/**
-             * 指定時間後に必要な処理を実行する。
+             * 連続操作が落ち着いてから、保留中の保存または表示更新を実行する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleScheduledTask25() {
                 return callback(0);
             }), 0);
         })));
         vi.stubGlobal("cancelAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「計測DOMを外す前にResizeObserverを停止する」で外部依存から返すclear・Timeoutの結果を固定し、検証を決定的にする。
          *
          * @param id 対象を識別するID
-         * @returns 呼び出し元で使用する処理結果
          */
         function fnCallback26(id: number) {
             return window.clearTimeout(id);
@@ -304,19 +296,18 @@ function defineTestSuite1() {
         const disconnect = vi.fn();
         vi.stubGlobal("ResizeObserver", class {
             /**
-             * observeに必要な処理を実行する。
+             * 現在の状態を基にobserveを導出する。
              */
             observe() { }
             /**
-             * disconnectに必要な処理を実行する。
+             * 不要になったイベント購読またはブラウザーリソースを解放し、後続画面への影響を防ぐ。
              */
             disconnect() { disconnect(); }
         });
         const view = render(<WorksheetPreview worksheet={createWorksheet()} mode="questions" zoom={1} assetUrls={new Map()}/>);
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「計測DOMを外す前にResizeObserverを停止する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback27() {
             return expect(view.container.querySelector(".preview-pages")).toHaveAttribute("data-pagination-ready", "true");
@@ -325,41 +316,38 @@ function defineTestSuite1() {
         expect(view.container.querySelector(".preview-measurement")).not.toBeInTheDocument();
     }));
     it("1ページより高いcontentを検出してプレビューに警告する", (/**
-     * 期待する振る舞いを検証する。
+     * 「1ページより高いcontentを検出してプレビューに警告する」という仕様を操作結果から検証する。
      *
-     * @returns 非同期処理の結果
+     * @returns テスト内の操作と検証が完了したときに解決するPromise
      */
     async function runTestCase28() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「1ページより高いcontentを検出してプレビューに警告する」で外部依存から返すset・Timeoutの結果を固定し、検証を決定的にする。
          *
-         * @param callback callbackとして使用する値
-         * @returns 呼び出し元で使用する処理結果
+         * @param callback 条件成立後に実行する処理
          */
         function fnCallback29(callback: FrameRequestCallback) {
             return window.setTimeout((/**
-             * 指定時間後に必要な処理を実行する。
+             * 連続操作が落ち着いてから、保留中の保存または表示更新を実行する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleScheduledTask30() {
                 return callback(0);
             }), 0);
         })));
         vi.stubGlobal("cancelAnimationFrame", vi.fn((/**
-         * fnへ渡す処理を実行する。
+         * 「1ページより高いcontentを検出してプレビューに警告する」で外部依存から返すclear・Timeoutの結果を固定し、検証を決定的にする。
          *
          * @param id 対象を識別するID
-         * @returns 呼び出し元で使用する処理結果
          */
         function fnCallback31(id: number) {
             return window.clearTimeout(id);
         })));
         vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation((/**
-         * mockImplementationへ渡す処理を実行する。
+         * 「1ページより高いcontentを検出してプレビューに警告する」で外部依存から返すrectangleの結果を固定し、検証を決定的にする。
          *
          * @param this 関数を呼び出したオブジェクト
-         * @returns 呼び出し元で使用する処理結果
+         * @returns rectangleの結果
          */
         function mockImplementationCallback32(this: HTMLElement) {
             if (this.classList.contains("paper-page"))
@@ -374,9 +362,8 @@ function defineTestSuite1() {
         const view = render(<WorksheetPreview worksheet={createWorksheet()} mode="questions" zoom={1} assetUrls={new Map()} onPaginationErrorChange={onPaginationErrorChange}/>);
         const previewPages = view.container.querySelector(".preview-pages");
         await waitFor((/**
-         * waitForへ渡す処理を実行する。
+         * 「1ページより高いcontentを検出してプレビューに警告する」の検証対象が更新を終え、アサーション可能になるまで待機する。
          *
-         * @returns 呼び出し元で使用する処理結果
          */
         function waitForCallback33() {
             return expect(previewPages).toHaveAttribute("data-pagination-ready", "true");
@@ -387,10 +374,10 @@ function defineTestSuite1() {
     }));
 }));
 /**
- * rectangleに必要な処理を実行する。
+ * DOM寸法に依存する処理を検証するため、指定値を持つ矩形情報を作る。
  *
- * @param height heightとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param height 要素またはページの高さ
+ * @returns 水平方向の座標・垂直方向の座標・要素または列へ適用する幅・要素またはページの高さ・要素上端の座標を持つオブジェクト
  */
 function rectangle(height: number): DOMRect {
     return {
@@ -403,9 +390,9 @@ function rectangle(height: number): DOMRect {
         bottom: height,
         left: 0,
         toJSON: (/**
-         * toJSONの入力値を必要な形式へ変換する。
+         * を持つオブジェクトを一つの結果へまとめる。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns を持つオブジェクト
          */
         function toJSONCallback34() {
             return ({});

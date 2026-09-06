@@ -3,11 +3,11 @@ const PROBLEM_COUNT = 100;
 const MEASURED_KEYSTROKES = 12;
 const MAX_P95_INPUT_LATENCY_MS = 250;
 test("100問で本文や複数の解説を開いても編集中のTipTapを1個に保つ", (/**
- * 期待する振る舞いを検証する。
+ * 「100問で本文や複数の解説を開いても編集中のTipTapを1個に保つ」という仕様を操作結果から検証する。
  *
  * @param page Playwrightが提供するブラウザーページ
  * @param testInfo 実行中のテスト情報
- * @returns 非同期処理の結果
+ * @returns テスト内の操作と検証が完了したときに解決するPromise
  */
 async function runTestCase1({ page }, testInfo) {
     const worksheetId = await openNewWorksheet(page);
@@ -26,37 +26,34 @@ async function runTestCase1({ page }, testInfo) {
     const durations: number[] = [];
     for (let index = 0; index < MEASURED_KEYSTROKES; index += 1) {
         await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns 呼び出し元で使用する処理結果
+         * @returns ブラウザー内で取得または計測した値
          */
         function evaluateCallback2() {
             return performance.mark("editor-input-start");
         }));
         await page.keyboard.type(String(index % 10));
         durations.push(await page.evaluate((/**
-         * evaluateへ渡す処理を実行する。
+         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns 非同期処理の結果
+         * @returns ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す処理の完了時に解決するPromise
          */
         async function evaluateCallback3() {
             await new Promise<void>((/**
-             * 呼び出し元から要求された処理を実行する。
+             * レイアウト確定後の描画フレームを、呼び出し側がawaitできるPromiseへ変換する。
              *
-             * @param resolve resolveとして使用する値
-             * @returns 呼び出し元で使用する処理結果
+             * @param resolve 非同期処理を正常完了させるPromise関数
              */
-            function commentRuleCallback4(resolve) {
+            function settlePromise4(resolve) {
                 return requestAnimationFrame((/**
-                 * 次の描画タイミングで画面状態を更新する。
+                 * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
                  *
-                 * @returns 呼び出し元で使用する処理結果
                  */
                 function handleAnimationFrame5() {
                     return requestAnimationFrame((/**
-                     * 次の描画タイミングで画面状態を更新する。
+                     * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
                      *
-                     * @returns 呼び出し元で使用する処理結果
                      */
                     function handleAnimationFrame6() {
                         return resolve();
@@ -67,11 +64,11 @@ async function runTestCase1({ page }, testInfo) {
         })));
     }
     const sorted = [...durations].sort((/**
-     * 表示順を決めるため二つの要素を比較する。
+     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
      *
-     * @param left leftとして使用する値
-     * @param right rightとして使用する値
-     * @returns 呼び出し元で使用する処理結果
+     * @param left 並び順を比較する左側の値
+     * @param right 並び順を比較する右側の値
+     * @returns 左を先に並べる場合は負、同順なら0、右を先に並べる場合は正の値
      */
     function compareItems7(left, right) {
         return left - right;
@@ -98,10 +95,10 @@ async function runTestCase1({ page }, testInfo) {
     await expect(page.locator(".solution-editor-static")).toHaveCount(4);
 }));
 /**
- * openNewWorksheetに対応する画面表示を更新する。
+ * 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する。
  *
- * @param page pageとして使用する値
- * @returns 非同期処理の結果
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
+ * @returns 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する処理の完了時に解決するPromise
  */
 async function openNewWorksheet(page: Page): Promise<string> {
     await page.goto("/");
@@ -110,42 +107,40 @@ async function openNewWorksheet(page: Page): Promise<string> {
     return new URL(page.url()).pathname.split("/").at(-1)!;
 }
 /**
- * seedProblemsに必要な処理を実行する。
+ * seed・Problemsをevaluateで処理し、その結果を呼び出し元へ反映する。
  *
- * @param page pageとして使用する値
+ * @param page ブラウザー操作と描画確認に使うPlaywrightページ
  * @param worksheetId 対象を識別するID
- * @param count countとして使用する値
- * @returns 非同期処理の結果
+ * @param count 生成または検査する要素数
+ * @returns seed・Problemsをevaluateで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
  */
 async function seedProblems(page: Page, worksheetId: string, count: number): Promise<void> {
     await page.evaluate((/**
-     * evaluateへ渡す処理を実行する。
+     * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
      *
-     * @param parameter1 parameter1として使用する値
-     * @returns 非同期処理の結果
+     * @param callbackInput let・{・id・問題・Countをまとめて受け取るコールバック入力
+     * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
      */
-    async function evaluateCallback8(parameter1) {
-        let { id, problemCount } = parameter1;
+    async function evaluateCallback8(callbackInput) {
+        let { id, problemCount } = callbackInput;
         const database = await new Promise<IDBDatabase>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback9(resolve, reject) {
+        function settlePromise9(resolve, reject) {
             const request = indexedDB.open("math-worksheet-db");
             request.addEventListener("success", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent10() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent11() {
                 return reject(request.error);
@@ -166,25 +161,23 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
                 }>;
             }>;
         }>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback12(resolve, reject) {
+        function settlePromise12(resolve, reject) {
             const request = store.get(id);
             request.addEventListener("success", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent13() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent14() {
                 return reject(request.error);
@@ -192,19 +185,19 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         }));
         const template = worksheet.problems[0]!;
         worksheet.problems = Array.from({ length: problemCount }, (/**
-         * fromへ渡す処理を実行する。
+         * 配列位置ごとに処理対象の問題または例題を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @param _ _として使用する値
+         * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
          * @param index 対象となる位置
-         * @returns 呼び出し元で使用する処理結果
+         * @returns 処理対象の問題または例題
          */
         function fromCallback15(_, index) {
             const problem = structuredClone(template);
             problem.id = crypto.randomUUID();
             problem.contents.forEach((/**
-             * 各要素へ必要な処理を適用する。
+             * 各処理対象の問題本文または解説についてrandom・UUIDを実行し、対応関係または検証状態を更新する。
              *
-             * @param content contentとして使用する値
+             * @param content 処理対象の問題本文または解説
              */
             function processItem16(content) { content.id = crypto.randomUUID(); }));
             const firstContent = problem.contents[0] as typeof problem.contents[number] & {
@@ -235,32 +228,29 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         worksheet.updatedAt = new Date().toISOString();
         store.put(worksheet);
         await new Promise<void>((/**
-         * 呼び出し元から要求された処理を実行する。
+         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
          *
-         * @param resolve resolveとして使用する値
-         * @param reject rejectとして使用する値
+         * @param resolve 非同期処理を正常完了させるPromise関数
+         * @param reject 非同期処理を失敗として終了させるPromise関数
          */
-        function commentRuleCallback17(resolve, reject) {
+        function settlePromise17(resolve, reject) {
             transaction.addEventListener("complete", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent18() {
                 return resolve();
             }), { once: true });
             transaction.addEventListener("error", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent19() {
                 return reject(transaction.error);
             }), { once: true });
             transaction.addEventListener("abort", (/**
-             * DOMから通知されたイベントを処理する。
+             * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
              *
-             * @returns 呼び出し元で使用する処理結果
              */
             function handleDomEvent20() {
                 return reject(transaction.error);

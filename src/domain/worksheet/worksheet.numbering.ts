@@ -1,10 +1,10 @@
 import type { ProblemKind, ProblemNumberFormat, SubQuestionGroupBlock, SubQuestionNumberFormat, Worksheet } from "./worksheet";
 /**
- * formatProblemNumberの入力値を必要な形式へ変換する。
+ * 問題・番号を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @param format formatとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・問題・番号で判定または変換する入力値
+ * @param format 問題番号へ適用する表示形式
+ * @returns Stringの結果として得た文字列。変換できない場合は関数固有の既定値
  */
 export function formatProblemNumber(value: number, format: ProblemNumberFormat): string {
     switch (format) {
@@ -23,10 +23,10 @@ export function formatProblemNumber(value: number, format: ProblemNumberFormat):
     }
 }
 /**
- * getProblemNumbersで必要な値を取得する。
+ * 問題・Numbersを入力データまたは現在の状態から取り出す。
  *
- * @param worksheet worksheetとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param worksheet 処理対象となるプリント
+ * @returns 結果として得た文字列。変換できない場合は関数固有の既定値
  */
 export function getProblemNumbers(worksheet: Worksheet): Map<string, string | null> {
     const current: Record<ProblemKind, number> = { problem: 0, example: 0 };
@@ -42,12 +42,12 @@ export function getProblemNumbers(worksheet: Worksheet): Map<string, string | nu
     return result;
 }
 /**
- * formatProblemHeadingの入力値を必要な形式へ変換する。
+ * 問題・Headingを比較・保存・表示先が要求する形式へ変換する。
  *
- * @param kind kindとして使用する値
- * @param number numberとして使用する値
- * @param format formatとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param kind 問題または例題の種別
+ * @param number 表示やデータ生成に使う通し番号
+ * @param format 問題番号へ適用する表示形式
+ * @returns 条件に応じて選択した値として得た文字列。変換できない場合は関数固有の既定値
  */
 export function formatProblemHeading(kind: ProblemKind, number: string, format: ProblemNumberFormat): string {
     if (format === "question") {
@@ -56,11 +56,11 @@ export function formatProblemHeading(kind: ProblemKind, number: string, format: 
     return `${kind === "example" ? "例" : "問"}${number}`;
 }
 /**
- * formatSubQuestionNumberの入力値を必要な形式へ変換する。
+ * Sub・Question・番号を比較・保存・表示先が要求する形式へ変換する。
  *
- * @param value 処理対象の値
- * @param format formatとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param value 表示形式・Sub・Question・番号で判定または変換する入力値
+ * @param format 問題番号へ適用する表示形式
+ * @returns 値を埋め込んだ表示文字列として得た文字列。変換できない場合は関数固有の既定値
  */
 export function formatSubQuestionNumber(value: number, format: SubQuestionNumberFormat): string {
     if (format === "dot")
@@ -74,11 +74,11 @@ export function formatSubQuestionNumber(value: number, format: SubQuestionNumber
     return `(${value})`;
 }
 /**
- * getSubQuestionNumbersで必要な値を取得する。
+ * Sub・Question・Numbersを入力データまたは現在の状態から取り出す。
  *
- * @param group groupとして使用する値
- * @param format formatとして使用する値
- * @returns 呼び出し元で使用する処理結果
+ * @param group 採番または表示をまとめる問題グループ
+ * @param format 問題番号へ適用する表示形式
+ * @returns 結果として得た文字列。変換できない場合は関数固有の既定値
  */
 export function getSubQuestionNumbers(group: SubQuestionGroupBlock, format: SubQuestionNumberFormat = group.numbering.format): Map<string, string> {
     let current = 0;
