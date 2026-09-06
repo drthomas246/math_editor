@@ -22,7 +22,7 @@ if (process.argv.includes("--check")) {
     const currentContents = await readFile(outputPath, "utf8").catch((/**
      * 非同期処理の失敗を利用者向けのエラー状態または終了コードへ変換する。
      *
-     * @returns 「」
+     * @returns ファイルを読み込めなかった場合の空文字列
      */
     function handleRejectedValue1() {
         return "";

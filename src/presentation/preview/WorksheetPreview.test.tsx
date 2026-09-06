@@ -22,7 +22,7 @@ function defineTestSuite1() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
          * 「places the year, class, and number lines before their labels」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function fnCallback4() {
             return 1;
@@ -57,7 +57,7 @@ function defineTestSuite1() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
          * 「問題と例題の種類および独立した番号を表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function fnCallback8() {
             return 1;
@@ -86,7 +86,7 @@ function defineTestSuite1() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
          * 「プリント設定で選んだ小問番号形式を表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function fnCallback11() {
             return 1;
@@ -114,7 +114,7 @@ function defineTestSuite1() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
          * 「問題のみは黒だけ、解答付きは黒と赤およびめあてを表示する」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function fnCallback14() {
             return 1;
@@ -185,7 +185,7 @@ function defineTestSuite1() {
         vi.stubGlobal("requestAnimationFrame", vi.fn((/**
          * 「問題のみでも下線付き解答色テキストの幅と下線を残す」で外部依存から返す1を固定し、検証を決定的にする。
          *
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function fnCallback16() {
             return 1;

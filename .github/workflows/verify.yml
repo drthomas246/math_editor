@@ -3,6 +3,7 @@ name: Verify
 on:
   push:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -14,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -23,6 +26,11 @@ jobs:
         run: npm ci
       - name: Verify
         run: npm run verify
+      - name: Verify comment-only change scope
+        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'comment-only')
+        env:
+          COMMENT_SCOPE_BASE: ${{ github.event.pull_request.base.sha }}
+        run: npm run comment:scope -- --head HEAD
       - name: Build
         run: npm run build
       - name: Install Playwright Chromium

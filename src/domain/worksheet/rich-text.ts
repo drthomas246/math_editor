@@ -140,7 +140,7 @@ export function mergeColoredDocuments(problemDocument: BasicRichTextDocument, an
  * 色・文書・As・解答をstructured・Cloneで処理し、その結果を呼び出し元へ反映する。
  *
  * @param document 処理対象のリッチテキスト文書
- * @returns cloned
+ * @returns すべての可視ノードへ解答色を付与した文書の複製
  */
 export function colorDocumentAsAnswer(document: BasicRichTextDocument): BasicRichTextDocument {
     const cloned = structuredClone(document) as unknown as {

@@ -29,8 +29,12 @@
     "schema:test": "tsx scripts/verify-schema-behavior.ts",
     "manual:check": "tsx scripts/verify-manual.ts",
     "comment:check": "node scripts/check-comment-rules.mjs",
+    "comment:check:test": "vitest run scripts/check-comment-rules.test.mjs",
+    "comment:scope": "node scripts/check-comment-change-scope.mjs",
+    "comment:scope:test": "vitest run scripts/check-comment-change-scope.test.mjs",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run comment:check && npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test"
+    "test:app": "vitest run src",
+    "verify": "npm run comment:check:test && npm run comment:scope:test && npm run comment:check && npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test:app"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.6.0",

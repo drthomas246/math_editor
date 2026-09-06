@@ -65,7 +65,7 @@ export function setSelectionContentColor(editor: Editor, color: ContentColor): v
  * 選択・内容・色を入力データまたは現在の状態から取り出す。
  *
  * @param editor 操作対象のTipTapエディタ
- * @returns 「answer」
+ * @returns 選択内容が解答色なら「answer」、それ以外は「problem」
  */
 export function getSelectionContentColor(editor: Editor): ContentColor {
     if (editor.isActive("answerColor"))

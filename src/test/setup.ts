@@ -13,7 +13,7 @@ function cleanUpTestCase1() {
 Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn((/**
      * 「対象機能」で外部依存から返す「blob:test」を固定し、検証を決定的にする。
      *
-     * @returns 「blob:test」
+     * @returns テスト用Blob URLを示す文字列「blob:test」
      */
     function fnCallback2() {
         return "blob:test";

@@ -67,7 +67,7 @@ function buildLayout(table: EditableTableData): TableLayout {
         return Array.from({ length: columnCount }, (/**
          * 配列位置ごとに「」を生成し、fixtureまたはバイナリの要素として格納する。
          *
-         * @returns 「」
+         * @returns 未配置セルの初期値として使用する空文字列
          */
         function fromCallback4() {
             return "";

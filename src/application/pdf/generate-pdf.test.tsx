@@ -115,7 +115,7 @@ function defineTestSuite11() {
          * stub・Globalを条件成立後に実行する処理で処理し、その結果を呼び出し元へ反映する。
          *
          * @param callback 条件成立後に実行する処理
-         * @returns 1
+         * @returns requestAnimationFrameのスタブIDとして使用する1
          */
         function stubGlobalCallback13(callback: FrameRequestCallback) {
             callback(0);
