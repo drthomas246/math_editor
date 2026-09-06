@@ -170,20 +170,20 @@ function appendHistoryEntry(stack: readonly HistoryEntry[], entry: HistoryEntry,
     return [...stack, entry].slice(-MAX_HISTORY);
 }
 /**
- * 現在・Sessionが仕様上の条件を満たすか判定する。
+ * 保存結果を現在の編集セッションへ反映してよいか判定する。
  *
  * @param state 更新前または現在の状態
  * @param request 自動保存の順序と内容を示す要求
- * @returns 状態の処理対象となるプリントの対象を一意に特定する識別子が自動保存の順序と内容を示す要求のプリント・Idと一致するかつ状態のsession・Idが自動保存の順序と内容を示す要求のsession・Idと一致する場合はtrue
+ * @returns プリントIDとセッションIDが保存要求と一致する場合はtrue
  */
 function isCurrentSession(state: Pick<EditorState, "worksheet" | "sessionId">, request: SaveRequest): boolean {
     return state.worksheet?.id === request.worksheetId && state.sessionId === request.sessionId;
 }
 /**
- * 保存・Requestを識別子・初期値・関連データが揃った新しい値として組み立てる。
+ * 現在の編集内容を識別できる保存要求を作る。
  *
  * @param state 更新前または現在の状態
- * @returns プリント・識別子・session・識別子・非同期更新の前後関係を判定する版番号を持つオブジェクト
+ * @returns プリントID、セッションID、版番号を持つ保存要求。プリントがなければnull
  */
 export function createSaveRequest(state: Pick<EditorState, "worksheet" | "sessionId" | "revision">): SaveRequest | null {
     if (!state.worksheet)
@@ -199,7 +199,7 @@ export const useEditorStore = create<EditorState>((/**
  *
  * @param set Zustand状態を更新する関数
  * @param get ストアの最新状態を取得する関数
- * @returns 処理対象となるプリント・session・Id・非同期更新の前後関係を判定する版番号・saved・版番号・保存・Statusを持つオブジェクト
+ * @returns プリント、選択状態、編集履歴、保存状態と各操作を持つ初期ストア
  */
 function createConfiguredState4(set, get) {
     return ({
@@ -213,10 +213,10 @@ function createConfiguredState4(set, get) {
         undoStack: [],
         redoStack: [],
         initialize: (/**
-         * initializeをZustand状態を更新する関数で処理し、その結果を呼び出し元へ反映する。
+         * 読み込んだプリントで新しい編集セッションを開始し、選択状態と履歴を初期化する。
          *
          * @param worksheet 処理対象となるプリント
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function initializeCallback5(worksheet) {
             return set((/**
@@ -330,10 +330,10 @@ function createConfiguredState4(set, get) {
             }));
         }),
         selectProblem: (/**
-         * 問題を入力データまたは現在の状態から取り出す。
+         * 指定した問題を選択し、その先頭の本文・解説も編集対象にする。
          *
          * @param id 対象を識別するID
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function selectProblemCallback13(id) {
             return set((/**
@@ -367,10 +367,10 @@ function createConfiguredState4(set, get) {
             }));
         }),
         selectContent: (/**
-         * 内容を入力データまたは現在の状態から取り出す。
+         * 編集対象の本文・解説を切り替える。
          *
          * @param id 対象を識別するID
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function selectContentCallback17(id) {
             return set({ selectedContentId: id });
@@ -408,10 +408,10 @@ function createConfiguredState4(set, get) {
             });
         }),
         markSaving: (/**
-         * 文字装飾・SavingをZustand状態を更新する関数で処理し、その結果を呼び出し元へ反映する。
+         * 現在の版に対する保存要求だけを保存中状態へ進める。
          *
          * @param request 自動保存の順序と内容を示す要求
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function markSavingCallback20(request) {
             return set((/**
@@ -427,10 +427,10 @@ function createConfiguredState4(set, get) {
             }));
         }),
         markSaved: (/**
-         * 文字装飾・SavedをZustand状態を更新する関数で処理し、その結果を呼び出し元へ反映する。
+         * 同じ編集セッションの保存成功を記録し、最新版なら保存済み状態へ進める。
          *
          * @param request 自動保存の順序と内容を示す要求
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function markSavedCallback22(request) {
             return set((/**
@@ -450,10 +450,10 @@ function createConfiguredState4(set, get) {
             }));
         }),
         markFailed: (/**
-         * 文字装飾・FailedをZustand状態を更新する関数で処理し、その結果を呼び出し元へ反映する。
+         * 現在の版に対する保存要求だけを保存失敗状態へ進める。
          *
          * @param request 自動保存の順序と内容を示す要求
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function markFailedCallback24(request) {
             return set((/**
@@ -469,9 +469,9 @@ function createConfiguredState4(set, get) {
             }));
         }),
         clear: (/**
-         * Callback26と不要になった関連データを安全に取り除く。
+         * 編集中のプリント・選択状態・履歴を破棄し、セッションIDを更新する。
          *
-         * @returns Zustand状態を更新する関数の結果
+         * @returns ストア更新処理の結果
          */
         function clearCallback26() {
             return set((/**

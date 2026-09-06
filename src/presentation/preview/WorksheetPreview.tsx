@@ -49,8 +49,8 @@ type MeasuredPagePlan = {
 export const WorksheetPreview = memo((/**
  * プリントを用紙寸法へ改ページし、問題と解答の表示モードに応じたページ群を表示する。
  *
- * @param callbackInput let・{・プリント・表示または改ページの動作モード・倍率・アセット識別子と表示URLの対応表・on・ページ・Count・Change・on・Pagination・エラー・Change・on・Pagination・Ready・Changeをまとめて受け取るコールバック入力
- * @returns プリント・プレビューを表示するReact要素
+ * @param callbackInput プリント、表示モード、倍率、画像URL、改ページ状態の通知処理
+ * @returns 用紙寸法で改ページしたプリントプレビュー
  */
 function WorksheetPreview(callbackInput: Props) {
     let { worksheet, mode, zoom, assetUrls, onPageCountChange, onPaginationErrorChange, onPaginationReadyChange } = callbackInput;
@@ -638,29 +638,29 @@ function toPixels(value: string): number {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 /**
- * wait・For・画像を非同期処理を正常完了させるPromise関数で処理し、その結果を呼び出し元へ反映する。
+ * 改ページ計測を安定させるため、画像の読み込み成功または失敗まで待機する。
  *
  * @param image 表示または編集する画像
- * @returns wait・For・画像を非同期処理を正常完了させるPromise関数で処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
+ * @returns 画像の読み込みが終了したときに解決するPromise
  */
 function waitForImage(image: HTMLImageElement): Promise<void> {
     if (image.complete)
         return Promise.resolve();
     return new Promise((/**
-     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+     * 画像のload/errorイベントを、改ページ計測が待機できるPromiseへ変換する。
      *
      * @param resolve 非同期処理を正常完了させるPromise関数
      */
     function settlePromise33(resolve) {
         image.addEventListener("load", (/**
-         * 「load」イベントを受け、現在のDOMまたは編集状態へ反映する。
+         * 画像の読み込み完了後に改ページ計測を再開する。
          *
          */
         function handleDomEvent34() {
             return resolve();
         }), { once: true });
         image.addEventListener("error", (/**
-         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+         * 読み込み失敗時も待機を終え、壊れた画像で処理が停止しないようにする。
          *
          */
         function handleDomEvent35() {
@@ -675,8 +675,8 @@ function waitForImage(image: HTMLImageElement): Promise<void> {
 export const WorksheetContentPreview = memo((/**
  * 問題本文の文書をプレビュー用の静的要素として描画する。
  *
- * @param callbackInput let・{・内容・解答をプレビューへ含めるかどうか・sub・Question・番号・表示形式・アセット識別子と表示URLの対応表をまとめて受け取るコールバック入力
- * @returns プリント・内容・プレビューを表示するReact要素
+ * @param callbackInput 表示する内容、解答表示の有無、小問番号形式、画像URL
+ * @returns 内容種別に対応した静的プレビュー
  */
 function WorksheetContentPreview(callbackInput: {
     content: ContentBlock;

@@ -20,11 +20,11 @@ function defineTestSuite1() {
                 return values.get(key) ?? null;
             }),
             setItem: (/**
-             * 要素を現在の編集結果へ反映する。
+             * localStorageの代わりとなるMapへ設定値を保存する。
              *
              * @param key 保存先または要素を特定するキー
-             * @param value set・要素で判定または変換する入力値
-             * @returns Zustand状態を更新する関数の結果
+             * @param value 保存する設定値
+             * @returns 保存後のMap
              */
             function setItemCallback4(key: string, value: string) {
                 return values.set(key, value);

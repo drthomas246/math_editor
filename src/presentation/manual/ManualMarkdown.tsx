@@ -45,10 +45,10 @@ function textFromChildren(children: ReactNode): string {
 }
 const manualMarkdownComponents = {
     /**
-     * 左側の要素の情報と操作を、画面へ組み込むReact要素として構成する。
+     * マニュアル内リンクはアプリ内遷移、外部リンクは安全な新規タブとして表示する。
      *
-     * @param callbackInput let・{・href・=・""・childrenをまとめて受け取るコールバック入力
-     * @returns 左側の要素を表示するReact要素
+     * @param callbackInput リンク先と表示内容
+     * @returns リンク先の種別に応じたリンク要素
      */
     a(callbackInput) {
         let { href = "", children } = callbackInput;
@@ -61,10 +61,10 @@ const manualMarkdownComponents = {
         return <>{children}</>;
     },
     /**
-     * pの情報と操作を、画面へ組み込むReact要素として構成する。
+     * 画像だけの段落をキャプション付きfigureへ変換する。
      *
-     * @param callbackInput let・{・ノード・childrenをまとめて受け取るコールバック入力
-     * @returns pを表示するReact要素
+     * @param callbackInput Markdownノードと段落内容
+     * @returns 通常段落または画像用figure
      */
     p(callbackInput) {
         let { node, children } = callbackInput;
@@ -77,10 +77,10 @@ const manualMarkdownComponents = {
         return <figure className="manual-figure">{children}{caption && <figcaption>{caption}</figcaption>}</figure>;
     },
     /**
-     * imgの情報と操作を、画面へ組み込むReact要素として構成する。
+     * マニュアル画像を許可済みパスだけで表示するコンポーネントへ渡す。
      *
-     * @param callbackInput let・{・src・=・""・alt・=・""をまとめて受け取るコールバック入力
-     * @returns imgを表示するReact要素
+     * @param callbackInput 画像パスと代替テキスト
+     * @returns 検証付きのマニュアル画像
      */
     img(callbackInput) {
         let { src = "", alt = "" } = callbackInput;
@@ -89,7 +89,7 @@ const manualMarkdownComponents = {
     /**
      * 編集または検証の対象となる表の情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @param callbackInput 表の内容
      * @returns 編集または検証の対象となる表を表示するReact要素
      */
     table(callbackInput) {
@@ -99,7 +99,7 @@ const manualMarkdownComponents = {
     /**
      * blockquoteの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @param callbackInput 引用内容
      * @returns blockquoteを表示するReact要素
      */
     blockquote(callbackInput) {
@@ -113,7 +113,7 @@ const manualMarkdownComponents = {
     /**
      * preの情報と操作を、画面へ組み込むReact要素として構成する。
      *
-     * @param callbackInput let・{・childrenをまとめて受け取るコールバック入力
+     * @param callbackInput コードブロックの内容
      * @returns preを表示するReact要素
      */
     pre(callbackInput) {

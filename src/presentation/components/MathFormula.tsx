@@ -56,8 +56,8 @@ export function getMathAriaLabel(latex: string): string {
 export const MathFormula = memo((/**
  * LaTeX式をMathLiveで静的描画し、読み上げ用ラベルと描画キャッシュを適用する。
  *
- * @param callbackInput let・{・latex・ブロック・=・false・テキスト・寸法・=・"normal"・class・名前・=・""をまとめて受け取るコールバック入力
- * @returns 数式・Formulaを表示するReact要素
+ * @param callbackInput LaTeX式、表示形式、文字サイズ、追加CSSクラス
+ * @returns 静的描画した数式。描画失敗時はLaTeX文字列
  */
 function MathFormula(callbackInput: Props) {
     let { latex, block = false, textSize = "normal", className = "" } = callbackInput;

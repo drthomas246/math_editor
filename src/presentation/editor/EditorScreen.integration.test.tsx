@@ -148,7 +148,7 @@ function defineTestSuite13() {
         act((/**
          * 「dirtyとsavingではbeforeunloadを阻止してタブ終了・リロード警告を要求する」で発生するReactの状態更新と副作用をまとめて完了させる。
          *
-         * @returns 文字装飾・Savingの結果
+         * @returns 保存状態をsavingへ変更する処理の結果
          */
         function actCallback16() {
             return useEditorStore.getState().markSaving(request!);

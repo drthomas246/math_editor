@@ -26,7 +26,7 @@ async function runTestCase1({ page }, testInfo) {
     const durations: number[] = [];
     for (let index = 0; index < MEASURED_KEYSTROKES; index += 1) {
         await page.evaluate((/**
-         * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
+         * 入力後に2回の描画フレームを待ち、開始マークから描画が落ち着くまでの時間を計測する。
          *
          * @returns ブラウザー内で取得または計測した値
          */
@@ -37,7 +37,7 @@ async function runTestCase1({ page }, testInfo) {
         durations.push(await page.evaluate((/**
          * ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す。
          *
-         * @returns ブラウザーのPerformance APIで描画または入力遅延を計測し、経過時間を返す処理の完了時に解決するPromise
+         * @returns 入力開始から2回目の描画フレームまでの経過時間（ミリ秒）
          */
         async function evaluateCallback3() {
             await new Promise<void>((/**
@@ -47,12 +47,12 @@ async function runTestCase1({ page }, testInfo) {
              */
             function settlePromise4(resolve) {
                 return requestAnimationFrame((/**
-                 * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
+                 * 入力直後の描画を待ったうえで、計測終了用の次フレームを予約する。
                  *
                  */
                 function handleAnimationFrame5() {
                     return requestAnimationFrame((/**
-                     * ブラウザーが直前のレイアウト変更を描画した次のフレームで処理を再開する。
+                     * 2回目の描画フレームで待機を終え、描画のばらつきを計測へ含める。
                      *
                      */
                     function handleAnimationFrame6() {
@@ -64,7 +64,7 @@ async function runTestCase1({ page }, testInfo) {
         })));
     }
     const sorted = [...durations].sort((/**
-     * 二つの要素の表示順を、題名・番号・更新日時など呼び出し側の基準で決定する。
+     * 入力遅延を昇順に並べ、95パーセンタイルを選べるようにする。
      *
      * @param left 並び順を比較する左側の値
      * @param right 並び順を比較する右側の値
@@ -98,7 +98,7 @@ async function runTestCase1({ page }, testInfo) {
  * 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する。
  *
  * @param page ブラウザー操作と描画確認に使うPlaywrightページ
- * @returns 一覧から新規プリントを作成し、編集画面が操作可能になるまで待機する処理の完了時に解決するPromise
+ * @returns 作成したプリントのID
  */
 async function openNewWorksheet(page: Page): Promise<string> {
     await page.goto("/");
@@ -107,24 +107,24 @@ async function openNewWorksheet(page: Page): Promise<string> {
     return new URL(page.url()).pathname.split("/").at(-1)!;
 }
 /**
- * seed・Problemsをevaluateで処理し、その結果を呼び出し元へ反映する。
+ * 対象プリントを指定件数の問題へ複製し、入力性能を測定できる状態にする。
  *
  * @param page ブラウザー操作と描画確認に使うPlaywrightページ
- * @param worksheetId 対象を識別するID
- * @param count 生成または検査する要素数
- * @returns seed・Problemsをevaluateで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
+ * @param worksheetId 問題を追加するプリントのID
+ * @param count 用意する問題数
+ * @returns IndexedDBへの登録が完了したときに解決するPromise
  */
 async function seedProblems(page: Page, worksheetId: string, count: number): Promise<void> {
     await page.evaluate((/**
      * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
      *
-     * @param callbackInput let・{・id・問題・Countをまとめて受け取るコールバック入力
-     * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
+     * @param callbackInput 対象プリントのIDと用意する問題数
+     * @returns 性能測定用データの保存が完了したときに解決するPromise
      */
     async function evaluateCallback8(callbackInput) {
         let { id, problemCount } = callbackInput;
         const database = await new Promise<IDBDatabase>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * テスト対象アプリのIndexedDB接続要求をPromiseへ変換する。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
@@ -132,14 +132,14 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         function settlePromise9(resolve, reject) {
             const request = indexedDB.open("math-worksheet-db");
             request.addEventListener("success", (/**
-             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 接続に成功したデータベースを後続の登録処理へ渡す。
              *
              */
             function handleDomEvent10() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * IndexedDB接続エラーを呼び出し元へ伝える。
              *
              */
             function handleDomEvent11() {
@@ -161,7 +161,7 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
                 }>;
             }>;
         }>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * プリント取得要求をPromiseへ変換し、既存データを複製処理へ渡す。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
@@ -169,14 +169,14 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         function settlePromise12(resolve, reject) {
             const request = store.get(id);
             request.addEventListener("success", (/**
-             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * IndexedDBから取得したプリントを複製処理へ渡す。
              *
              */
             function handleDomEvent13() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * プリント取得エラーを呼び出し元へ伝える。
              *
              */
             function handleDomEvent14() {
@@ -185,17 +185,17 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         }));
         const template = worksheet.problems[0]!;
         worksheet.problems = Array.from({ length: problemCount }, (/**
-         * 配列位置ごとに処理対象の問題または例題を生成し、fixtureまたはバイナリの要素として格納する。
+         * 元の問題を複製し、性能測定用の一意な問題として初期化する。
          *
          * @param _ コールバックの契約上受け取るが、この処理では参照しない未使用の入力
          * @param index 対象となる位置
-         * @returns 処理対象の問題または例題
+         * @returns 一意なIDと表示文を設定した問題
          */
         function fromCallback15(_, index) {
             const problem = structuredClone(template);
             problem.id = crypto.randomUUID();
             problem.contents.forEach((/**
-             * 各処理対象の問題本文または解説についてrandom・UUIDを実行し、対応関係または検証状態を更新する。
+             * 複製した本文・解説が互いに衝突しないよう新しいIDを割り当てる。
              *
              * @param content 処理対象の問題本文または解説
              */
@@ -228,28 +228,28 @@ async function seedProblems(page: Page, worksheetId: string, count: number): Pro
         worksheet.updatedAt = new Date().toISOString();
         store.put(worksheet);
         await new Promise<void>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * 更新トランザクションの完了または失敗をPromiseへ変換する。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
          */
         function settlePromise17(resolve, reject) {
             transaction.addEventListener("complete", (/**
-             * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * すべての変更が永続化された時点で待機を終了する。
              *
              */
             function handleDomEvent18() {
                 return resolve();
             }), { once: true });
             transaction.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * トランザクション中のエラーを呼び出し元へ伝える。
              *
              */
             function handleDomEvent19() {
                 return reject(transaction.error);
             }), { once: true });
             transaction.addEventListener("abort", (/**
-             * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 中断されたトランザクションを失敗として呼び出し元へ伝える。
              *
              */
             function handleDomEvent20() {

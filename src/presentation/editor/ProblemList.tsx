@@ -17,9 +17,9 @@ type ProblemDescriptor = {
     displayNumber: string | null;
 };
 const getCurrentWorksheet = (/**
- * 現在・プリントを入力データまたは現在の状態から取り出す。
+ * イベント処理時点の最新プリントをエディタストアから取得する。
  *
- * @returns get・状態の結果の処理対象となるプリント
+ * @returns 編集中のプリント。未読込の場合はnull
  */
 function getCurrentWorksheetImplementation1(): Worksheet | null {
     return useEditorStore.getState().worksheet;
@@ -27,8 +27,8 @@ function getCurrentWorksheetImplementation1(): Worksheet | null {
 export const ProblemList = memo((/**
  * プリント内の問題を採番順に並べ、選択中の問題だけを編集可能なカードとして表示する。
  *
- * @param callbackInput let・{・アセット・Urls・on・Add・画像・on・更新・画像・on・Toastをまとめて受け取るコールバック入力
- * @returns 問題・一覧を表示するReact要素
+ * @param callbackInput 画像URLと画像操作・通知用コールバック
+ * @returns 採番済みの問題カード一覧
  */
 function ProblemList(callbackInput: ProblemListProps) {
     let { assetUrls, onAddImage, onUpdateImage, onToast } = callbackInput;

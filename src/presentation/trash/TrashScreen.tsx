@@ -21,15 +21,16 @@ type PendingOperation = {
 } | {
     kind: "empty";
 };
+type TrashScreenProps = {
+    repository?: WorksheetRepository;
+};
 /**
  * ごみ箱内のプリントを一覧表示し、復元・完全削除・一括削除を提供する。
  *
- * @param props Trash・画面へ渡す表示情報と操作
- * @returns Trash・画面を表示するReact要素
+ * @param props ごみ箱データの読み込みと更新に使用するリポジトリ
+ * @returns ごみ箱画面
  */
-export function TrashScreen(props: {
-    repository?: WorksheetRepository;
-}) {
+export function TrashScreen(props: TrashScreenProps) {
     let { repository = worksheetRepository } = props;
     const navigate = useNavigate();
     const [items, setItems] = useState<Worksheet[]>([]);
@@ -39,9 +40,9 @@ export function TrashScreen(props: {
     const [target, setTarget] = useState<Worksheet | "all" | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const load = useCallback((/**
-     * create・Memoizedをset・Loadingへ渡すコールバックとして安定化する。
+     * ごみ箱内のプリントを読み込み、削除日時の新しい順で表示する。
      *
-      * @returns create・Memoizedをset・Loadingへ渡すコールバックとして安定化する処理の完了時に解決するPromise
+      * @returns ごみ箱一覧の更新が完了したときに解決するPromise
      */
     async function createMemoizedCallback1() {
         setLoading(true);

@@ -4,11 +4,11 @@ export const PREVIEW_ZOOM_STEP = 0.05;
 export const PREVIEW_PAGE_BASE_WIDTH_PX = 520;
 const PAGE_COUNTER_HEIGHT_PX = 24;
 /**
- * 次の値・プレビュー・倍率を入力データまたは現在の状態から取り出す。
+ * 現在の倍率から指定方向の次の倍率を求め、許容範囲内へ収める。
  *
  * @param currentZoom 現在のプレビュー倍率
  * @param direction 倍率を上げるか下げるかを示す方向
- * @returns clamp・倍率の結果から算出した数値
+ * @returns 1段階拡大または縮小したプレビュー倍率
  */
 export function getNextPreviewZoom(currentZoom: number, direction: -1 | 1): number {
     const currentStep = currentZoom / PREVIEW_ZOOM_STEP;
@@ -18,10 +18,10 @@ export function getNextPreviewZoom(currentZoom: number, direction: -1 | 1): numb
     return clampZoom(Number((nextStep * PREVIEW_ZOOM_STEP).toFixed(2)));
 }
 /**
- * Fitted・プレビュー・倍率をレイアウトまたは性能判定の基準に沿って算出する。
+ * プレビュー領域へ用紙の幅または全体が収まる表示倍率を計算する。
  *
- * @param callbackInput let・{・モード・viewport・幅・viewport・高さ・horizontal・Padding・vertical・Padding・ページ・Aspect・Ratio・未使用の入力をまとめて受け取るコールバック入力
- * @returns clamp・倍率の結果から算出した数値
+ * @param callbackInput 合わせ方、表示領域、余白、用紙の縦横比
+ * @returns 許容範囲内へ収めた表示倍率
  */
 export function calculateFittedPreviewZoom(callbackInput: {
     mode: "fitWidth" | "fitPage";

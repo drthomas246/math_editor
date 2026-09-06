@@ -21,8 +21,8 @@ function mockCallback2() {
         ProblemCard: (/**
          * 一問分の種類・本文・解説・画像・表・小問を編集し、並べ替えや複製操作も提供する。
          *
-         * @param callbackInput let・{・問題をまとめて受け取るコールバック入力
-         * @returns 問題・カードを表示するReact要素
+         * @param callbackInput 描画回数を記録する問題
+         * @returns 問題IDを持つテスト用カード
          */
         function ProblemCardCallback3(callbackInput: {
             problem: {

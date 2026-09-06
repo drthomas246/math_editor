@@ -116,10 +116,10 @@ export class DexieWorksheetRepository implements WorksheetRepository {
         // oxlint-disable-next-line typescript/no-this-alias
         const instanceContext5 = this;
         const parsed = data.map((/**
-         * 各処理対象となるプリントとプリントに関連付ける画像アセット一覧の組を処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクトへ変換する。
+         * プリントと画像アセットをスキーマ検証し、まとめて保存できる形式へ整える。
          *
-         * @param callbackInput let・{・プリント・プリントに関連付ける画像アセット一覧をまとめて受け取るコールバック入力
-         * @returns 処理対象となるプリント・プリントに関連付ける画像アセット一覧を持つオブジェクト
+         * @param callbackInput 検証するプリントと関連画像アセット
+         * @returns スキーマ検証済みのプリントと画像アセット
          */
         function mapItem6(callbackInput) {
             let { worksheet, assets } = callbackInput;

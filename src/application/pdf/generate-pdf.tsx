@@ -199,21 +199,21 @@ async function waitForPreviewAssets(previewPages: readonly HTMLElement[]) {
             throw new Error("PDFに使用する画像を読み込めませんでした");
         }
         await new Promise<void>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * PDF生成前に画像の読込結果を確定できるよう、load/errorイベントをPromiseへ変換する。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
          */
         function settlePromise10(resolve, reject) {
             image.addEventListener("load", (/**
-             * 「load」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 画像の読み込み完了後にPDF生成を再開する。
              *
              */
             function handleDomEvent11() {
                 return resolve();
             }), { once: true });
             image.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 欠落画像を含むPDFを出力しないよう、読み込み失敗を例外として伝える。
              *
              */
             function handleDomEvent12() {

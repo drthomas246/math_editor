@@ -55,13 +55,13 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                 database.close();
                 return performance.now() - startedAt;
                 /**
-                 * Databaseを取得して利用可能な状態へ反映する。
+                 * テスト対象アプリのIndexedDBへ接続する。
                  *
-                 * @returns Databaseを外部状態から取得し、利用者が操作できる画面状態へ反映する処理の完了時に解決するPromise
+                 * @returns 接続に成功したデータベース
                  */
                 function openDatabase(): Promise<IDBDatabase> {
                     return new Promise((/**
-                     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+                     * IndexedDB接続要求をPromiseへ変換する。
                      *
                      * @param resolve 非同期処理を正常完了させるPromise関数
                      * @param reject 非同期処理を失敗として終了させるPromise関数
@@ -69,14 +69,14 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                     function settlePromise4(resolve, reject) {
                         const request = indexedDB.open("math-worksheet-db");
                         request.addEventListener("success", (/**
-                         * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                         * 接続に成功したデータベースを呼び出し元へ渡す。
                          *
                          */
                         function handleDomEvent5() {
                             return resolve(request.result);
                         }), { once: true });
                         request.addEventListener("error", (/**
-                         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                         * IndexedDB接続エラーを呼び出し元へ伝える。
                          *
                          */
                         function handleDomEvent6() {
@@ -85,35 +85,35 @@ for (const scenario of WORKSHEET_LIST_BENCHMARK_SCENARIOS) {
                     }));
                 }
                 /**
-                 * 完了を監視するIndexedDBトランザクションを基にtransaction・Completeを導出する。
+                 * IndexedDBトランザクションが確定するまで待機する。
                  *
                  * @param transactionValue 完了を監視するIndexedDBトランザクション
-                 * @returns 完了を監視するIndexedDBトランザクションを基にtransaction・Completeを導出する処理の完了時に解決するPromise
+                 * @returns トランザクション完了時に解決し、失敗または中断時に拒否されるPromise
                  */
                 function transactionComplete(transactionValue: IDBTransaction): Promise<void> {
                     return new Promise((/**
-                     * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+                     * トランザクションの完了・失敗・中断イベントをPromiseへ変換する。
                      *
                      * @param resolve 非同期処理を正常完了させるPromise関数
                      * @param reject 非同期処理を失敗として終了させるPromise関数
                      */
                     function settlePromise7(resolve, reject) {
                         transactionValue.addEventListener("complete", (/**
-                         * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                         * すべての変更が永続化された時点で待機を終了する。
                          *
                          */
                         function handleDomEvent8() {
                             return resolve();
                         }), { once: true });
                         transactionValue.addEventListener("error", (/**
-                         * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                         * トランザクション中のエラーを呼び出し元へ伝える。
                          *
                          */
                         function handleDomEvent9() {
                             return reject(transactionValue.error);
                         }), { once: true });
                         transactionValue.addEventListener("abort", (/**
-                         * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                         * 中断されたトランザクションを失敗として呼び出し元へ伝える。
                          *
                          */
                         function handleDomEvent10() {

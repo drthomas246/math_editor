@@ -170,23 +170,23 @@ async function openNewWorksheet(page: Page): Promise<string> {
     return new URL(page.url()).pathname.split("/").at(-1)!;
 }
 /**
- * seed・負荷・Fixtureをevaluateで処理し、その結果を呼び出し元へ反映する。
+ * 大規模編集ベンチマーク用のプリントと画像をブラウザーへ登録する。
  *
  * @param page ブラウザー操作と描画確認に使うPlaywrightページ
  * @param fixture ブラウザーへ投入する性能測定用データ一式
- * @returns seed・負荷・Fixtureをevaluateで処理し、その結果を呼び出し元へ反映する処理の完了時に解決するPromise
+ * @returns IndexedDBへの登録が完了したときに解決するPromise
  */
 async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEditorStressFixture>): Promise<void> {
     await page.evaluate((/**
      * ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する。
      *
-     * @param callbackInput let・{・プリント・プリントに関連付ける画像アセット一覧・png・Bytesをまとめて受け取るコールバック入力
-     * @returns ブラウザーのIndexedDBへ性能測定用fixtureを登録し、トランザクション完了まで待機する処理の完了時に解決するPromise
+     * @param callbackInput プリント、画像アセット一覧、PNGバイト列
+     * @returns 性能測定用データの保存が完了したときに解決するPromise
      */
     async function evaluateCallback10(callbackInput) {
         let { worksheet, assets, pngBytes } = callbackInput;
         const database = await new Promise<IDBDatabase>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * テスト対象アプリのIndexedDB接続要求をPromiseへ変換する。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
@@ -194,14 +194,14 @@ async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEd
         function settlePromise11(resolve, reject) {
             const request = indexedDB.open("math-worksheet-db");
             request.addEventListener("success", (/**
-             * 「success」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 接続に成功したデータベースを後続の登録処理へ渡す。
              *
              */
             function handleDomEvent12() {
                 return resolve(request.result);
             }), { once: true });
             request.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * IndexedDB接続エラーを呼び出し元へ伝える。
              *
              */
             function handleDomEvent13() {
@@ -218,28 +218,28 @@ async function seedStressFixture(page: Page, fixture: ReturnType<typeof createEd
             });
         }
         await new Promise<void>((/**
-         * 画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換する。
+         * 更新トランザクションの完了または失敗をPromiseへ変換する。
          *
          * @param resolve 非同期処理を正常完了させるPromise関数
          * @param reject 非同期処理を失敗として終了させるPromise関数
          */
         function settlePromise14(resolve, reject) {
             transaction.addEventListener("complete", (/**
-             * 「complete」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * プリントと画像が永続化された時点で待機を終了する。
              *
              */
             function handleDomEvent15() {
                 return resolve();
             }), { once: true });
             transaction.addEventListener("error", (/**
-             * 「error」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * トランザクション中のエラーを呼び出し元へ伝える。
              *
              */
             function handleDomEvent16() {
                 return reject(transaction.error);
             }), { once: true });
             transaction.addEventListener("abort", (/**
-             * 「abort」イベントを受け、現在のDOMまたは編集状態へ反映する。
+             * 中断されたトランザクションを失敗として呼び出し元へ伝える。
              *
              */
             function handleDomEvent17() {

@@ -14,7 +14,7 @@ import { TableStructureToolbar } from "./TableStructureToolbar";
 // 型定義と定数
 // --------------------
 
-type Props = {
+type RichTextEditorProps = {
     document: BasicRichTextDocument;
     onChange: (document: BasicRichTextDocument) => void;
     placeholder?: string;
@@ -31,12 +31,12 @@ type Props = {
 };
 const EMPTY_ASSET_URLS = new Map<string, string>();
 /**
- * リッチ・テキスト・エディタの内容と操作を、アクセシブルな画面要素として構成する。
+ * 問題文・解説・表セルを編集するリッチテキストエディタを表示する。
  *
- * @param props リッチ・テキスト・エディタへ渡す表示情報と操作
- * @returns リッチ・テキスト・エディタを表示するReact要素
+ * @param props 文書、編集機能、画像URLなどの表示設定
+ * @returns リッチテキスト編集領域と書式ツールバー
  */
-export function RichTextEditor(props: Props) {
+export function RichTextEditor(props: RichTextEditorProps) {
     let { document, onChange, placeholder = "ここに問題文を入力…", compact, tableCell = false, toolbarContainer, enableMath = false, initialColor = "problem", showColorSelector = true, onImage, onEditImage, onTable, assetUrls = EMPTY_ASSET_URLS } = props;
 
     // --------------------
@@ -49,7 +49,7 @@ export function RichTextEditor(props: Props) {
     const [activeRichTableCell, setActiveRichTableCell] = useState<RichTableCellEditorController | null>(null);
     const activeRichTableCellRef = useRef<RichTableCellEditorController | null>(null);
     const updateActiveRichTableCell = useCallback((/**
-     * create・Memoizedをset・有効状態・リッチ・表・セルへ渡すコールバックとして安定化する。
+     * 操作中の表セルをStateとRefの両方へ記録し、イベント処理から常に最新値を参照できるようにする。
      *
      * @param controller 編集状態とコマンドを提供するエディタ制御器
      */
@@ -59,7 +59,7 @@ export function RichTextEditor(props: Props) {
     }), []);
     const [selectedColor, setSelectedColor] = useState<ContentColor>(initialColor);
     const handleRichTableCellFocus = useCallback((/**
-     * create・Memoizedをdeactivateへ渡すコールバックとして安定化する。
+     * フォーカスが移った表セルを有効化し、それまで操作していたセルの編集状態を解除する。
      *
      * @param controller 編集状態とコマンドを提供するエディタ制御器
      */
@@ -74,14 +74,14 @@ export function RichTextEditor(props: Props) {
     const [richTableMathInserter, setRichTableMathInserter] = useState<((latex: string, textSize: MathTextSize, color: ContentColor) => void) | null>(null);
     const onEditImageRef = useRef(onEditImage);
     useLayoutEffect((/**
-     * 外部状態とReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
+     * TipTapへ渡す安定したコールバックから最新の画像編集処理を呼べるようRefを同期する。
      */
     function synchronizeLayoutEffect3() { onEditImageRef.current = onEditImage; }), [onEditImage]);
     const handleEditImage = useCallback((/**
-     * create・Memoizedを更新前の値へ渡すコールバックとして安定化する。
+     * TipTapの再生成を避けながら、最新の画像編集コールバックへ処理を委譲する。
      *
      * @param image 表示または編集する画像
-     * @returns 更新前の値の結果
+     * @returns 親コンポーネントの画像編集処理が返した値
      */
     function createMemoizedCallback4(image: EditableImageRef) {
         return onEditImageRef.current?.(image);
@@ -95,12 +95,12 @@ export function RichTextEditor(props: Props) {
         return new Map(assetUrls);
     }));
     useLayoutEffect((/**
-     * clearとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
+     * Mapの参照を維持したまま内容だけを更新し、TipTapのノードビューから最新URLを参照できるようにする。
      */
     function synchronizeLayoutEffect6() {
         stableAssetUrls.clear();
         assetUrls.forEach((/**
-         * 各安全性の検証または解放を行うURLについてZustand状態を更新する関数を実行し、対応関係または検証状態を更新する。
+         * 親から受け取ったアセットIDとObject URLの対応を、TipTapが参照するMapへ複写する。
          *
          * @param url 安全性の検証または解放を行うURL
          * @param assetId 対象を識別するID
@@ -143,11 +143,11 @@ export function RichTextEditor(props: Props) {
                 assetUrls: stableAssetUrls,
                 onCellFocus: handleRichTableCellFocus,
                 onCellStateChange: (/**
-                 * セル・Toolbar・版番号をユーザー操作または非同期処理の結果に合わせて更新する。
+                 * 表セル内の選択や書式が変わったことをツールバーへ通知する。
                  */
                 function onCellStateChangeCallback8() {
                     return setCellToolbarRevision((/**
-                     * セル・Toolbar・版番号を現在の編集結果へ反映する。
+                     * 再描画を発生させるため、表セルツールバーの版番号を進める。
                      *
                      * @param revision 非同期更新の前後関係を判定する版番号
                      * @returns 非同期更新の前後関係を判定する版番号と1を加算した値
@@ -162,9 +162,9 @@ export function RichTextEditor(props: Props) {
         content: normalize(document as JSONContent) as unknown as JSONContent,
         editorProps: { attributes: { class: "rich-editor-content", "aria-label": placeholder } },
         onCreate: (/**
-         * 文字装飾をユーザー操作または非同期処理の結果に合わせて更新する。
+         * 解答欄として開いたエディタへ、初期文字色のマークを設定する。
          *
-         * @param callbackInput let・{・エディタをまとめて受け取るコールバック入力
+         * @param callbackInput 作成されたTipTapエディタを含む通知内容
          */
         function onCreateCallback10(callbackInput) {
             let { editor: currentEditor } = callbackInput;
@@ -172,19 +172,19 @@ export function RichTextEditor(props: Props) {
                 currentEditor.commands.setMark("answerColor");
         }),
         onUpdate: (/**
-         * 更新の通知内容を、対応する編集状態・DOM・永続処理へ反映する。
+         * TipTapの更新内容を正規化し、親コンポーネントへ編集結果として通知する。
          *
-         * @param callbackInput let・{・エディタをまとめて受け取るコールバック入力
-         * @returns on・Changeの結果
+         * @param callbackInput 更新されたTipTapエディタを含む通知内容
+         * @returns 親コンポーネントの変更通知処理が返した値
          */
         function onUpdateCallback11(callbackInput) {
             let { editor: currentEditor } = callbackInput;
             return onChange(normalize(currentEditor.getJSON()));
         }),
         onSelectionUpdate: (/**
-         * Selected・色をユーザー操作または非同期処理の結果に合わせて更新する。
+         * 選択位置の文字色を読み取り、ツールバーの色表示へ反映する。
          *
-         * @param callbackInput let・{・エディタをまとめて受け取るコールバック入力
+         * @param callbackInput 選択状態が変わったTipTapエディタを含む通知内容
          */
         function onSelectionUpdateCallback12(callbackInput) {
             let { editor: currentEditor } = callbackInput;
@@ -193,7 +193,7 @@ export function RichTextEditor(props: Props) {
     }, [tableCell, initialColor, canEditImages]);
     const previousAssetUrlsRef = useRef(assetUrls);
     useEffect((/**
-     * set・PropsとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
+     * 画像URLの変更時だけノードビューを再構築し、文書・履歴・選択状態を維持する。
      */
     function synchronizeEffect13() {
         if (previousAssetUrlsRef.current === assetUrls)
@@ -207,7 +207,7 @@ export function RichTextEditor(props: Props) {
         editor.createNodeViews();
     }), [assetUrls, editor]);
     useEffect((/**
-     * normalizeとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
+     * 外部文書が変わった場合、編集中の入力を妨げないタイミングでTipTapへ同期する。
      */
     function synchronizeEffect14() {
         if (!editor || editor.isDestroyed || editor.isFocused)
@@ -226,14 +226,14 @@ export function RichTextEditor(props: Props) {
     // --------------------
 
     const openMath = (/**
-     * リッチ・表・数式・Inserterをユーザー操作または非同期処理の結果に合わせて更新する。
+     * 現在の編集対象に応じて、本文・通常表セル・リッチ表セル用の数式ダイアログを開く。
      */
     function openMathImplementation15() {
         if (activeRichTableCell)
             setRichTableMathInserter((/**
-             * リッチ・表・数式・Inserterを現在の編集結果へ反映する。
+             * ダイアログからリッチ表セルへ数式を挿入する関数を保持する。
              *
-             * @returns 有効状態・リッチ・表・セルのinsert・数式
+             * @returns 現在のリッチ表セルへ数式を挿入する関数
              */
             function setRichTableMathInserterCallback16() {
                 return activeRichTableCell.insertMath;
@@ -244,7 +244,7 @@ export function RichTextEditor(props: Props) {
             setMathOpen(true);
     });
     const changeColor = (/**
-     * Selected・色をユーザー操作または非同期処理の結果に合わせて更新する。
+     * 選択した文字色をツールバーと現在の編集対象へ反映する。
      *
      * @param color 文字または数式へ適用する色
      */
@@ -262,7 +262,7 @@ export function RichTextEditor(props: Props) {
     const toolbar = <div className="rich-toolbar" aria-label="書式ツールバー">
     {showColorSelector && <>
       <select className={`content-color-select ${selectedColor}`} aria-label="入力色" value={selectedColor} onChange={(/**
-         * 「入力色」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
+         * 入力色の選択変更を現在の編集対象へ適用する。
          *
          * @param event 発生したイベント
          */
@@ -272,7 +272,7 @@ export function RichTextEditor(props: Props) {
       <span className="toolbar-separator"/>
     </>}
     <select aria-label="文字サイズ" defaultValue="normal" onChange={(/**
-         * 「文字サイズ」要素のon・Changeを受け、対応する編集状態と画面表示を更新する。
+         * 選択した文字サイズを表セルまたは本文の選択範囲へ適用する。
          *
          * @param event 発生したイベント
          */
@@ -287,21 +287,21 @@ export function RichTextEditor(props: Props) {
         })}><option value="small">小</option><option value="normal">標準</option><option value="large">大</option><option value="xLarge">特大</option></select>
     <span className="toolbar-separator"/>
     <ToolbarButton label="太字" active={activeRichTableCell?.isActive("bold") ?? editor.isActive("bold")} onClick={(/**
-     * 「太字」Toolbar・ボタン要素からクリック操作を受け、toggle・Boldを実行する。
+     * 現在の編集対象で太字を切り替える。
      *
      */
     function handleClick20() {
         return activeRichTableCell ? activeRichTableCell.toggleBold() : editor.chain().focus().toggleBold().run();
     })}><Bold size={15}/></ToolbarButton>
     <ToolbarButton label="下線" active={activeRichTableCell?.isActive("underline") ?? editor.isActive("underline")} onClick={(/**
-     * 「下線」Toolbar・ボタン要素からクリック操作を受け、toggle・Underlineを実行する。
+     * 現在の編集対象で下線を切り替える。
      *
      */
     function handleClick21() {
         return activeRichTableCell ? activeRichTableCell.toggleUnderline() : editor.chain().focus().toggleUnderline().run();
     })}><UnderlineIcon size={15}/></ToolbarButton>
     <ToolbarButton label="斜体" active={activeRichTableCell?.isActive("italic") ?? editor.isActive("italic")} onClick={(/**
-     * 「斜体」Toolbar・ボタン要素からクリック操作を受け、toggle・Italicを実行する。
+     * 現在の編集対象で斜体を切り替える。
      *
      */
     function handleClick22() {
@@ -310,14 +310,14 @@ export function RichTextEditor(props: Props) {
     {!tableCell && <>
       <span className="toolbar-separator"/>
       <ToolbarButton label="箇条書き" disabled={Boolean(activeRichTableCell)} active={editor.isActive("bulletList")} onClick={(/**
-         * 「箇条書き」Toolbar・ボタン要素からクリック操作を受け、runを実行する。
+         * 本文の選択範囲で箇条書きを切り替える。
          *
          */
         function handleClick23() {
             return editor.chain().focus().toggleBulletList().run();
         })}><List size={16}/></ToolbarButton>
       <ToolbarButton label="番号付きリスト" disabled={Boolean(activeRichTableCell)} active={editor.isActive("orderedList")} onClick={(/**
-         * 「番号付きリスト」Toolbar・ボタン要素からクリック操作を受け、runを実行する。
+         * 本文の選択範囲で番号付きリストを切り替える。
          *
          */
         function handleClick24() {
@@ -327,14 +327,14 @@ export function RichTextEditor(props: Props) {
     {hasInsertTools && <span className="toolbar-separator"/>}
     {(enableMath || tableCell) && <ToolbarButton label="数式" onClick={openMath}><Sigma size={16}/></ToolbarButton>}
     {onImage && <ToolbarButton label="画像" disabled={Boolean(activeRichTableCell)} onClick={(/**
-     * 「画像」Toolbar・ボタン要素からクリック操作を受け、on・画像として親コンポーネントへ通知する。
+     * 現在の入力色を引き継いで画像挿入を親コンポーネントへ依頼する。
      *
      */
     function handleClick25() {
         return onImage(selectedColor);
     })}><Image size={16}/></ToolbarButton>}
     {onTable && <ToolbarButton label="表" disabled={Boolean(activeRichTableCell)} onClick={(/**
-     * 「表」Toolbar・ボタン要素からクリック操作を受け、on・表として親コンポーネントへ通知する。
+     * 現在の入力色を引き継いで表挿入を親コンポーネントへ依頼する。
      *
      */
     function handleClick26() {
@@ -344,9 +344,9 @@ export function RichTextEditor(props: Props) {
     return (<div className={`rich-editor ${compact ? "rich-editor-compact" : ""} ${tableCell ? "rich-editor-table-cell" : ""}`}>
       {toolbarContainer ? createPortal(toolbar, toolbarContainer) : toolbar}
       {activeRichTableCell && <TableStructureToolbar availability={activeRichTableCell.tableOperationAvailability} onOperation={(/**
-             * 表・Structure・Toolbar要素から画面操作を受け、適用・表・操作を実行する。
+             * 選択中の表セルへ行・列の追加や削除を適用し、操作後はセル選択を解除する。
              *
-             * @param operation 計測または適用する操作
+             * @param operation 適用する表構造の変更
              */
             function handleOperation27(operation) {
                 if (activeRichTableCell.applyTableOperation(operation))
@@ -356,7 +356,7 @@ export function RichTextEditor(props: Props) {
                 columnWidthPercent: activeRichTableCell.tableSizing.columnWidthPercent,
                 canResizeColumn: activeRichTableCell.tableSizing.canResizeColumn,
                 onRowHeightChange: (/**
-                 * 行・高さ・Mmをユーザー操作または非同期処理の結果に合わせて更新する。
+                 * 選択行の高さを変更し、変更後はセル選択を解除する。
                  *
                  * @param heightMm ミリメートル単位の高さ
                  */
@@ -365,7 +365,7 @@ export function RichTextEditor(props: Props) {
                         updateActiveRichTableCell(null);
                 }),
                 onColumnWidthChange: (/**
-                 * 列・幅・Percentをユーザー操作または非同期処理の結果に合わせて更新する。
+                 * 選択列の幅を変更し、変更後はセル選択を解除する。
                  *
                  * @param widthPercent 表全体に対する列幅の割合
                  */
@@ -375,7 +375,7 @@ export function RichTextEditor(props: Props) {
                 }),
             }}/>}
       <div onPointerDownCapture={(/**
-         * div要素から画面操作を受け、closestを実行する。
+         * リッチ表の外側を押したとき、表セルの編集状態を解除する。
          *
          * @param event 発生したイベント
          */
@@ -386,12 +386,12 @@ export function RichTextEditor(props: Props) {
             }
         })}><EditorContent editor={editor}/></div>
       {mathOpen && <MathDialog onClose={(/**
-         * 数式・ダイアログ要素から終了要求を受け、数式・Openを操作内容に合う状態へ更新する。
+         * 本文用の数式ダイアログを閉じる。
          */
         function handleClose31() {
             return setMathOpen(false);
         })} onInsert={(/**
-             * 数式・ダイアログ要素から挿入要求を受け、insert・数式・位置・選択を実行する。
+             * 入力された数式を本文の選択位置へ挿入し、ダイアログを閉じる。
              *
              * @param latex 描画または保存するLaTeX式
              * @param block 処理対象のリッチテキストブロック
@@ -402,12 +402,12 @@ export function RichTextEditor(props: Props) {
                 setMathOpen(false);
             })}/>}
       {cellMathOpen && <MathDialog inlineOnly onClose={(/**
-         * 数式・ダイアログ要素から終了要求を受け、セル・数式・Openを操作内容に合う状態へ更新する。
+         * 通常表セル用の数式ダイアログを閉じる。
          */
         function handleClose33() {
             return setCellMathOpen(false);
         })} onInsert={(/**
-             * 数式・ダイアログ要素から挿入要求を受け、insert・数式・位置・選択を実行する。
+             * 入力されたインライン数式を通常表セルへ挿入し、ダイアログを閉じる。
              *
              * @param latex 描画または保存するLaTeX式
              * @param _block コールバックの契約上受け取るが、この処理では参照しないブロック
@@ -418,12 +418,12 @@ export function RichTextEditor(props: Props) {
                 setCellMathOpen(false);
             })}/>}
       {richTableMathInserter && <MathDialog inlineOnly onClose={(/**
-         * 数式・ダイアログ要素から終了要求を受け、リッチ・表・数式・Inserterを操作内容に合う状態へ更新する。
+         * リッチ表セル用の数式ダイアログを閉じる。
          */
         function handleClose35() {
             return setRichTableMathInserter(null);
         })} onInsert={(/**
-             * 数式・ダイアログ要素から挿入要求を受け、リッチ・表・数式・Inserterを実行する。
+             * 入力されたインライン数式をリッチ表セルへ挿入し、ダイアログを閉じる。
              *
              * @param latex 描画または保存するLaTeX式
              * @param _block コールバックの契約上受け取るが、この処理では参照しないブロック
@@ -434,12 +434,12 @@ export function RichTextEditor(props: Props) {
                 setRichTableMathInserter(null);
             })}/>}
       {editingMath && <MathDialog initial={{ latex: editingMath.latex, block: editingMath.block, textSize: editingMath.textSize }} onClose={(/**
-         * 数式・ダイアログ要素から終了要求を受け、Editing・数式を操作内容に合う状態へ更新する。
+         * 既存数式の編集ダイアログを閉じる。
          */
         function handleClose37() {
             return setEditingMath(null);
         })} onInsert={(/**
-             * 数式・ダイアログ要素から挿入要求を受け、適用・数式・Editを実行する。
+             * 編集したLaTeX式と文字サイズを既存の数式ノードへ反映する。
              *
              * @param latex 描画または保存するLaTeX式
              * @param _block コールバックの契約上受け取るが、この処理では参照しないブロック
@@ -457,7 +457,7 @@ export function RichTextEditor(props: Props) {
 // --------------------
 
 /**
- * 数式・Editを現在の編集結果へ反映する。
+ * 編集中の数式ノードが有効な場合だけ、LaTeX式と文字サイズを更新する。
  *
  * @param math 編集または表示する数式ブロック
  * @param latex 描画または保存するLaTeX式
@@ -473,19 +473,21 @@ function applyMathEdit(math: EditableMathRef, latex: string, textSize: MathTextS
     math.editor.view.dispatch(math.editor.state.tr.setNodeMarkup(math.position, undefined, { ...node.attrs, latex, textSize }));
     math.editor.commands.focus();
 }
-/**
- * リッチテキスト書式操作を、選択状態と無効状態が分かるツールバーボタンとして表示する。
- *
- * @param props Toolbar・ボタンへ渡す表示情報と操作
- * @returns Toolbar・ボタンを表示するReact要素
- */
-function ToolbarButton(props: {
+type ToolbarButtonProps = {
     label: string;
     active?: boolean;
     disabled?: boolean;
     onClick: (() => void) | undefined;
     children: React.ReactNode;
-}) {
+};
+
+/**
+ * リッチテキスト書式操作を、選択状態と無効状態が分かるツールバーボタンとして表示する。
+ *
+ * @param props ラベル、選択状態、無効状態、クリック処理、表示内容
+ * @returns 書式ツールバーに表示するボタン
+ */
+function ToolbarButton(props: ToolbarButtonProps) {
     let { label, active, disabled, onClick, children } = props;
     return <button type="button" disabled={disabled} className={active ? "toolbar-button active" : "toolbar-button"} aria-label={label} title={label} onClick={onClick}>{children}</button>;
 }

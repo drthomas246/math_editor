@@ -36,22 +36,14 @@ const GENERIC_PATTERNS = [
   /操作結果と一致する最新状態/u,
   /measureをレイアウトまたは性能判定/u,
   /現在の状態からrelease・Resources/u,
+  /create・Memoized/u,
+  /文字装飾・(?:Saving|Saved|Failed)/u,
+  /seed・(?:Problems|負荷・Fixture|プリント)/u,
+  /画像の読み込み完了と失敗イベントを、レイアウト処理がawaitできるPromiseへ変換/u,
+  /現在のDOMまたは編集状態へ反映する/u,
+  /let・\{/u,
 ];
-const ENGLISH_SECTION_NAMES = new Set([
-  "State",
-  "State and refs",
-  "Store",
-  "Effects",
-  "Event handlers",
-  "Render",
-  "Asset operations",
-  "Save and navigation",
-  "Derived values",
-  "Derived values and handlers",
-  "Scroll sync",
-  "Preview",
-  "Helpers",
-]);
+const JAPANESE_CHARACTER_PATTERN = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
 
 /**
  * 検査対象ディレクトリを再帰走査し、TypeScriptソースだけを列挙する。
@@ -246,7 +238,7 @@ function inspectFile(filePath) {
   const sectionPattern = /^\s*\/\/\s*-{3,}\s*\r?\n\s*\/\/\s*(.+?)\s*\r?\n\s*\/\/\s*-{3,}\s*$/gmu;
   for (const match of text.matchAll(sectionPattern)) {
     result.sections += 1;
-    if (ENGLISH_SECTION_NAMES.has(match[1])) {
+    if (!JAPANESE_CHARACTER_PATTERN.test(match[1])) {
       const line = text.slice(0, match.index).split(/\r?\n/u).length + 1;
       result.issues.push({ kind: "english-section", line, detail: match[1] });
     }

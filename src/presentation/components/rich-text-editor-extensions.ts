@@ -126,10 +126,10 @@ function readStringAttribute(value: unknown): string {
  */
 function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
     return (/**
-     * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
+     * 数式ノードの表示・選択・編集を管理するTipTapノードビューを作る。
      *
-     * @param callbackInput let・{・ノード・操作対象のTipTapエディタ・get・Posをまとめて受け取るコールバック入力
-     * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
+     * @param callbackInput 数式ノード、TipTapエディタ、ノード位置の取得関数
+     * @returns DOM、選択処理、更新処理を持つノードビュー
      */
     function applyDeferredOperation3(callbackInput: {
         node: {
@@ -169,7 +169,7 @@ function createMathNodeView(block: boolean, onEdit: MathNodeOptions["onEdit"]) {
                 editButton.textContent = "編集";
                 editButton.setAttribute("aria-label", "数式を編集");
                 editButton.addEventListener("click", (/**
-                 * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                 * 数式ノードの位置と属性を取得し、編集ダイアログを開く。
                  *
                  * @param event 発生したイベント
                  */
@@ -273,8 +273,8 @@ export const InlineMath = Node.create<MathNodeOptions>({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput インライン数式へ出力するHTML属性
+     * @returns TipTapがインライン数式を描画するためのDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
@@ -325,8 +325,8 @@ export const BlockMath = Node.create<MathNodeOptions>({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput ブロック数式へ出力するHTML属性
+     * @returns TipTapがブロック数式を描画するためのDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
@@ -396,8 +396,8 @@ export const ImageRef = Node.create<ImageRefOptions>({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput 画像参照へ出力するHTML属性
+     * @returns TipTapが画像参照を描画するためのDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
@@ -414,10 +414,10 @@ export const ImageRef = Node.create<ImageRefOptions>({
         const instanceContext11 = this;
         const assetUrls = this.options.assetUrls;
         return (/**
-         * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
+         * 画像参照ノードを表示し、画像編集操作を提供するノードビューを作る。
          *
-         * @param callbackInput let・{・ノードをまとめて受け取るコールバック入力
-         * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
+         * @param callbackInput 表示する画像参照ノード
+         * @returns DOM、選択処理、更新処理を持つ画像ノードビュー
          */
         function applyDeferredOperation12(callbackInput) {
             let { node } = callbackInput;
@@ -461,7 +461,7 @@ export const ImageRef = Node.create<ImageRefOptions>({
                     editButton.textContent = "編集";
                     editButton.setAttribute("aria-label", "画像を編集");
                     editButton.addEventListener("click", (/**
-                     * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                     * 現在の画像属性を親エディタへ渡し、画像編集ダイアログを開く。
                      *
                      * @param event 発生したイベント
                      */
@@ -610,8 +610,8 @@ export const RichTable = Node.create<RichTableOptions>({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput リッチ表へ出力するHTML属性
+     * @returns TipTapがリッチ表を描画するためのDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
@@ -627,10 +627,10 @@ export const RichTable = Node.create<RichTableOptions>({
         // oxlint-disable-next-line typescript/no-this-alias
         const instanceContext22 = this;
         return (/**
-         * 非同期処理の完了後に、登録時の後始末または状態更新を実行する。
+         * リッチ表のセル選択・編集・サイズ変更を管理するノードビューを作る。
          *
-         * @param callbackInput let・{・ノード・操作対象のTipTapエディタ・get・Posをまとめて受け取るコールバック入力
-         * @returns dom・ignore・Mutation・select・ノード・deselect・ノード・対象データへ適用する更新処理を持つオブジェクト
+         * @param callbackInput 表ノード、外側のTipTapエディタ、ノード位置の取得関数
+         * @returns DOM、セル編集、選択処理、更新処理を持つ表ノードビュー
          */
         function applyDeferredOperation23(callbackInput) {
             let { node, editor: outerEditor, getPos } = callbackInput;
@@ -709,7 +709,7 @@ export const RichTable = Node.create<RichTableOptions>({
                 button.setAttribute("aria-label", `${location.rowIndex + 1}行${location.cellIndex + 1}列を編集`);
                 renderTableCellDocumentPreview(button, location.cell.document, instanceContext22.options.assetUrls);
                 button.addEventListener("click", (/**
-                 * 「click」イベントを受け、現在のDOMまたは編集状態へ反映する。
+                 * クリックした表セルを編集状態へ切り替える。
                  *
                  */
                 function handleDomEvent29() {
@@ -778,9 +778,9 @@ export const RichTable = Node.create<RichTableOptions>({
                         },
                     },
                     onUpdate: (/**
-                     * 更新の通知内容を、対応する編集状態・DOM・永続処理へ反映する。
+                     * セルエディタの変更を正規化し、外側の表ノードへ反映する。
                      *
-                     * @param callbackInput let・{・エディタをまとめて受け取るコールバック入力
+                     * @param callbackInput 更新されたセル用TipTapエディタ
                      */
                     function onUpdateCallback32(callbackInput) {
                         let { editor: currentEditor } = callbackInput;
@@ -1278,8 +1278,8 @@ export const TextSize = Mark.create({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput 文字サイズマークへ出力するHTML属性
+     * @returns 文字サイズ用のdata属性とCSSクラスを持つDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
@@ -1302,8 +1302,8 @@ export const AnswerColor = Mark.create({
     /**
      * TipTapノードの属性を安全なHTML属性へ変換して出力する。
      *
-     * @param callbackInput let・{・HTML・Attributesをまとめて受け取るコールバック入力
-     * @returns 後続処理が順番に扱う結果の配列
+     * @param callbackInput 解答色マークへ出力するHTML属性
+     * @returns 解答色用のdata属性とCSSクラスを持つDOM定義
      */
     renderHTML(callbackInput) {
         let { HTMLAttributes } = callbackInput;
