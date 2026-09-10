@@ -236,6 +236,8 @@ npm run benchmark:ci
 npm run build
 ```
 
+CIではコメント検査結果をコミットSHA、全対象ファイルと検査器入力のSHA-256へ結び付け、成功・失敗の両方をArtifactとして90日間保存します。ローカル生成は `npm run comment:evidence`、作業ファイルとの照合は `npm run comment:evidence:verify` です。ダウンロードしたArtifactとGitコミットの照合方法、記録項目、保証範囲は[コメント検査の証跡](docs/comment-evidence.md)を参照してください。
+
 E2Eテストはローカルではインストール済みのGoogle Chromeを使用する。GitHub ActionsではPlaywright Chromiumをインストールして実行する。通常の`test:e2e`は`*.benchmark.spec.ts`を除外するため、重い性能ベンチマークは明示的に実行したときだけ動く。ストレスベンチマークの上限は初期表示30秒、対象選択2秒、入力p95 250msであり、`EDITOR_STRESS_MAX_INITIAL_LOAD_MS`、`EDITOR_STRESS_MAX_SELECTION_MS`、`EDITOR_STRESS_MAX_P95_MS`で変更できる。追加したベンチマークのしきい値は`STRUCTURE_BENCHMARK_MAX_P95_MS`、`LIST_BENCHMARK_MAX_REPOSITORY_MS`、`LIST_BENCHMARK_MAX_RENDER_MS`、`LIST_BENCHMARK_MAX_SEARCH_MS`、`LIST_BENCHMARK_MAX_PAGE_CHANGE_MS`、`PDF_BENCHMARK_MAX_GENERATION_MS`、`PDF_BENCHMARK_MAX_MS_PER_PAGE`で変更できる。一覧のrepository・初回描画はfixture密度に応じた既定値を持ち、環境変数を指定した場合は全profileへ同じ上限を適用する。PDFページ数は`PDF_BENCHMARK_PAGE_COUNTS`（例: `10,50,100`）、複合fixtureのページ数は`PDF_BENCHMARK_COMPLEX_PAGE_COUNT`で指定できる。
 
 GitHub Actionsの`Performance Benchmark`は毎週月曜日03:00（日本時間）と手動実行で`benchmark:ci`を実行する。構造操作のJSON、ブラウザ計測JSON、確認用PDFはActions artifactとして30日間保存する。環境差の大きい性能計測をpush / pull requestの必須チェックにはせず、定期実行で上限超過と長期的な退行を検出する。

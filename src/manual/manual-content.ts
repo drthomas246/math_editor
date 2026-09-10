@@ -12,19 +12,19 @@ import troubleshooting from "./content/troubleshooting.md?raw";
 import versionAndLicense from "./content/version-and-license.md?raw";
 import worksheetList from "./content/worksheet-list.md?raw";
 import type { ManualChapterSlug } from "./manual-manifest";
-
+// 各章の識別子とビルド時に読み込んだMarkdown本文を対応付ける。
 export const MANUAL_CONTENT = {
-  overview,
-  "getting-started": gettingStarted,
-  "worksheet-list": worksheetList,
-  "editor-basics": editorBasics,
-  formulas,
-  "images-and-tables": imagesAndTables,
-  answers,
-  "preview-and-pdf": previewAndPdf,
-  "saving-and-history": savingAndHistory,
-  "backup-and-trash": backupAndTrash,
-  "ai-skills": aiSkills,
-  troubleshooting,
-  "version-and-license": versionAndLicense,
+    overview,
+    "getting-started": gettingStarted,
+    "worksheet-list": worksheetList,
+    "editor-basics": editorBasics,
+    formulas,
+    "images-and-tables": imagesAndTables,
+    answers,
+    "preview-and-pdf": previewAndPdf,
+    "saving-and-history": savingAndHistory,
+    "backup-and-trash": backupAndTrash,
+    "ai-skills": aiSkills,
+    troubleshooting,
+    "version-and-license": versionAndLicense,
 } satisfies Record<ManualChapterSlug, string>;

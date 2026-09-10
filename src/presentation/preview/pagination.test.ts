@@ -1,58 +1,81 @@
 import { describe, expect, it } from "vitest";
-
 import { paginateMeasuredItems, planMeasuredPagination, type MeasuredPaginationItem } from "./pagination";
-
-const item = (key: string, height: number, startsProblem = true): MeasuredPaginationItem => ({
-  key,
-  height,
-  startsProblem,
-  breakBefore: false,
-  breakAfter: false,
-});
-
-describe("paginateMeasuredItems", () => {
-  it("moves overflowing problems to following pages", () => {
-    expect(paginateMeasuredItems([
-      item("p1", 40), item("p2", 40), item("p3", 40),
-    ], 100, 100, 10)).toEqual([["p1", "p2"], ["p3"]]);
-  });
-
-  it("does not add a problem gap between continuation fragments", () => {
-    expect(paginateMeasuredItems([
-      item("p1:a", 55), item("p1:b", 45, false), item("p2", 10),
-    ], 100, 100, 10)).toEqual([["p1:a", "p1:b"], ["p2"]]);
-  });
-
-  it("honors explicit page breaks", () => {
-    expect(paginateMeasuredItems([
-      item("p1", 20),
-      { ...item("p2", 20), breakBefore: true },
-      { ...item("p3", 20), breakAfter: true },
-      item("p4", 20),
-    ], 100, 100, 10)).toEqual([["p1"], ["p2", "p3"], ["p4"]]);
-  });
-
-  it("uses the header-free capacity after the first page", () => {
-    expect(paginateMeasuredItems([
-      item("p1", 70), item("p2", 100),
-    ], 80, 110, 10)).toEqual([["p1"], ["p2"]]);
-  });
-
-  it("moves a first fragment to a header-free page when it fits there", () => {
-    expect(planMeasuredPagination([
-      item("p1", 90),
-    ], 80, 100, 10)).toEqual({
-      pages: [[], ["p1"]],
-      oversizedItemKeys: [],
+const item = (/**
+ * 保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクトを一つの結果へまとめる。
+ *
+ * @param key 保存先または要素を特定するキー
+ * @param height 要素またはページの高さ
+ * @param startsProblem ページ先頭が問題本体かどうか
+ * @returns 保存先または要素を特定するキー・要素またはページの高さ・ページ先頭が問題本体かどうか・break・Before・break・Afterを持つオブジェクト
+ */
+function itemImplementation1(key: string, height: number, startsProblem = true): MeasuredPaginationItem {
+    return ({
+        key,
+        height,
+        startsProblem,
+        breakBefore: false,
+        breakAfter: false,
     });
-  });
-
-  it("reports a fragment that is taller than a header-free page", () => {
-    expect(planMeasuredPagination([
-      item("p1", 120),
-    ], 80, 100, 10)).toEqual({
-      pages: [[], ["p1"]],
-      oversizedItemKeys: ["p1"],
-    });
-  });
 });
+describe("paginateMeasuredItems", (/**
+ * 「paginateMeasuredItems」に関するテスト条件と検証例をまとめる。
+ */
+function defineTestSuite2() {
+    it("moves overflowing problems to following pages", (/**
+     * 「moves overflowing problems to following pages」という仕様を操作結果から検証する。
+     */
+    function runTestCase3() {
+        expect(paginateMeasuredItems([
+            item("p1", 40), item("p2", 40), item("p3", 40),
+        ], 100, 100, 10)).toEqual([["p1", "p2"], ["p3"]]);
+    }));
+    it("does not add a problem gap between continuation fragments", (/**
+     * 「does not add a problem gap between continuation fragments」という仕様を操作結果から検証する。
+     */
+    function runTestCase4() {
+        expect(paginateMeasuredItems([
+            item("p1:a", 55), item("p1:b", 45, false), item("p2", 10),
+        ], 100, 100, 10)).toEqual([["p1:a", "p1:b"], ["p2"]]);
+    }));
+    it("honors explicit page breaks", (/**
+     * 「honors explicit page breaks」という仕様を操作結果から検証する。
+     */
+    function runTestCase5() {
+        expect(paginateMeasuredItems([
+            item("p1", 20),
+            { ...item("p2", 20), breakBefore: true },
+            { ...item("p3", 20), breakAfter: true },
+            item("p4", 20),
+        ], 100, 100, 10)).toEqual([["p1"], ["p2", "p3"], ["p4"]]);
+    }));
+    it("uses the header-free capacity after the first page", (/**
+     * 「uses the header-free capacity after the first page」という仕様を操作結果から検証する。
+     */
+    function runTestCase6() {
+        expect(paginateMeasuredItems([
+            item("p1", 70), item("p2", 100),
+        ], 80, 110, 10)).toEqual([["p1"], ["p2"]]);
+    }));
+    it("moves a first fragment to a header-free page when it fits there", (/**
+     * 「moves a first fragment to a header-free page when it fits there」という仕様を操作結果から検証する。
+     */
+    function runTestCase7() {
+        expect(planMeasuredPagination([
+            item("p1", 90),
+        ], 80, 100, 10)).toEqual({
+            pages: [[], ["p1"]],
+            oversizedItemKeys: [],
+        });
+    }));
+    it("reports a fragment that is taller than a header-free page", (/**
+     * 「reports a fragment that is taller than a header-free page」という仕様を操作結果から検証する。
+     */
+    function runTestCase8() {
+        expect(planMeasuredPagination([
+            item("p1", 120),
+        ], 80, 100, 10)).toEqual({
+            pages: [[], ["p1"]],
+            oversizedItemKeys: ["p1"],
+        });
+    }));
+}));
