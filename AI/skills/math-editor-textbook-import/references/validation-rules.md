@@ -79,7 +79,7 @@ type ValidationResult = {
 7. `npm run skill:schema:check`
 8. 代表JSONをMath Editorの`parseBackup()`へ通す
 
-Phase 1の配布検証には`npm run plugin:build`、`npm run plugin:verify`、`npm run plugin:test`を使う。配布物の直接編集は禁止し、`AI/skills/`を変更して再生成する。
+portable Pluginの配布検証には`npm run plugin:build`、`npm run plugin:verify`、`npm run plugin:test`を使う。配布物の直接編集は禁止し、`AI/skills/`を変更して再生成する。
 
 Schemaだけ、Validatorだけ、mappingだけを単独更新しない。
 

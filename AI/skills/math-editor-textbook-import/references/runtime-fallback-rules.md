@@ -32,4 +32,4 @@ Tier 2/3でも、元PDFからの描画、座標、cropRevision、Preview、MIME�
 
 検査不能は`RUNTIME_CAPABILITY_CHECK_FAILED`。ファイル読取/書込先を直すか実行環境を確保して再検査する。ValidatorにSchema driftがあればSkillパッケージを更新する。AIの目視だけで決定論的Validatorを置き換えない。
 
-このPhase 1パッケージの配送は、明示確定したDraftから生成し、Validatorが成功した単一プリントJSON。Math EditorのURLは利用者または起動した開発サーバーから得る。未指定ならURLを作らず、JSONファイルと既存インポート手順を示す。
+配送するのは、明示確定したDraftから生成し、Validatorが成功した単一プリントJSON。Math Editor側の事前検証を行う場合は [webmcp-integration.md](webmcp-integration.md) の対象ページ解決と検証手順を使う。接続先が未解決ならURLを作らず、JSONファイルと既存インポート手順を示す。
