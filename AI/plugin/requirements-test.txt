@@ -1,0 +1,4 @@
+# CIで検証するPython依存の固定値。Pluginの利用先へ自動インストールしない。
+Pillow==12.3.0
+pypdf==6.10.0
+pypdfium2==5.13.0

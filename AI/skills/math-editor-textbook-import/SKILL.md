@@ -24,10 +24,11 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 ## 段階別ルーティング
 
 - PDF解析と範囲解決を始める前に [textbook-analysis-rules.md](references/textbook-analysis-rules.md) を読む。
+- 図版処理前と最終build/validate前に [runtime-fallback-rules.md](references/runtime-fallback-rules.md) を読み、Runtime Capability Probeを実行する。
 - Draftを作成・更新・検証するときは [ai-worksheet-draft.md](references/ai-worksheet-draft.md) を読む。
 - 数式または表を含むときだけ [math-conversion-rules.md](references/math-conversion-rules.md) を読む。
 - 例題または説明スタイルの処理時だけ [explanation-style-rules.md](references/explanation-style-rules.md) を読む。
-- 図版を含むときだけ [figure-cropping-rules.md](references/figure-cropping-rules.md) を読み、`scripts/crop_pdf_figure.py`で元PDFから切り出す。
+- 図版を含むときだけ [figure-cropping-rules.md](references/figure-cropping-rules.md) を読み、検出済み経路で元PDFから切り出す。同梱Cropperの代替もなければホストの元PDF切り出し能力を実測し、必須図版を処理できなければ`blocked`とする。
 - 確定DraftをWorksheetへ変換する前に [worksheet-mapping.md](references/worksheet-mapping.md) を読む。
 - Draft確認時と最終生成時に [validation-rules.md](references/validation-rules.md) を読む。
 - Issueを登録・表示・復旧するときだけ [error-catalog.md](references/error-catalog.md) を読む。
@@ -44,8 +45,13 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 ## 決定論的スクリプト
 
+- 環境検査：`node scripts/check_runtime_capabilities.mjs --input <source.pdf> --output-dir <existing-output-dir>`。図版が必須なら`--figures-required`を付ける。`ready`を確認してから該当処理を実行する。
 - 図版：`crop_pdf_figure.py --input <request.json>`。元PDF、1始まりのPDFページ、回転補正後左上原点の正規化矩形から毎回切り出す。
 - 組立て：`node build_math_worksheet_file.mjs --draft <draft.json> --output <candidate.json> --asset-root <crop-dir>`。未確定またはrevision不一致のDraftは拒否させる。
 - 最終検証：`node validate_math_worksheet.mjs <candidate.json>`。終了コードだけでなく、標準出力JSONの`valid === true`かつ`errors.length === 0`を確認する。
 
 BuilderまたはValidatorが失敗した候補を完成ファイルとして提供しない。修正可能ならIssueへ変換して`review-required`へ戻し、必須ツール不在、Schema drift、読取不能PDFなど継続不能なFatalでは停止して復旧方法を示す。
+
+## Phase 1の配送
+
+portable Plugin版でも、完成した検証済みJSONを利用者へ渡し、Math Editorの既存インポートから追加する。接続先URLは実行時に得て、未確定の本番URLを推測・固定しない。WebMCPの直接取込は後続Phaseで追加する。

@@ -26,6 +26,10 @@
     "schema:generate": "tsx scripts/generate-math-worksheet-schema.ts",
     "schema:check": "tsx scripts/generate-math-worksheet-schema.ts --check",
     "skill:schema:check": "tsx scripts/verify-skill-schema.ts",
+    "plugin:build": "npm run schema:check && npm run skill:schema:check && tsx scripts/build-math-editor-plugin.ts",
+    "plugin:verify": "npm run schema:check && npm run skill:schema:check && tsx scripts/verify-math-editor-plugin.ts",
+    "plugin:test": "vitest run --config vitest.plugin.config.ts",
+    "plugin:runtime": "node AI/skills/math-editor-textbook-import/scripts/check_runtime_capabilities.mjs",
     "schema:test": "tsx scripts/verify-schema-behavior.ts",
     "manual:check": "tsx scripts/verify-manual.ts",
     "comment:check": "node scripts/check-comment-rules.mjs",
@@ -37,7 +41,7 @@
     "comment:evidence:test": "vitest run scripts/comment-evidence.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:app": "vitest run src",
-    "verify:checks": "npm run comment:check:test && npm run comment:scope:test && npm run comment:evidence:test && npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run schema:test && npm run manual:check && npm run test:app",
+    "verify:checks": "npm run comment:check:test && npm run comment:scope:test && npm run comment:evidence:test && npm run typecheck && npm run lint && npm run plugin:build && npm run plugin:verify && npm run plugin:test && npm run schema:test && npm run manual:check && npm run test:app",
     "verify": "npm run comment:check && npm run verify:checks"
   },
   "dependencies": {

@@ -32,6 +32,29 @@ jobs:
         run: npm run verify:checks
       - name: Build
         run: npm run build
+      # Viteがdistを空にした後でPluginを再生成し、検証済みの配布物を残す。
+      - name: Build and verify portable Plugin
+        run: npm run plugin:build && npm run plugin:verify
+      - name: Set up Python for Plugin runtime tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Plugin test dependencies
+        run: |
+          python -m pip install -r AI/plugin/requirements-test.txt
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Verify Plugin runtime and PDF fallback
+        run: |
+          node dist/math-editor-ai/skills/math-editor-textbook-import/scripts/check_runtime_capabilities.mjs --python python --figures-required
+          python scripts/test-plugin-crop.py
+      - name: Upload tested portable Plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-editor-ai-phase1
+          path: dist/math-editor-ai/
+          include-hidden-files: false
+          if-no-files-found: error
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Browser lifecycle E2E

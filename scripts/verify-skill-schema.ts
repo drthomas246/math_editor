@@ -6,6 +6,7 @@ import { CURRENT_SCHEMA_VERSION } from "../src/domain/worksheet/worksheet.schema
 const rootSchemaPath = fileURLToPath(new URL("../schemas/math-worksheet.schema.json", import.meta.url));
 const skillSchemaPath = fileURLToPath(new URL("../AI/skills/math-editor-textbook-import/schemas/math-worksheet.schema.json", import.meta.url));
 const manifestPath = fileURLToPath(new URL("../AI/skills/math-editor-textbook-import/schemas/schema-manifest.json", import.meta.url));
+const rootManifestPath = fileURLToPath(new URL("../schemas/math-worksheet.schema-manifest.json", import.meta.url));
 const validatorPath = fileURLToPath(new URL("../AI/skills/math-editor-textbook-import/scripts/validate_math_worksheet.mjs", import.meta.url));
 const EXPECTED_SOURCE = "src/domain/worksheet/worksheet.schema.ts";
 const EXPECTED_GENERATED_SCHEMA = "schemas/math-worksheet.schema.json";
@@ -138,6 +139,16 @@ async function readValidatorSchemaVersion(errors: string[]): Promise<unknown> {
         }
         return null;
     }
+    if (!Array.isArray(output.errors)) {
+        errors.push("Validator実行結果にerrors配列がありません。");
+    } else {
+        for (const issue of output.errors) {
+            if (!isObject(issue) || issue.code !== "AI_SCHEMA_VALIDATION_FAILED"
+                || issue.message !== "候補JSONファイルを1件指定してください。") {
+                errors.push("Validatorの起動時検査に失敗しました。Schemaまたは実行環境を確認してください。");
+            }
+        }
+    }
     return output.schemaVersion;
 }
 const [rootSchemaRaw, skillSchemaRaw, manifestRaw, validatorRaw] = await Promise.all([
@@ -158,6 +169,14 @@ if (rootSchema !== skillSchema) {
     errors.push("ルートSchemaとSkill同梱Schemaが一致しません。Schema生成後にSkill側へコピーしてください。");
 }
 const manifest = parseJson(manifestRaw, "schema-manifest.json", errors);
+const rootManifest = parseJson(await readFile(rootManifestPath, "utf8"), "root schema manifest", errors);
+if (isObject(rootManifest) && isObject(manifest)) {
+    for (const key of ["format", "schemaVersion", "source", "generatedSchema", "sha256", "generatedAt"]) {
+        expectEqual(manifest[key], rootManifest[key], `root/Skill manifestの${key}が不一致です`, errors);
+    }
+} else {
+    errors.push("root/Skill manifestはJSON objectである必要があります。");
+}
 if (!isObject(manifest)) {
     errors.push("schema-manifest.jsonはJSON objectである必要があります。");
 }

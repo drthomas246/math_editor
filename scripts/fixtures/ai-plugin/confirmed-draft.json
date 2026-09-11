@@ -1,0 +1,38 @@
+{
+  "draftVersion": 1,
+  "draftId": "phase1-synthetic",
+  "revision": 1,
+  "state": "confirmed",
+  "source": {
+    "sourceFileName": "synthetic.pdf",
+    "pdfPageCount": 1,
+    "pdfKind": "text",
+    "rightsConfirmed": true,
+    "externalProcessingAcknowledged": true
+  },
+  "range": { "status": "resolved" },
+  "options": {
+    "title": "Phase 1 自己テスト",
+    "pageSettings": { "size": "B5", "orientation": "portrait", "margin": "normal", "fontFamily": "biz-udp-gothic", "problemNumberFormat": "dot", "subQuestionNumberFormat": "paren" },
+    "header": { "gradeField": true, "classField": true, "numberField": true, "nameField": true, "firstPageOnly": true }
+  },
+  "explanationStyle": "normal",
+  "items": [{
+    "itemKey": "question-1",
+    "order": 1,
+    "source": { "pdfPageNumber": 1, "printedPageLabel": "1", "sourceLabel": "問1", "sourceBounds": null },
+    "kind": "problem",
+    "reviewDecision": "accepted",
+    "recognitionStatus": "resolved",
+    "problemDocument": { "type": "doc", "content": [{ "type": "paragraph", "attrs": { "textAlign": "left" }, "content": [{ "type": "text", "text": "1 + 1 を計算しなさい。" }] }] },
+    "subQuestionGroup": null,
+    "textbookAnswer": { "status": "found", "sourcePdfPageNumber": 1, "sourceLabel": "問1", "document": { "type": "doc", "content": [{ "type": "paragraph", "attrs": { "textAlign": "left" }, "content": [{ "type": "text", "text": "2" }] }] }, "verification": "consistent" },
+    "textbookExplanation": { "status": "not-applicable", "sourcePdfPageNumber": null, "sourceLabel": null, "document": null, "verification": "not-applicable" },
+    "finalExplanation": null,
+    "figures": [],
+    "issueIds": []
+  }],
+  "issues": [],
+  "confirmation": { "status": "confirmed", "confirmedRevision": 1, "confirmedAt": "2026-09-11T00:00:00.000Z" },
+  "validationSummary": { "acceptedItems": 1, "excludedItems": 0, "pendingItems": 0, "warningCount": 0, "fatalCount": 0, "lastValidatedRevision": 1 }
+}
