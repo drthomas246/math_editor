@@ -10,6 +10,8 @@ const SKIPPED_NAMES = new Set(["node_modules", "__pycache__", "Thumbs.db", "desk
 const REQUIRED_SKILL_FILES = [
   "SKILL.md", "agents/openai.yaml", "references/runtime-fallback-rules.md",
   "references/figure-cropping-rules.md", "references/validation-rules.md",
+  "references/webmcp-integration.md",
+  "scripts/resolve_math_editor_target.mjs",
   "scripts/check_runtime_capabilities.mjs", "scripts/crop_pdf_figure.py",
   "scripts/build_math_worksheet_file.mjs", "scripts/validate_math_worksheet.mjs",
   "schemas/math-worksheet.schema.json", "schemas/schema-manifest.json",

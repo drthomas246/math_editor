@@ -11,7 +11,7 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 - 新規問題、類題、誤答例、ヒント、教科書にない解答の自動生成
 - 一般的なPDF要約、Math Editor以外の教材作成
-- Math Editorへの直接書込み、外部AI APIまたは外部MCPの利用
+- Math Editorへの直接書込み、外部AI APIまたはMath Editorの事前検証以外の外部MCPの利用
 - PDF本体の最終JSON格納、AI画像生成、教科書図版の描き直し
 
 ## 毎回の開始手順
@@ -52,6 +52,6 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 BuilderまたはValidatorが失敗した候補を完成ファイルとして提供しない。修正可能ならIssueへ変換して`review-required`へ戻し、必須ツール不在、Schema drift、読取不能PDFなど継続不能なFatalでは停止して復旧方法を示す。
 
-## Phase 1の配送
+## 完成JSONの配送と事前検証
 
-portable Plugin版でも、完成した検証済みJSONを利用者へ渡し、Math Editorの既存インポートから追加する。接続先URLは実行時に得て、未確定の本番URLを推測・固定しない。WebMCPの直接取込は後続Phaseで追加する。
+完成した検証済みJSONを利用者へ渡し、Math Editorの既存インポートから追加する。完成後、Math EditorのSite toolsが見えている、利用者が接続先を指定した、または事前検証を依頼した場合は [webmcp-integration.md](references/webmcp-integration.md) を読み、対象ページの能力取得と事前検証を行う。接続先URLは実行時に解決し、推測・固定しない。Phase 2は事前検証までで、候補の保持は保存完了を意味しない。

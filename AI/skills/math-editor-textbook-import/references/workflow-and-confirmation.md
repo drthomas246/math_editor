@@ -20,7 +20,7 @@
 - Math Editor本体のブラウザ内ローカル保存とは処理経路が異なる。
 - 利用者がPDFの利用権限を確認し、Skillは許諾取得や法的判断を代行しない。
 - 最終JSONには採用内容と採用図版だけを含み、PDF本体、範囲外本文、棄却Crop、OCR中間結果を含めない。
-- 外部AI API、Math Editor API、外部MCPは使わない。
+- PDF解析・Draft構築には外部AI API、Math Editor API、外部MCPを使わない。完成確認とBuilder / Validator成功後に、対象のMath Editorページへ完成JSONだけを渡してWebMCP事前検証を行う場合がある。事前検証は保存を伴わない。
 
 同一実行セッションでPDFが差し替えられたら、旧Draftと確認状態を引き継がず新規Draftを作る。
 
