@@ -72,12 +72,14 @@ type ValidationResult = {
 
 1. `npm run schema:check`
 2. `npm run schema:test`
-3. 最新`worksheet.schema.ts`とZodからValidatorをbundleし直す
-4. 生成SchemaをSkillへコピー
-5. manifestのcommit、hash、generatedAtを更新
+3. 保存形式を変更した場合は最新`worksheet.schema.ts`とZodからValidatorをbundleし直す
+4. `npm run schema:generate`でルートSchema/manifestとSkillのSchema/共通manifestを同期する（LFで保存）
+5. 同じSchemaの再生成では`generatedAt`を維持する。Validatorのhashはこのコマンドで自動追認しない
 6. Validator先頭の`math-editor-validator-metadata`とmanifestの`validator`を更新
 7. `npm run skill:schema:check`
 8. 代表JSONをMath Editorの`parseBackup()`へ通す
+
+Phase 1の配布検証には`npm run plugin:build`、`npm run plugin:verify`、`npm run plugin:test`を使う。配布物の直接編集は禁止し、`AI/skills/`を変更して再生成する。
 
 Schemaだけ、Validatorだけ、mappingだけを単独更新しない。
 

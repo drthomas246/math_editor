@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import math
 import os
@@ -14,6 +15,10 @@ import subprocess
 import sys
 import tempfile
 from typing import Any, NoReturn
+
+# JSONの機械読取りがWindowsの既定文字コードに左右されないようにする。
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
 
 
 def emit(payload: dict[str, Any], exit_code: int) -> NoReturn:
@@ -32,7 +37,7 @@ try:
     from PIL import Image, UnidentifiedImageError
 except ImportError as error:  # pragma: no cover - runtime dependent
     fail(
-        "AI_RUNTIME_TOOL_UNAVAILABLE",
+        "FIGURE_RUNTIME_UNAVAILABLE",
         "PDF図版の切り出しに必要なPillowを利用できません。",
         technical_message=str(error),
     )
@@ -40,12 +45,9 @@ except ImportError as error:  # pragma: no cover - runtime dependent
 try:
     from pypdf import PdfReader
     from pypdf.errors import PdfReadError
-except ImportError as error:  # pragma: no cover - runtime dependent
-    fail(
-        "AI_RUNTIME_TOOL_UNAVAILABLE",
-        "PDF検査に必要なpypdfを利用できません。",
-        technical_message=str(error),
-    )
+except ImportError:
+    PdfReader = None
+    PdfReadError = RuntimeError
 
 
 ALLOWED_INPUT_KEYS = {
@@ -57,6 +59,8 @@ ALLOWED_INPUT_KEYS = {
     "outputMimeType",
     "outputPath",
     "pdftoppmPath",
+    "mutoolPath",
+    "backend",
 }
 ALLOWED_BOUND_KEYS = {"left", "top", "right", "bottom"}
 ALLOWED_ROTATIONS = {0, 90, 180, 270}
@@ -68,6 +72,100 @@ MIME_TO_FORMAT = {
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_EDGE = 10_000
 MAX_IMAGE_PIXELS = 40_000_000
+
+
+def optional_module(name: str) -> Any:
+    """代替描画モジュールを実際に読み込み、壊れた依存は利用不可とする。"""
+    try:
+        module = importlib.import_module(name)
+        if name == "fitz" and not (hasattr(module, "open") and hasattr(module, "Matrix")):
+            return None
+        return module
+    except (ImportError, OSError, RuntimeError):
+        return None
+
+
+def available_command(configured: Any, default: str, base_dir: Path) -> str | None:
+    """明示パスまたはPATH上のコマンドが実際に起動することを確認する。"""
+    if configured is not None and not isinstance(configured, str):
+        fail("AI_FIGURE_OUTPUT_INVALID", "描画コマンドのパスは文字列で指定してください。")
+    executable = str(resolve_path(configured, base_dir)) if configured else shutil.which(default)
+    if not executable:
+        return None
+    try:
+        result = subprocess.run([executable, "-v"], capture_output=True, timeout=5, check=False)
+        return executable if result.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def select_backend(request: dict[str, Any], base_dir: Path) -> tuple[str, Any]:
+    """元PDFを描画できる経路を優先順に選び、必須依存不足時は停止する。"""
+    requested = request.get("backend", "auto")
+    if not isinstance(requested, str) or requested not in {"auto", "poppler", "pymupdf", "pypdfium2", "mutool"}:
+        fail("AI_FIGURE_OUTPUT_INVALID", "backendの指定が不正です。")
+    if requested in {"auto", "poppler"} and PdfReader is not None:
+        executable = available_command(request.get("pdftoppmPath") or os.environ.get("PDFTOPPM_PATH"), "pdftoppm", base_dir)
+        if executable:
+            return "poppler", executable
+    if requested in {"auto", "pymupdf"}:
+        module = optional_module("fitz")
+        if module is not None:
+            return "pymupdf", module
+    if requested in {"auto", "pypdfium2"}:
+        module = optional_module("pypdfium2")
+        if module is not None:
+            return "pypdfium2", module
+    if requested in {"auto", "mutool"} and PdfReader is not None:
+        executable = available_command(request.get("mutoolPath"), "mutool", base_dir)
+        if executable:
+            return "mutool", executable
+    fail("FIGURE_RUNTIME_UNAVAILABLE", "元PDFの図版を保存・検証できる描画環境がありません。Runtime検査結果を確認してください。")
+
+
+def render_original(backend: str, renderer: Any, pdf_path: Path, page_number: int, dpi: int, prefix: Path) -> tuple[Path, int]:
+    """各描画経路を元PDF、CropBox、ページ回転を保持する共通PNGへ変換する。"""
+    if not pdf_path.is_file():
+        fail("AI_PDF_MISSING", "元PDFが見つかりません。")
+    output = prefix.with_suffix(".png")
+    try:
+        if backend in {"poppler", "mutool"}:
+            _, native_rotation = inspect_pdf(pdf_path, page_number)
+            if backend == "poppler":
+                return render_page(renderer, pdf_path, page_number, dpi, prefix), native_rotation
+            result = subprocess.run(
+                [renderer, "draw", "-q", "-F", "png", "-r", str(dpi), "-o", str(output), str(pdf_path), str(page_number)],
+                capture_output=True, timeout=120, check=False,
+            )
+            if result.returncode != 0:
+                fail("AI_PDF_UNREADABLE", "mutoolでPDFページを描画できません。")
+            return output, native_rotation
+        if backend == "pymupdf":
+            with renderer.open(str(pdf_path)) as document:
+                if document.needs_pass and not document.authenticate(""):
+                    fail("AI_PDF_ENCRYPTED", "暗号化PDFを復号できません。")
+                if not 1 <= page_number <= len(document):
+                    fail("AI_RANGE_PAGE_NOT_FOUND", "指定PDFページがありません。")
+                page = document[page_number - 1]
+                native_rotation = page.rotation
+                page.get_pixmap(matrix=renderer.Matrix(dpi / 72, dpi / 72), alpha=False).save(str(output))
+            return output, native_rotation
+        with renderer.PdfDocument(str(pdf_path)) as document:
+            if not 1 <= page_number <= len(document):
+                fail("AI_RANGE_PAGE_NOT_FOUND", "指定PDFページがありません。")
+            page = document[page_number - 1]
+            try:
+                native_rotation = page.get_rotation()
+                bitmap = page.render(scale=dpi / 72)
+                try:
+                    bitmap.to_pil().save(output, format="PNG")
+                finally:
+                    bitmap.close()
+            finally:
+                page.close()
+        return output, native_rotation
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        fail("AI_PDF_UNREADABLE", "元PDFページを描画できません。", technical_message=str(error))
 
 
 def load_request(request_path: Path) -> dict[str, Any]:
@@ -125,24 +223,6 @@ def validate_bounds(value: Any) -> tuple[float, float, float, float]:
     if not left < right or not top < bottom:
         fail("AI_FIGURE_OUTPUT_INVALID", "boundsはclamp後も正の幅と高さを持つ必要があります。")
     return left, top, right, bottom
-
-
-def resolve_pdftoppm(request: dict[str, Any], base_dir: Path) -> str:
-    configured = request.get("pdftoppmPath") or os.environ.get("PDFTOPPM_PATH")
-    if configured:
-        if not isinstance(configured, str):
-            fail("AI_RUNTIME_TOOL_UNAVAILABLE", "pdftoppmPathは文字列で指定してください。")
-        executable = resolve_path(configured, base_dir)
-        if not executable.is_file():
-            fail("AI_RUNTIME_TOOL_UNAVAILABLE", "指定されたpdftoppmを利用できません。")
-        return str(executable)
-    discovered = shutil.which("pdftoppm")
-    if not discovered:
-        fail(
-            "AI_RUNTIME_TOOL_UNAVAILABLE",
-            "pdftoppmを利用できません。PATH、PDFTOPPM_PATH、またはpdftoppmPathを設定してください。",
-        )
-    return discovered
 
 
 def inspect_pdf(pdf_path: Path, page_number: int) -> tuple[int, int]:
@@ -229,8 +309,8 @@ def main() -> None:
 
     pdf_path = resolve_path(require_string(request, "pdfPath"), base_dir)
     output_path = resolve_path(require_string(request, "outputPath"), base_dir)
-    if pdf_path == output_path:
-        fail("AI_FIGURE_OUTPUT_INVALID", "元PDFを出力先として上書きできません。")
+    if output_path in {pdf_path, request_path}:
+        fail("AI_FIGURE_OUTPUT_INVALID", "元PDFや入力JSONを出力先として上書きできません。")
 
     page_number = request.get("pdfPageNumber")
     if isinstance(page_number, bool) or not isinstance(page_number, int):
@@ -249,13 +329,13 @@ def main() -> None:
         fail("AI_FIGURE_OUTPUT_INVALID", "outputMimeTypeはPNG、JPEG、WebPだけです。")
 
     bounds = validate_bounds(request.get("bounds"))
-    _, native_rotation = inspect_pdf(pdf_path, page_number)
-    pdftoppm = resolve_pdftoppm(request, base_dir)
+    backend, renderer = select_backend(request, base_dir)
 
     try:
         with tempfile.TemporaryDirectory(prefix="math-editor-crop-") as temp_dir:
-            rendered_path = render_page(
-                pdftoppm,
+            rendered_path, native_rotation = render_original(
+                backend,
+                renderer,
                 pdf_path,
                 page_number,
                 dpi,
@@ -303,6 +383,8 @@ def main() -> None:
     emit(
         {
             "ok": True,
+            "backend": backend,
+            "warnings": [] if backend == "poppler" else ["FIGURE_PRIMARY_RUNTIME_UNAVAILABLE"],
             "outputPath": str(output_path),
             "mimeType": mime_type,
             "width": width,

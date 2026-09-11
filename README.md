@@ -131,6 +131,8 @@ math-editor-textbook-import Skillを使って、添付した教科書PDFの
 
 ### Skillパッケージの構成と保守
 
+v2.1のPhase 1として、portable Pluginの生成・検証とRuntime自己テストを追加しています。`npm run plugin:build`で`dist/math-editor-ai/`を生成し、`npm run plugin:verify`で正本との一致を検証できます。個人ローカルMarketplaceへの導入、実行環境の検査、図版の代替描画は[Phase 1自己テスト手順](docs/ai-plugin-phase1.md)を参照してください。
+
 ```text
 AI/skills/math-editor-textbook-import/
 ├─ SKILL.md               適用範囲、状態遷移、確認ゲート、実行手順

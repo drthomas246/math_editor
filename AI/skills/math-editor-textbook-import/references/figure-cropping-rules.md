@@ -15,6 +15,8 @@
 
 ## Cropper
 
+事前に[runtime-fallback-rules.md](runtime-fallback-rules.md)のRuntime Capability Probeを実行する。依存不足時は元PDFから描画できる同等経路を選び、必須図版を無言で省略しない。
+
 入力JSON例：
 
 ```json
@@ -36,6 +38,8 @@ python scripts/crop_pdf_figure.py --input crop-request.json
 ```
 
 `pdftoppm`がPATHにない環境では、入力へ任意の`pdftoppmPath`を加えるか、`PDFTOPPM_PATH`環境変数を使う。追加インストールを黙って行わない。
+
+任意の`backend`は既定`auto`。Poppler、PyMuPDF、pypdfium2、mutoolの順に実際の依存を確認して選ぶ。固定経路を検査する場合は`poppler`、`pymupdf`、`pypdfium2`、`mutool`を指定する。mutoolの明示パスには`mutoolPath`を使う。全経路でPillowが必要。PyMuPDF/pypdfium2ではpypdf不要。成功結果の`backend`と`warnings`も記録する。
 
 成功時は`ok`、`outputPath`、`mimeType`、`width`、`height`、`byteLength`、`sha256`をJSONで返す。失敗時は`ok: false`、安定した`code`、技術メッセージを返す。
 

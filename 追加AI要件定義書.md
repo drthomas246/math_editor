@@ -5,469 +5,522 @@
 | 項目 | 内容 |
 |---|---|
 | 文書名 | 数学プリント作成ソフト 追加AI要件定義書 |
-| 文書版 | 1.0 |
-| 基準日 | 2026-08-24 |
+| 文書版 | 2.1 |
+| 基準日 | 2026-09-11 |
 | 対象システム | `drthomas246/math_editor` |
-| 対象 | 中学校数学の授業プリント作成 |
-| 初期AI方式 | ChatGPT Work 上で動作する Math Editor Skill |
-| 将来方式 | Math Editor Plugin（Skillを内包し、App連携を追加） |
+| 基準ブランチ | `master` |
+| 基準コミット | `1ef632ad20d24dbb1e12e0bf022ecc1d6168837d` |
+| 対象 | 中学校数学を中心とする授業プリント作成 |
+| AI実行方式 | 利用者自身のChatGPT上で実行するMath Editor Skill |
+| 配布方式 | portable Plugin |
+| Math Editor連携方式 | WebMCP Site tools |
+| フォールバック | `math-worksheet` 単一プリントJSON |
 | OpenAI API | 使用しない |
-| 初期連携方式 | `math-worksheet` 単一プリントJSONを生成し、Math Editorへインポート |
-| 永続データの正本 | `src/domain/worksheet/worksheet.schema.ts` |
+| APIキー | 使用しない |
+| 永続データ正本 | `src/domain/worksheet/worksheet.schema.ts` |
+| 生成意味論の正本 | `src/application/backup/backup.ts` |
+| Math Editor保存先 | ブラウザIndexedDB |
+| 教科書PDF保存 | Math Editorへ永続保存しない |
 
-本書は、既存のMath Editorに対して、教科書PDFから授業プリントを作成するAI支援機能を追加するための要件を定義する。初期版はChatGPT Work上のSkillとして実装し、AI処理結果をMath Editorの既存JSON形式として出力する。将来は同じSkillをPluginに組み込み、AppによるMath Editorとの直接連携へ拡張する。
+本書は、既存Math Editorの教科書PDF取込Skillをportable Pluginとして配布し、WebMCPに対応したMath Editorと直接連携させるための要件を定義する。
 
----
-
-## 2. 背景と目的
-
-Math Editorでは、問題・例題・数式・画像・表・解答色・教師用解説を既存Worksheet形式で保持し、ブラウザ上で編集・プレビュー・PDF出力できる。一方、教科書をもとに授業プリントを作成する際には、問題文の転記、数式入力、図版切り出し、解答入力、例題解説の調整に大きな作業時間が必要となる。
-
-本追加機能の目的は、利用者が所有・利用権限を持つ教科書PDFをChatGPT Workへ渡し、指定した範囲の例題・問題をMath Editorで再編集可能な形式へ変換することで、授業プリント作成作業を短縮することである。
-
-AIは最終判断者ではなく変換・編集支援者として扱う。AI処理結果は必ず利用者が確認し、明示的に確定した後にMath Editor用JSONを生成する。
+従来の「ChatGPTでJSONを生成し、利用者が手動でMath Editorへインポートする」方式を廃止するのではなく、WebMCPが利用可能な環境では直接インポートを主経路とし、利用できない環境では既存JSON方式へ安全にフォールバックする。
 
 ---
 
-## 3. 基本方針
+### 1.1 変更履歴
 
-### 3.1 初期版はSkill方式とする
+| 版 | 基準日 | 主な変更 |
+|---|---|---|
+| 2.0 | 2026-09-11 | portable Plugin + WebMCP直接取込の基本構成を定義 |
+| 2.1 | 2026-09-11 | Skill実行環境フォールバック、WebMCP保存後のReact画面同期、receipt先行の冪等性、未確定公開URLの扱い、個人ローカルMarketplaceでのPlugin利用・テスト範囲を確定 |
 
-初期版はChatGPT Work上で利用する「Math Editor Skill」として実装する。Math Editor本体からOpenAI APIを呼び出す機能は実装しない。
+### 1.2 v2.1で確定した判断
 
-Skillは次の責務を持つ。
+本版では次を正式な設計判断とする。
 
-- 教科書PDFの解析手順を定義する。
-- 開始ページ・開始問題から終了ページ・終了問題までの対象範囲を決定する。
-- 例題、通常問題、小問、数式、図版、解答、解説を抽出する。
-- 抽出結果を確認用データとして提示する。
-- 利用者の修正を反映する。
-- 最終確定後にMath Editorの単一プリントJSONを生成する。
-- 生成JSONがMath EditorのSchema要件に適合することを検証する。
+1. Skill実行環境で既存のPDF図版切り出し依存関係が不足する場合、同等の結果を生成できる利用可能な代替経路を自動検出して使用する。代替経路も利用できず、採用問題に図版が必須である場合は完成処理を停止する。
+2. WebMCP直接インポート成功後は、Application層のAI Import Eventを発行し、Worksheet一覧画面がRepositoryを再読込して表示を同期する。
+3. WebMCPインポートの再試行では、candidate確認より先に`requestId`のImport Receiptを確認する。
+4. Math Editorの本番公開URLは未定とする。SkillおよびPluginへ本番URLを固定埋め込みしない。
+5. v2.1のPlugin配布対象は開発者本人によるローカルMarketplaceへの導入・テストまでとし、第三者配布・公開Plugin Directoryへの提出は対象外とする。
 
-### 3.2 将来はPluginへ移行する
+## 2. 背景
 
-将来版ではMath Editor SkillをPluginに組み込み、必要に応じてMath Editor Appを追加する。Skillに定義した教科書解析・変換ルールは原則として再利用し、Plugin化のために同じ処理を作り直さない。
+Math Editorはブラウザ上で問題・例題・数式・画像・表・解答色・教師用解説を編集し、IndexedDBへローカル保存してPDF出力できる。
 
-将来構成は次を想定する。
+既存の `math-editor-textbook-import` Skill は、利用権限のある教科書PDFから指定範囲の問題・例題・数式・図版・教科書解答・解説を抽出し、利用者確認後にMath Editor単一プリントJSONを生成できる。
+
+一方、現行フローでは、AI処理完了後に次の手動操作が必要である。
 
 ```text
-Math Editor Plugin
-├─ Math Editor Skill
-│  ├─ 教科書解析
-│  ├─ 数式変換
-│  ├─ 解答・解説処理
-│  └─ Worksheet変換
-└─ Math Editor App
-   ├─ Math Editorとのデータ受け渡し
-   ├─ Schema検証
-   ├─ 図版確認UI
-   └─ 直接インポート
+ChatGPT
+  ↓
+JSONファイル生成
+  ↓
+ダウンロード
+  ↓
+Math Editorを開く
+  ↓
+インポート
+  ↓
+ファイル選択
 ```
 
-### 3.3 OpenAI APIは使用しない
-
-Math Editor本体およびSkillの運用において、利用者または運営者がOpenAI APIキーを登録する方式は採用しない。API従量課金を前提としない。
-
-AI処理は利用者自身のChatGPTプランとChatGPT Workの利用条件・利用上限に従う。利用可能量をMath Editor側が保証してはならない。
-
-### 3.4 Skill方式はローカル完結ではない
-
-Skill方式では教科書PDFをChatGPT Workへ渡して処理するため、PDFおよび必要な内容はChatGPTへ送信される。Math Editor本体の既存ローカル保存方式とは異なるため、利用者に明示する。
-
-「OpenAI APIを使わない」ことと「データを外部へ送信しない」ことを同一視してはならない。
+WebMCPを利用し、この中の「JSONファイルの手動受け渡し」を省略する。
 
 ---
 
-## 4. 対象範囲
+## 3. 目的
 
-### 4.1 初期リリース対象
+本追加機能の目的は次のとおり。
 
-初期版では次を対象とする。
+1. 既存Skillをportable Pluginとして再利用可能な形で配布する。
+2. ChatGPTからMath Editorへ検証済みプリントを直接追加できるようにする。
+3. OpenAI API、APIキー、外部MCPサーバーを必要としない構成を維持する。
+4. Math Editorのローカル保存と既存Schemaを維持する。
+5. AI結果を利用者が明示確定した後だけ書き込む。
+6. WebMCPの提供状況に依存してMath Editor本体が使えなくなることを防ぐ。
+7. WebMCPが使えない場合は既存JSON方式へ戻れるようにする。
+8. Math Editor開発者が利用者のAI従量料金を負担する構造にしない。
 
-1. ChatGPT WorkでMath Editor Skillを実行する。
-2. 教科書PDFを入力する。
-3. 開始ページと開始問題番号を指定する。
-4. 終了ページと終了問題番号を指定する。
-5. 指定範囲内の例題・問題・小問を抽出する。
-6. 問題本文をMath EditorのRichTextへ変換する。
-7. 数式をLaTeXへ変換する。
-8. 問題に必要な図版を元PDFから切り出す。
-9. 図版の切り出し結果を確認し、会話による修正指示で再切り出しできる。
-10. 教科書に掲載されている解答を取得する。
-11. 教科書に掲載されている解説を取得する。
-12. 例題について「ていねいに・普通に・端的に」を選択する。
-13. AI処理結果を確定前に確認する。
-14. 問題単位で採用・除外を指定する。
-15. 修正後にMath Editor単一プリントJSONを生成する。
-16. 既存Math EditorのJSONインポートで取り込める。
-17. 取り込み後は既存の編集、Undo / Redo、プレビュー、PDF出力を利用できる。
+---
 
-### 4.2 初期リリース対象外
+## 4. 基本方針
 
-次は初期版の対象外とする。
+### 4.1 AIとMath Editorの責務を分離する
 
-- AIによる新規問題の自動作問
-- 類題生成
-- 難易度指定による問題生成
-- ChatGPTからMath Editorへの直接書き込み
-- Math EditorからChatGPT Workを直接起動して自動処理する専用API連携
-- Math Editor専用のChatGPT内カスタムUI
-- 図版範囲をマウスドラッグで編集する専用UI
-- AIによる図形・グラフの描き直し
-- AI画像生成
+AI処理はChatGPT側で行う。
+
+ChatGPT側の責務:
+
+- PDF理解
+- 対象範囲解決
+- 問題・例題認識
+- 数式転記
+- 教科書解答・解説取得
+- 説明スタイル調整
+- 図版候補決定
+- Draft生成
+- 利用者確認
+- 完成候補生成
+- Skill側Validator
+- WebMCP直接配送またはJSONフォールバックの選択
+
+Math Editor側の責務:
+
+- WebMCP Site tools提供
+- 最終データ再検証
+- 画像検証
+- ID再採番
+- 新規Worksheet保存
+- AI Import Event発行
+- 画面再同期
+- 編集
+- プレビュー
+- PDF出力
+
+### 4.2 OpenAI APIを使用しない
+
+Math Editor本体、Plugin、Skillの通常利用にOpenAI APIキーを必要としない。
+
+利用者またはMath Editor運営者へAPIキー入力を要求しない。
+
+### 4.3 AI利用量
+
+AI推論は、Plugin/Skillを実行している利用者本人のChatGPT環境で行う。
+
+Math Editor開発者のAPIアカウントへ利用量を集約しない。
+
+ChatGPT側の利用可能量、モデル、クレジット、レート制限等はOpenAIの利用条件に従い、Math Editorが保証しない。
+
+### 4.4 Skillを正本として再利用する
+
+Plugin化のために教科書解析ロジックを別実装しない。
+
+`AI/skills/math-editor-textbook-import/` をSkillの正本とし、Plugin配布物へ機械的にコピーする。
+
+### 4.5 WebMCPは任意機能とする
+
+`document.modelContext` が存在しないブラウザでもMath Editor本体を正常動作させる。
+
+WebMCPはMath Editorの必須ブラウザーAPIに含めない。
+
+### 4.6 Skill実行環境を事前検査する
+
+Skillは、外部コマンド・Pythonモジュール・JavaScript実行環境等を「存在するはず」と仮定しない。
+
+図版切り出しまたは決定論的検証を実行する前に必要能力を検査し、次の順で処理する。
+
+```text
+必要能力あり
+  → 既存の決定論的スクリプトを使用
+
+必要能力の一部なし
+  ↓
+同等結果を保証できる代替経路を検出
+  ├─ 利用可能 → 代替経路を使用して結果を検証
+  └─ 利用不可
+       ├─ 当該能力が不要 → 続行
+       └─ 当該能力が完成に必須 → blocked
+```
+
+AIによる画像生成、PDF紙面の再描画、未検証の推測結果を「代替経路」として扱わない。
+
+### 4.7 WebMCP保存とReact表示を分離する
+
+WebMCP層はReact componentを直接操作しない。
+
+Repository保存成功後にApplication層からAI Import Eventを発行し、表示中のWorksheet一覧がイベントを購読してRepositoryを再読込する。
+
+### 4.8 本番URLを固定しない
+
+Math Editorの本番公開URLはv2.1時点では未定である。
+
+Plugin、Skill、WebMCPコードへ本番URLをハードコードしない。開発・自己テストでは、実行時に利用者またはテスト手順から与えられたMath Editor URLを使用する。
+
+### 4.9 v2.1のPlugin利用範囲は個人テストとする
+
+v2.1ではportable Pluginを作成し、開発者本人のローカルMarketplaceへ追加してインストール・テストできることを必須とする。
+
+第三者への配布、組織配布、公開Plugin Directoryへの提出・審査・公開は将来要件とする。
+
+## 5. OpenAI製品面の前提
+
+2026-09-11時点のOpenAI公式仕様を基準として、次を前提とする。
+
+- 再利用可能なSkillの配布にはPluginを利用できる。
+- portable Pluginはルートの `plugin.json` と `skills/` を持つ構成を利用できる。
+- ChatGPTのSite toolsはWebMCPを利用して、開いているWebページがツールを提供できる。
+- ChatGPTの内蔵ブラウザでは、ページのトップレベルJavaScriptから登録されたSite toolsをChatGPT Work/Codexが利用できる。
+- WebMCPの利用可能モデル・プラン・ワークスペース・ロールアウト状況はOpenAI側で変更されうる。
+- 2026-09-11時点ではWebMCP Site toolsに利用環境上の制限があるため、リリース時に公式仕様を再確認する。
+
+これらはMath Editorの永続仕様ではなく、外部プラットフォーム依存条件として扱う。
+
+---
+
+## 6. 全体構成
+
+```text
+利用者
+  │
+  ▼
+ChatGPT
+  │
+  ├─ Math Editor portable Plugin
+  │    └─ math-editor-textbook-import Skill
+  │          ├─ PDF解析
+  │          ├─ Draft生成
+  │          ├─ 確認
+  │          ├─ Builder
+  │          └─ Validator
+  │
+  │ WebMCP Site tools
+  ▼
+Math Editor
+  ├─ WebMCP登録層
+  ├─ AI Import Application Service
+  ├─ MathWorksheetFileSchema
+  ├─ hydrateBackup()
+  ├─ WorksheetRepository
+  └─ IndexedDB
+```
+
+外部MCPサーバー、AIバックエンド、OpenAI APIサーバーは置かない。
+
+---
+
+## 7. 対象範囲
+
+### 7.1 初期リリース対象
+
+1. 既存Skillをportable Pluginとしてパッケージできる。
+2. Plugin内Skillとリポジトリ内Skillの内容が一致する。
+3. 教科書PDFをChatGPTへ添付できる。
+4. 開始ページ・開始問題を指定できる。
+5. 終了ページ・終了問題を指定できる。
+6. 例題・問題・小問を抽出できる。
+7. 数式をMath Editorで再編集可能なLaTeXへ変換できる。
+8. 必要な図版を元PDFから切り出せる。
+9. 教科書掲載解答を取得できる。
+10. 教科書掲載解説を利用できる。
+11. 「普通に・ていねいに・端的に」を指定できる。
+12. 問題単位で採用・除外・修正できる。
+13. 現revisionを利用者が明示確定するまで完成データを書き込まない。
+14. WebMCP対応Math Editorの能力情報を取得できる。
+15. Skill側とMath Editor側のSchema互換性を確認できる。
+16. Math Editor側で完成候補を再検証できる。
+17. AI連携書込許可後だけIndexedDBへ新規プリントを保存できる。
+18. 既存プリントをAI連携で上書きしない。
+19. 保存後に新規Worksheet IDを返せる。
+20. WebMCPが使えない場合に単一プリントJSONを生成できる。
+21. WebMCP直接取込上限を超える場合にJSONへフォールバックできる。
+22. インポート後は既存編集・保存・Undo/Redo・プレビュー・PDF出力を利用できる。
+
+### 7.2 初期リリース対象外
+
+- OpenAI API呼び出し
+- APIキー登録
+- 外部MCPサーバー
+- Math Editor独自AIバックエンド
+- ChatGPTアカウント認証のMath Editorへの組み込み
+- クラウド同期
+- 既存プリントのAIによる自動上書き
+- AIによるプリント削除
+- AIによるごみ箱操作
+- AIによる任意IndexedDB操作
+- AIによる任意JavaScript実行
 - 教科書PDFのMath Editor内永続保存
-- 教科書ライブラリ
-- 複数ユーザーでの教科書共有
-- 教科書全文検索
-- 複数教科書横断検索
-- 生徒別の個別最適化
-
-これらは必要に応じてPlugin/App化以降の機能として検討する。
-
----
-
-## 5. 利用条件
-
-### 5.1 ChatGPTプラン
-
-Math Editor Skillを利用可能なChatGPTプランを対象とする。対応プランはリリース時点のOpenAI公式仕様に従う。
-
-### 5.2 API契約
-
-利用者およびMath Editor運営者は、本機能のためにOpenAI API契約またはAPIキー登録を必要としない。
-
-### 5.3 教科書の利用権限
-
-利用者は、入力する教科書PDFについて、授業・校務等の目的で必要な利用権限を有していることを確認する。Skillは著作権処理や利用許諾の取得を代行しない。
+- 市販教科書PDFのリポジトリ格納
+- AI画像による教科書図版の描き直し
+- 類題生成
+- 自動作問
+- 誤答例生成
+- 生徒別個別最適化
+- WebMCP経由の巨大ファイル分割転送
+- 専用図版ドラッグトリミングUI
+- WebMCPが利用できない環境での無理な自動操作
 
 ---
 
-## 6. 全体利用フロー
+## 8. Plugin要件
 
-初期版の標準フローを次とする。
+### 8.1 portable Plugin
+
+Pluginはportable形式を採用する。
+
+配布候補物:
 
 ```text
-1. 利用者がChatGPT Workを開く
-        ↓
-2. Math Editor Skillを利用する
-        ↓
-3. 教科書PDFを添付する
-        ↓
-4. 開始ページ・開始問題を指定する
-        ↓
-5. 終了ページ・終了問題を指定する
-        ↓
-6. 例題の説明スタイルを指定する
-        ↓
-7. SkillがPDFを解析する
-        ↓
-8. 例題・問題・数式・図版・解答・解説を抽出する
-        ↓
-9. Work上で確認用結果を提示する
-        ↓
-10. 利用者が採用・除外・修正を指示する
-        ↓
-11. Skillが修正版を再提示する
-        ↓
-12. 利用者が明示的に確定する
-        ↓
-13. math-worksheet単一プリントJSONを生成する
-        ↓
-14. Math EditorへJSONをインポートする
-        ↓
-15. Math Editorで編集・プレビュー・PDF出力する
+math-editor-ai/
+├─ plugin.json
+└─ skills/
+   └─ math-editor-textbook-import/
+      └─ <Skill一式>
 ```
 
----
+### 8.2 Plugin名
 
-## 7. PDF入力要件
+推奨Plugin名を `math-editor-ai` とする。
 
-### 7.1 入力形式
+理由:
 
-初期版の必須入力形式はPDFとする。
+- 現在の教科書取込以外のSkillを将来追加できる。
+- Math Editor本体とAI連携パッケージを区別できる。
+- Skill名 `math-editor-textbook-import` を変更せずに済む。
 
-### 7.2 PDFの保存
+### 8.3 Skill同期
 
-Math Editor本体には教科書PDFを保存しない。教科書PDFはAI処理を実行するたびにChatGPT Workへユーザーが添付する。
+Plugin内Skillは手作業で編集してはならない。
 
-Skillが生成するMath Editor JSONには、採用した問題・解答・解説・図版のみを含め、教科書PDF本体を含めない。
+ビルド時に `AI/skills/math-editor-textbook-import/` からコピーし、ファイル一覧とSHA-256を検証する。
 
-### 7.3 PDF種類
+### 8.4 v2.1のインストール・配布範囲
 
-次のPDFを対象とする。
+v2.1で必須とするのは、開発者本人がローカルMarketplaceへPluginを追加し、ChatGPTまたはCodexの対応画面からインストールして代表ケースをテストできることまでとする。
 
-- テキスト情報を保持するPDF
-- ページが画像化されたスキャンPDF
-
-テキストを取得できるPDFでは抽出テキストを利用し、必要に応じてページ画像と照合する。スキャンPDFでは視覚解析を利用する。
-
-### 7.4 暗号化PDF
-
-Skillが読み取れない暗号化PDFは処理対象外とし、利用者へ明確に通知する。
-
----
-
-## 8. 範囲指定要件
-
-### 8.1 指定方式
-
-利用者は次の4項目を指定できる。
-
-- 開始ページ
-- 開始問題番号または開始例題番号
-- 終了ページ
-- 終了問題番号または終了例題番号
-
-例：
+標準フロー:
 
 ```text
-開始: p.148 例1
-終了: p.151 問4
+Skill正本
+  ↓
+plugin:build
+  ↓
+plugin:verify
+  ↓
+portable Pluginフォルダ
+  ↓
+開発者本人のローカルMarketplaceへ登録
+  ↓
+インストール
+  ↓
+新規会話で動作確認
 ```
 
-### 8.2 問題番号表記
+次はv2.1対象外とする。
 
-少なくとも次の表記を候補として認識する。
+- 公開Plugin Directoryへの提出
+- 公開審査対応
+- 第三者向け自動更新
+- GitHub経由の組織配布
+- 一般利用者向けインストールサポート
 
-- 例1
-- 例題1
-- 問1
-- 問題1
-- 練習1
-- (1)
-- ①
-- その他、ページ内で問題として明確に区切られた番号
+portable形式自体は将来配布できる構造を維持する。
 
-### 8.3 範囲解釈
+## 9. PDF入力要件
 
-開始位置から終了位置までを教科書掲載順で抽出する。指定範囲外の問題を最終JSONへ含めてはならない。
+### 9.1 入力
 
-問題番号の解釈に確信が持てない場合は推測で確定せず、確認対象として表示する。
+必須入力形式はPDFとする。
 
----
+### 9.2 PDF種類
 
-## 9. 問題・例題の認識
+- テキストレイヤーを持つPDF
+- スキャンPDF
 
-### 9.1 例題
+を対象とする。
 
-教科書上の例題は既存Schemaの次の形式へ変換する。
+### 9.3 暗号化PDF
 
-```text
-ProblemBlock.kind = "example"
-```
+Skill実行環境で読取不能な暗号化PDFは処理対象外とする。
 
-### 9.2 通常問題
+### 9.4 外部送信の明示
 
-通常問題は次の形式へ変換する。
+PDF解析前に利用者へ次を説明する。
 
-```text
-ProblemBlock.kind = "problem"
-```
+- PDFはMath EditorではなくChatGPT側で解析される。
+- Math Editorのローカル保存経路とは異なる。
+- 利用者自身がPDFの利用権限を確認する。
+- 完成WorksheetにPDF本体を保存しない。
 
-### 9.3 小問
-
-同一問題内に複数の小問がある場合、構造が適合するものは既存の`SubQuestionGroupBlock`と`SubQuestion`へ変換する。
-
-小問構造として安全に判定できない場合は、内容を失わないことを優先し、通常のRichTextとして保持して警告する。
+利用者確認前にPDF解析を開始しない。
 
 ---
 
-## 10. 問題本文変換
+## 10. 範囲指定要件
 
-### 10.1 基本原則
+利用者は最低限次を指定できる。
 
-問題本文は既存の`BasicRichTextDocument`へ変換する。Skill専用の独自リッチテキスト形式を最終出力に残さない。
+- 開始紙面ページ
+- 開始問題または開始例題ラベル
+- 終了紙面ページ
+- 終了問題または終了例題ラベル
 
-### 10.2 文章
+PDF物理ページと紙面ページが異なる場合は両方を記録できる。
 
-文章は段落構造を維持し、Math Editorで再編集可能なテキストとして出力する。
+開始位置から終了位置までを包含範囲とし、指定範囲外の問題を完成Worksheetへ含めない。
 
-### 10.3 文字装飾
-
-意味上必要な場合に限り、既存Schemaで許可されている太字、下線、斜体、文字サイズを利用する。教科書の装飾を完全再現することより、数学的意味と読みやすさを優先する。
-
----
-
-## 11. 数式要件
-
-### 11.1 LaTeX変換
-
-教科書上の数式は通常文字列ではなく、原則として既存の`inlineMath`または`blockMath`へ変換する。
-
-### 11.2 数式配置
-
-文章中に含まれる短い数式は`inlineMath`、独立行として示すべき式は`blockMath`を利用する。
-
-### 11.3 MathLive再編集
-
-生成したLaTeXはMath Editorの既存MathLive編集機能で再編集できなければならない。
-
-### 11.4 Schema制約
-
-既存`LatexStringSchema`の文字数・禁止コマンド等の制約を満たすこと。Schema違反となる数式を最終JSONへ出力してはならない。
-
-### 11.5 認識不確実性
-
-符号、指数、分数、根号、添字、角度、図形記号等に不確実性がある場合は確認項目として提示する。
+解答探索のために範囲外ページを見ることは許可できるが、その本文を完成Worksheetへ混入させない。
 
 ---
 
-## 12. 教科書解答要件
+## 11. 問題・例題・小問要件
 
-### 12.1 教科書解答優先
+教科書上の例題は既存 `ProblemBlock.kind = "example"` へ変換する。
 
-正答はAIが独自に作成した答えより、教科書に掲載されている解答を優先する。
+通常問題は `ProblemBlock.kind = "problem"` へ変換する。
 
-### 12.2 AIによる上書き禁止
+小問構造を安全に判定できる場合は既存小問構造へ変換する。
 
-AIが計算した答えと教科書解答が異なる場合、AIの答えで自動上書きしてはならない。差異を警告として利用者に提示する。
-
-### 12.3 解答が見つからない場合
-
-指定されたPDF内で教科書解答を特定できない場合は「解答を確認できない」と明示する。初期版では、教科書解答がない問題についてAI独自解答を確定データとして自動採用しない。
-
-利用者が明示的にAI解答の生成を求めた場合の扱いは将来要件とする。
-
-### 12.4 Math Editorへの格納
-
-解答は既存の問題色・解答色構造、`answerContent`、`solution`等から問題構造に適した既存フィールドを使用する。
+判定が不確実な場合は内容欠落を避け、Warningとして利用者へ提示する。
 
 ---
 
-## 13. 解答色要件
+## 12. 数式要件
 
-### 13.1 テキスト
-
-解答として表示する文字列には既存の`answerColor` markを利用する。
-
-### 13.2 数式
-
-解答となる`inlineMath`および`blockMath`には既存の`answerColor: true`を利用する。
-
-### 13.3 画像・表
-
-解答側に必要な画像・表は、既存Schemaで利用可能な`answerColor`情報を使用する。新しいAI専用の色属性は追加しない。
-
-### 13.4 既存プレビューとの整合
-
-AIから取り込んだ内容も、Math Editor既存の「問題のみ」「解答付き」「問題＋解答」の表示・PDF出力仕様に従う。
+- 文章中の数式は原則 `inlineMath`。
+- 独立行の数式は原則 `blockMath`。
+- MathLiveで再編集できるLaTeXを生成する。
+- 既存 `LatexStringSchema` の制約に適合させる。
+- 禁止コマンドや長さ制限を無視しない。
+- 符号、指数、分数、根号、添字、角度、図形記号等に不確実性がある場合はWarningを付ける。
+- AIが意味を推測して式を勝手に変更しない。
 
 ---
 
-## 14. 例題の説明スタイル
+## 13. 教科書解答要件
 
-例題は次の3モードから選択する。初期値は「普通に」とする。
+- 正答は教科書掲載解答を優先する。
+- AIによる検算結果が異なる場合、教科書解答を自動上書きしない。
+- 差異をWarningとして利用者へ提示する。
+- 教科書解答を確認できない場合は「解答を確認できない」と明示する。
+- 初期版では、教科書にないAI独自解答を完成データへ自動採用しない。
 
-### 14.1 普通に
+---
 
-教科書に掲載されている解説を原則としてそのまま利用する。
+## 14. 例題解説要件
 
-AIは、Math Editor形式への構造化、数式LaTeX化、不要な改行の調整等、形式変換に必要な処理だけを行う。解説の意味、説明順序、正答を勝手に変更しない。
+説明スタイルは次とする。
 
-教科書に解説が存在しない場合は、教科書に掲載された解答のみを利用し、AIが新しい解説を自動追加しない。
+### `normal`
 
-### 14.2 ていねいに
+教科書解説を原則そのまま利用し、形式変換に必要な編集だけを行う。
 
-教科書の問題、解答、解説を根拠として、学習者が途中過程を理解できるように説明を補足する。
+### `detailed`
 
-必要に応じて次を補足できる。
+教科書の問題・解答・解説を根拠に、途中過程や理由を補足する。
 
-- 使用する考え方
-- その方法を選ぶ理由
-- 計算途中
-- 式変形の理由
-- 注意点
-- 最終結論
+### `concise`
 
-教科書の正答を変更してはならない。
+教科書解説を根拠に説明量を減らし、必要な式・理由・結論を残す。
 
-### 14.3 端的に
-
-教科書解説を根拠として説明量を減らし、必要な式・理由・結論を残す。
-
-数学的成立に必要な条件や重要な式変形を削除してはならず、教科書の正答を変更してはならない。
-
-### 14.4 モード共通制約
-
-3モード間で変化させるのは説明量と表現であり、問題条件および最終正答を変更してはならない。
+全モードで問題条件と最終正答を変更してはならない。
 
 ---
 
 ## 15. 図版要件
 
-### 15.1 元PDF利用
+### 15.1 基本原則
 
-問題に図、グラフ、座標平面、数直線、統計図、表現上必要な画像等が含まれる場合、AI画像生成で描き直さず、元PDFから該当領域を切り出す。
+- AI画像生成で描き直さない。
+- 元PDFから切り出す。
+- 不要な別問題や本文を含めない。
+- 修正時も元PDFから再切り出す。
+- 採用した図版だけをMath Editor Assetへ含める。
+- 図版候補は利用者が確認できるようにする。
+- WebMCP直接取込上限を超える場合はJSONファイルへフォールバックする。
 
-### 15.2 切り出し対象
+### 15.2 Skill Runtime Capability Probe
 
-図版は原則として問題に必要な領域だけを切り出し、不要な本文や別問題を含めない。
+図版処理前に、現在のSkill実行環境が既存の決定論的crop経路を実行できるか確認する。
 
-### 15.3 手動修正
+最低限確認対象:
 
-初期Skill版では専用ドラッグUIを持たないため、Work上の確認ステップで切り出し画像を提示し、利用者が「上を少し広げる」「左を狭くする」「図だけにする」等の修正指示を行えるようにする。Skillは必ず元PDFから再切り出しする。
+- JavaScript/Node系スクリプトを実行できること
+- Python実行環境
+- `Pillow`
+- `pypdf`
+- `pdftoppm` / Poppler
+- 入出力ファイルへアクセスできること
 
-画像をさらに画像として再切り出しし、不要な画質劣化を発生させない。
+実装時の正確な必須バージョンは、現在のSkillスクリプトとCIで固定する。
 
-### 15.4 Plugin移行後
+### 15.3 自動フォールバック
 
-Plugin/App版では、画像上の矩形操作等による専用切り出しUIを検討する。これは将来機能であり、初期Skill版の必須要件ではない。
+既存crop経路を利用できない場合、Skillは同等の次条件を満たす代替経路を自動検出してよい。
 
-### 15.5 Asset変換
+- 元PDFページを直接レンダリングできる。
+- 指定矩形を元PDF由来画像から切り出せる。
+- AI画像生成または図の再描画を行わない。
+- 別問題や範囲外本文を混入させない。
+- 出力画像を利用者が確認できる。
+- 既存Asset要件へ変換できる。
 
-確定した図版は既存Math Editorバックアップ形式の`assets[]`へ格納し、Worksheet側から`assetId`で参照する。
+代替候補は、実行環境で実際に利用可能であることを確認してから使用する。特定ライブラリが「一般には存在する」という理由だけで利用可能と仮定してはならない。
 
----
+### 15.4 代替不能時
 
-## 16. 確認・確定要件
+代替経路も利用できない場合:
 
-### 16.1 自動確定禁止
+```text
+採用問題に図版が不要
+  → 図版処理をスキップして続行可能
 
-SkillはPDF解析完了後、直ちに最終JSONを生成して確定扱いにしてはならない。
+採用問題に図版が必須
+  → FIGURE_RUNTIME_UNAVAILABLE
+  → 完成処理をblocked
+```
 
-### 16.2 確認ステップ
+必須図版を欠落させたWorksheetを完成品として提供してはならない。
 
-Work上で最低限、問題ごとに次を確認できる形式で提示する。
+### 15.5 初期版で行わないこと
 
-| 確認項目 | 内容 |
-|---|---|
-| 対象 | 採用 / 除外 |
-| 種別 | 例題 / 問題 |
-| 出典位置 | PDFページ、元問題番号 |
-| 問題文 | 抽出・変換後の内容 |
-| 数式 | LaTeX変換結果 |
-| 図版 | 切り出しプレビュー |
-| 解答 | 教科書から取得した内容 |
-| 解説 | 選択モードによる内容 |
-| 警告 | 認識不確実箇所 |
+WebMCP経由の画像分割アップロード、AI画像による再生成、PDF紙面の意味的再描画は実装しない。
 
-### 16.3 明示的な確定
+## 16. 中間データ要件
 
-利用者が「確定」「JSONを作成」等の明示的な意思表示を行うまで最終インポートJSONを生成しない。
+AI解析結果を直接永続Schemaへ確定しない。
 
-### 16.4 修正ループ
-
-利用者が修正を指示した場合は、該当部分だけを再処理し、再度確認結果を提示する。
-
----
-
-## 17. 中間データ要件
-
-AI解析結果を直接Math Editor最終Schemaとして扱わず、中間構造`AiWorksheetDraft`を定義する。
-
-概念構造は次とする。
+既存 `AiWorksheetDraft` を使用し、少なくとも次を保持する。
 
 ```text
 AiWorksheetDraft
+├─ revision
+├─ confirmedRevision
+├─ state
 ├─ source
-│  ├─ sourceFileName
-│  └─ sessionOnlyMetadata
 ├─ range
-│  ├─ startPage
-│  ├─ startLabel
-│  ├─ endPage
-│  └─ endLabel
 ├─ explanationStyle
 ├─ items[]
 │  ├─ sourcePage
@@ -480,22 +533,350 @@ AiWorksheetDraft
 │  ├─ textbookAnswer
 │  ├─ textbookExplanation
 │  ├─ finalExplanation
-│  ├─ warnings
-│  └─ accepted
+│  ├─ issues
+│  └─ acceptance
 └─ validationSummary
 ```
 
-`AiWorksheetDraft`はSkill内部の作業形式であり、Math Editorの永続データ正本にはしない。
+DraftはChatGPT/Skill側の作業形式であり、Math Editorの永続データ正本にしない。
 
 ---
 
-## 18. Math Editor JSON出力要件
+## 17. 確認・確定要件
 
-### 18.1 出力形式
+### 17.1 自動確定禁止
 
-最終成果物は既存のMath Editor単一プリントバックアップ形式とする。
+PDF解析完了後に自動でMath Editorへ書き込まない。
 
-概念上、次の構造を使用する。
+### 17.2 確認内容
+
+問題ごとに最低限次を確認できるようにする。
+
+- 採用 / 除外
+- 例題 / 問題
+- PDFページ
+- 紙面ページ
+- 元ラベル
+- 問題文
+- 数式
+- 小問
+- 図版
+- 教科書解答
+- 解説
+- Warning
+- Fatal
+
+### 17.3 明示確定
+
+「確定」「この内容でMath Editorへ追加」「採用した問題で出力」等、完成データ生成意図が明確な発話のみ確定として扱う。
+
+「進めて」「確認した」「よいと思う」等だけでは確定扱いにしない。
+
+### 17.4 revision
+
+確定後に内容を修正した場合は `revision` を増やし、以前の確定を無効にする。
+
+`confirmedRevision === revision` の場合だけ完成候補を配送できる。
+
+---
+
+## 18. Skill完成ゲート
+
+完成候補生成には最低限次のAND条件を要求する。
+
+1. 利用権限確認済み
+2. ChatGPT側処理への送信理解済み
+3. 対象範囲解決済み
+4. 採用項目1件以上
+5. 未解決Fatal 0件
+6. 全採用項目の確認済み
+7. 保留項目0件
+8. 採用図版の最終Crop確定済み
+9. Warning提示済み
+10. `confirmedRevision === revision`
+11. 利用者が完成データ生成を明示
+
+---
+
+## 19. WebMCP能力確認要件
+
+Math Editorは次のSite toolを提供する。
+
+```text
+math_editor_get_capabilities
+```
+
+最低限返す情報:
+
+```json
+{
+  "app": "math-editor",
+  "integrationVersion": 1,
+  "worksheetFormat": "math-worksheet",
+  "worksheetFileVersion": 1,
+  "schemaSha256": "...",
+  "directImportAvailable": true,
+  "maxDirectImportBytes": 2097152,
+  "writeConsentGranted": false
+}
+```
+
+`maxDirectImportBytes = 2 MiB` はMath Editor初期実装で採用する保守的な設計値であり、OpenAI公式上限を意味しない。
+
+---
+
+## 20. Schema互換性要件
+
+直接インポート前に、Skill同梱SchemaとMath Editor側Schemaの互換性を確認する。
+
+初期版ではSHA-256完全一致を要求する。
+
+```text
+一致
+ → WebMCP直接取込可能
+
+不一致
+ → 直接取込禁止
+ → JSONフォールバック
+```
+
+AIが「たぶん互換」と判断して無視してはならない。
+
+---
+
+## 21. WebMCP検証要件
+
+Site tool:
+
+```text
+math_editor_validate_import
+```
+
+は、完成JSON相当の `payloadText` を受け取り、保存せずに検証する。
+
+処理:
+
+1. WebMCP直接取込サイズ上限確認
+2. JSON parse
+3. `MathWorksheetFileSchema` parse
+4. `kind === "single"` 確認
+5. `hydrateBackup()` 実行
+6. 画像データ検証
+7. ID再採番
+8. 検証済み候補をページメモリへ一時保存
+9. SHA-256算出
+10. `candidateToken` 発行
+
+返却:
+
+```json
+{
+  "valid": true,
+  "candidateToken": "...",
+  "payloadSha256": "...",
+  "worksheetId": "...",
+  "title": "...",
+  "problemCount": 8,
+  "assetCount": 2,
+  "expiresAt": "..."
+}
+```
+
+検証候補は永続保存しない。
+
+---
+
+## 22. AI連携書込許可要件
+
+### 22.1 初期値
+
+書込許可はOFF。
+
+### 22.2 許可範囲
+
+許可は現在のMath Editorページセッションだけに限定する。
+
+### 22.3 永続化
+
+書込許可をIndexedDBやLocalStorageへ永続保存しない。
+
+### 22.4 UI
+
+WebMCP対応環境で、利用者が明示的にONへ変更できるUIを用意する。
+
+### 22.5 拒否
+
+許可OFF時に `math_editor_import_worksheet` が呼ばれた場合、データを書き込まず `CONSENT_REQUIRED` 相当を返す。
+
+---
+
+## 23. WebMCP直接インポート要件
+
+Site tool:
+
+```text
+math_editor_import_worksheet
+```
+
+入力:
+
+- `candidateToken`
+- `requestId`
+- `expectedPayloadSha256`
+
+保存条件:
+
+1. AI連携書込許可ON
+2. candidateが存在
+3. candidate未失効
+4. SHA-256一致
+5. candidate未消費
+6. Math Editor件数上限内
+7. Repository保存可能
+
+保存は必ず既存 `WorksheetRepository` を通す。
+
+WebMCP登録コードからDexieテーブルへ直接 `put()` してはならない。
+
+---
+
+## 24. 冪等性要件
+
+同じWebMCPインポート要求が再試行されても、同一ブラウザ/タブセッション内の通常再試行でプリントを重複作成しない。
+
+`requestId` を必須とする。
+
+### 24.1 確認順序
+
+`math_editor_import_worksheet` はcandidateより先にImport Receiptを確認する。
+
+```text
+requestId receipt確認
+  ├─ completed
+  │    → candidateが消えていても前回成功結果を返す
+  │
+  ├─ pending
+  │    ↓
+  │  receipt.worksheetId をRepositoryで確認
+  │    ├─ 存在 → completedへ昇格して前回成功結果を返す
+  │    └─ 不在
+  │         → stale pendingとして整理
+  │         → candidate確認へ進む
+  │
+  └─ receiptなし
+       → candidate確認へ進む
+```
+
+### 24.2 pending後にcandidateが失われた場合
+
+ページ再読込等によりcandidateが失われ、かつpending receiptのWorksheetがRepositoryにも存在しない場合は、`REVALIDATION_REQUIRED` を返してよい。
+
+Skillは同じ完成payloadを再度 `math_editor_validate_import` し、新しいcandidateを作った後、**同じrequestId** で再試行する。
+
+payload SHA-256が以前のreceiptと一致しない場合は再試行せず `PAYLOAD_HASH_MISMATCH` とする。
+
+### 24.3 Receipt保存
+
+同一タブの再読込を考慮し、`sessionStorage` に最低限次を保持する。
+
+```json
+{
+  "requestId": "...",
+  "payloadSha256": "...",
+  "worksheetId": "...",
+  "title": "...",
+  "status": "pending | completed"
+}
+```
+
+### 24.4 保証範囲
+
+v2.1で保証するのは、同一ブラウザ/タブセッションにおける通常再試行の重複防止である。
+
+ブラウザセッション完全終了後までの厳密なExactly-once保証は対象外とする。
+
+AI連携許可そのものは `sessionStorage` へ保存しない。
+
+## 25. 直接取込後の要件
+
+成功時に最低限次を返す。
+
+```json
+{
+  "success": true,
+  "worksheetId": "...",
+  "title": "...",
+  "editorPath": "/worksheets/<id>"
+}
+```
+
+### 25.1 AI Import Event
+
+Repositoryへの保存が成功し、completed receiptを確定した後、Application層から次のイベントを発行する。
+
+概念:
+
+```ts
+type AiImportCompletedEvent = {
+  type: "ai-import-completed";
+  worksheetId: string;
+  title: string;
+  requestId: string;
+};
+```
+
+イベントへ教科書本文、PDF、Base64 Asset、完成payload全文を含めない。
+
+### 25.2 Worksheet一覧の同期
+
+`WorksheetListScreen` が表示中の場合、`ai-import-completed` を受信したら既存の一覧ロード処理を再実行する。
+
+期待動作:
+
+```text
+WebMCP import成功
+  ↓
+Repository保存
+  ↓
+completed receipt
+  ↓
+AI Import Event
+  ↓
+WorksheetListScreen
+  ↓
+repository.list()
+  ↓
+一覧更新 + Toast
+```
+
+WebMCP層からReactの`setState`を直接呼び出してはならない。
+
+### 25.3 既存プリント保護
+
+直接取込は必ず新規Worksheetとして作成し、既存プリントを上書きしない。
+
+## 26. JSONフォールバック要件
+
+次の場合は直接取込を断念し、既存単一プリントJSON方式を利用する。
+
+- WebMCP非対応
+- Site toolsが利用不可
+- Math Editorが開かれていない
+- Schema hash不一致
+- WebMCP直接取込サイズ超過
+- WebMCP候補検証失敗
+- Site tool呼び出し失敗
+- 利用者が直接取込を望まない
+- OpenAI側のロールアウト・モデル・プラン等によりSite toolsを使えない
+- Math Editor側が安全に直接取込できないと判断した
+
+フォールバック時もSkill完成ゲートとValidatorを省略しない。
+
+---
+
+## 27. Math Editor JSON要件
+
+完成データの形式は既存単一プリント形式を維持する。
 
 ```json
 {
@@ -508,306 +889,430 @@ AiWorksheetDraft
 }
 ```
 
-### 18.2 Schema正本
+`src/domain/worksheet/worksheet.schema.ts` を正本とする。
 
-最終出力は`src/domain/worksheet/worksheet.schema.ts`およびそこから生成されるJSON Schemaを正本として検証する。
-
-Skill内部へSchemaのコピーを持つ場合でも、Math Editor側のSchema更新に追従できる仕組みを設ける。
-
-### 18.3 ID
-
-Worksheet配下のエンティティIDは一意でなければならない。`assetId`参照と`assets[].id`は整合しなければならない。
-
-### 18.4 画像
-
-採用された図版は既存バックアップ形式に従い、Base64画像として`assets[]`に格納する。
-
-### 18.5 不正出力禁止
-
-Schema検証に失敗した場合、Skillは完成ファイルとして提供せず、修正処理を行うかエラーを明示する。
+AI専用の永続フィールドを安易に追加しない。
 
 ---
 
-## 19. Skillパッケージ要件
+## 28. 既存処理再利用要件
 
-Skillは後のPlugin化を容易にするため、1つの巨大な指示文だけで構成しない。
+最低限次を再利用する。
 
-推奨構造を次とする。
-
-```text
-math-editor-textbook-import/
-├─ SKILL.md
-├─ references/
-│  ├─ worksheet-schema.md
-│  ├─ textbook-analysis-rules.md
-│  ├─ math-conversion-rules.md
-│  ├─ explanation-style-rules.md
-│  └─ validation-rules.md
-└─ scripts/
-   ├─ validate_math_worksheet.*
-   ├─ crop_pdf_figure.*
-   └─ build_math_worksheet_file.*
-```
-
-### 19.1 SKILL.md
-
-利用開始条件、入力方法、全体ワークフロー、確認・確定ルール、参照ファイルの使い分けを定義する。
-
-### 19.2 references
-
-変更頻度が比較的低い変換規則、Math Editor Schemaの説明、例題説明スタイル等を保持する。
-
-### 19.3 scripts
-
-再現性が必要なSchema検証、ID生成、Base64化、PDF図版切り出し等は、可能な範囲で決定論的なスクリプトへ分離する。
-
-AIの文章判断と機械的なデータ検証を分離する。
-
----
-
-## 20. エラー・警告要件
-
-最低限、次を区別して利用者へ伝える。
-
-| 種別 | 例 |
-|---|---|
-| PDF入力エラー | PDFを読み取れない、暗号化されている |
-| 範囲エラー | 指定ページがない、開始位置が終了位置より後 |
-| 問題認識警告 | 問題番号を一意に決定できない |
-| 数式警告 | 符号・指数・分数・根号等の認識が不確実 |
-| 図版警告 | 図版の範囲または対応問題が不確実 |
-| 解答警告 | 教科書解答を確認できない |
-| 整合性警告 | 教科書解答とAIによる検算が一致しない |
-| Schemaエラー | Math Editor Schemaに適合しない |
-| 出力エラー | JSONファイルを完成できない |
-
-警告がある場合でも、利用者が内容を確認して採用できるものと、最終出力を禁止すべき致命的エラーを区別する。
-
----
-
-## 21. 品質要件
-
-品質上の優先順位を次とする。
-
-1. 教科書に記載された数学的内容の正確性
-2. 教科書解答の正確な取得
-3. 問題文と図版の対応
-4. 数式の正確なLaTeX変換
-5. 例題・問題・小問構造の正確性
-6. 指定範囲および掲載順の維持
-7. Math Editor Schemaへの適合
-8. 説明スタイルの適切さ
-9. レイアウトの近似
-
-教科書紙面の完全な見た目再現より、数学的内容を欠落・改変せずMath Editorで再編集可能にすることを優先する。
-
----
-
-## 22. セキュリティ・プライバシー要件
-
-### 22.1 APIキー
-
-SkillおよびMath EditorにOpenAI APIキー入力欄を設けない。APIキーをLocalStorage、IndexedDB、GitHub、生成JSONへ保存しない。
-
-### 22.2 PDF送信の明示
-
-Skill利用時は、教科書PDFをChatGPT Workへ添付して処理することを利用者が理解できる説明を設ける。
-
-### 22.3 Math Editor側への保存
-
-Math Editorへインポートされた後は、既存仕様どおりWorksheetと採用画像をブラウザのIndexedDBへ保存する。教科書PDF本体は保存しない。
-
-### 22.4 不要データ
-
-最終JSONには指定範囲外の教科書本文、不要なページ画像、教科書PDF本体を含めない。
-
----
-
-## 23. 既存Math Editorとの整合要件
-
-既存実装を可能な限り変更せず、以下を再利用する。
-
-- `ProblemBlock.kind` の`problem` / `example`
-- `BasicRichTextDocument`
-- `SolutionRichTextDocument`
-- `SubQuestionGroupBlock`
-- `answerColor` mark
-- 数式ノードの`answerColor`
-- 画像・表の既存構造
-- `AssetRecord` / `assetId`参照
-- 単一プリントJSONインポート
+- `MathWorksheetFileSchema`
+- `hydrateBackup()`
+- `WorksheetRepository.create()`
+- 既存画像検証
+- `createId()`
+- 構造上限
+- IndexedDBトランザクション
+- 編集画面
 - プレビュー
 - PDF出力
-- 自動保存
 - Undo / Redo
-
-Skillの都合だけを理由にMath Editorの既存保存形式を大きく変更しない。
+- JSONインポート / エクスポート
 
 ---
 
-## 24. テスト要件
+## 29. WebMCPで公開しない機能
 
-### 24.1 Skill単体テスト相当
+初期版では次のSite toolを作らない。
 
-代表PDFを用いて、少なくとも次を確認する。
+- 任意JavaScript実行
+- 任意URL fetch
+- IndexedDB任意read/write
+- 全プリント取得
+- 教科書データ取得
+- 既存プリント更新
+- プリント削除
+- ごみ箱操作
+- バックアップ全件出力
+- 任意ファイル読取
+- OSファイル操作
 
-- 指定範囲外の問題を含めない。
-- 例題と通常問題を区別する。
-- 小問を適切に構造化する。
-- 数式をLaTeX化する。
-- 教科書解答を優先する。
-- 「普通に」で解説内容を不用意に書き換えない。
-- 「ていねいに」で正答を変更しない。
-- 「端的に」で正答を変更しない。
-- 図版を元PDFから切り出す。
-- 再切り出し指示が反映される。
-- 確定前に最終JSONを生成しない。
-- 除外した問題を最終JSONへ含めない。
-- `math-worksheet` Schemaへ適合する。
+最小権限とする。
 
-### 24.2 Math Editor連携テスト
+---
 
-生成したJSONについて次を確認する。
+## 30. セキュリティ・プライバシー要件
 
-- Math Editorへインポートできる。
-- 例題・問題の種別が保持される。
-- 数式をMathLiveで再編集できる。
-- 画像が表示される。
-- 解答色が正しく表示される。
-- 教師用解説が表示される。
+### 30.1 APIキー
+
+APIキー入力欄を作らない。
+
+APIキーをソース、LocalStorage、sessionStorage、IndexedDB、生成JSONへ保存しない。
+
+### 30.2 入力不信頼
+
+ChatGPTから渡されるWebMCP入力を信頼済みデータとして扱わない。
+
+必ずサイズ・JSON・Schema・画像・構造制約をMath Editor側で再検証する。
+
+### 30.3 出力不信頼
+
+Site toolの結果もAIが誤解する可能性を前提とし、成功・失敗・ID・件数等を機械可読な形で返す。
+
+### 30.4 PDF
+
+PDF本体をMath EditorのIndexedDBへ保存しない。
+
+### 30.5 既存データ保護
+
+AI連携は新規プリント作成だけを許可する。
+
+既存プリントへ直接変更を加えない。
+
+---
+
+## 31. エラー・警告要件
+
+最低限次を区別する。
+
+| コード例 | 種別 | 内容 |
+|---|---|---|
+| `WEBMCP_UNAVAILABLE` | Warning | Site toolsを利用できない |
+| `SCHEMA_MISMATCH` | Warning | SkillとMath EditorのSchemaが一致しない |
+| `DIRECT_IMPORT_TOO_LARGE` | Warning | WebMCP直接取込上限超過 |
+| `CONSENT_REQUIRED` | Recoverable | Math Editor側書込許可が必要 |
+| `CANDIDATE_EXPIRED` | Recoverable | 検証候補が失効 |
+| `CANDIDATE_NOT_FOUND` | Recoverable | candidateTokenが無効 |
+| `PAYLOAD_HASH_MISMATCH` | Fatal for direct import | 検証時と取込時のデータが一致しない |
+| `INVALID_WORKSHEET_FILE` | Fatal | Schema不正 |
+| `INVALID_ASSET` | Fatal | 画像不正 |
+| `WORKSHEET_LIMIT_REACHED` | Recoverable | 保存件数上限 |
+| `IMPORT_FAILED` | Recoverable/Fatal | 保存失敗 |
+
+WebMCP直接取込失敗とSkillの数学的Fatalを混同しない。
+
+WebMCP経路だけの失敗であればJSONフォールバックを検討する。
+
+---
+
+## 32. 性能要件
+
+- WebMCP非対応時に通常起動性能を大きく悪化させない。
+- WebMCPツール登録はアプリ起動後に軽量に実施する。
+- PDF解析をMath Editor側で行わない。
+- WebMCP直接取込の初期上限を2 MiBとする。
+- 通常JSONバックアップ上限は既存仕様を維持する。
+- 画像検証は既存処理を再利用する。
+- 同一候補に対する不要な再hydrateを避ける。
+
+---
+
+## 33. 可用性・障害耐性要件
+
+WebMCPは追加機能であり、障害時に次を維持する。
+
+- プリント一覧表示
+- 新規作成
+- 編集
+- 保存
+- PDF出力
+- JSONバックアップ
+- JSONインポート
+- ごみ箱
+- マニュアル
+
+OpenAI側の機能変更でMath Editor本体が起動不能になってはならない。
+
+---
+
+## 34. ブラウザ・保存領域要件
+
+ChatGPT内蔵ブラウザは通常ブラウザと別プロファイルを利用する場合があるため、IndexedDBも別保存領域となり得る。
+
+そのため利用者向けマニュアルに次を明示する。
+
+- AI統合モードで保存したプリントは、そのMath Editorを開いているブラウザプロファイルに保存される。
+- 普段のChrome/Edgeと自動共有されるとは限らない。
+- 必要に応じてJSONエクスポート/インポートで移動できる。
+
+---
+
+### 34.1 Math Editor URL解決要件
+
+v2.1では本番公開URLを確定しない。
+
+SkillおよびPluginに特定の本番originをハードコードしない。
+
+直接連携時は次の優先順位で対象ページを解決する。
+
+```text
+1. 現在のChatGPTブラウザでMath Editorページが既に開いており、
+   Site toolsを発見できる
+      → そのページを使用
+
+2. 利用者が今回のセッションでMath Editor URLを明示している
+      → そのURLを開く
+
+3. 開発・自己テスト手順からURLが与えられている
+      → そのURLを開く
+
+4. URLを解決できない
+      → URLを推測しない
+      → 利用者へ対象URLを求めるかJSON方式へフォールバック
+```
+
+開発時はVite等のローカル開発サーバーURLを利用できるが、ポート番号をSkillへ固定しない。
+
+本番公開URL確定後は、要件定義書の改版で正式なdeployment originと許可origin方針を追加する。
+
+## 35. UI要件
+
+WebMCP対応時のみ、AI連携状態を表示する。
+
+例:
+
+```text
+AI連携: OFF
+AI連携: ON
+```
+
+許可ダイアログには最低限次を表示する。
+
+- ChatGPTから新規プリントを追加できること
+- 既存プリントは変更しないこと
+- 許可は現在のページセッションだけであること
+- PDF本体をMath Editorへ保存しないこと
+- 無効化方法
+
+---
+
+## 36. テスト要件
+
+### 36.1 Skill
+
+既存テストに加えて次を確認する。
+
+- WebMCP経路を利用できる場合にSite toolsを使う。
+- Schema不一致で直接取込しない。
+- 明示確定前にimport toolを呼ばない。
+- WebMCP失敗時にJSONへフォールバックできる。
+- Runtime Capability Probeが依存関係の有無を正しく報告する。
+- primary crop経路が利用不能な場合に、利用可能な代替経路へ切り替える。
+- 代替経路もなく、必須図版がある場合にblockedとなる。
+- 図版不要問題では図版runtime不足だけを理由に不必要にblockedにしない。
+- 代替経路でも元PDF由来図版であることを維持する。
+
+### 36.2 Math Editor application
+
+- 正常singleデータを候補化できる。
+- archiveを拒否する。
+- Schema不正を拒否する。
+- 画像不正を拒否する。
+- IDを再採番する。
+- 既存プリントを上書きしない。
+- 保存失敗時に候補を完成扱いにしない。
+- 保存成功時にAI Import Eventを1回発行する。
+- イベントに完成payloadやBase64画像を含めない。
+
+### 36.3 WebMCP
+
+- 非対応ブラウザで登録処理が無害。
+- capabilitiesを返せる。
+- サイズ超過を拒否する。
+- validateでcandidateTokenを返す。
+- 許可OFFでimportを拒否する。
+- 許可ONでimportできる。
+- candidate期限切れを拒否する。
+- hash不一致を拒否する。
+- **receiptをcandidateより先に確認する。**
+- completed receiptがあればcandidate消失後でも成功結果を再構成できる。
+- pending receiptかつRepositoryにWorksheetがあればcompletedへ回復できる。
+- pending receiptかつRepositoryにWorksheetがなくcandidateも失われた場合、再検証を要求できる。
+- 同じrequestIdの再試行で重複作成しない。
+
+### 36.4 React表示同期
+
+- 一覧表示中の直接import成功で自動再読込する。
+- 新規Worksheetが一覧へ表示される。
+- 成功Toastを表示できる。
+- WebMCP非対応時にイベント機構が通常一覧へ悪影響を与えない。
+- イベント受信解除が正しく行われる。
+
+### 36.5 Pluginローカルテスト
+
+- portable Pluginをbuildできる。
+- verifyできる。
+- 開発者本人のローカルMarketplaceへ登録できる。
+- Pluginをインストールできる。
+- 新規会話からSkillを起動できる。
+- 代表PDFでJSONフォールバックを完走できる。
+- 対応環境ではWebMCP直接取込を完走できる。
+
+公開Plugin Directoryへの提出テストはv2.1の受け入れ条件にしない。
+
+### 36.6 E2E
+
+- ChatGPTを模したWebMCP呼び出しでプリント追加まで通る。
+- 追加後にイベント経由で一覧へ表示される。
+- 編集画面を開ける。
 - 保存・再読込できる。
 - PDF出力できる。
 - JSON再エクスポートできる。
+- same requestIdを再送しても一覧件数が増えない。
 
-### 24.3 テスト教材
+実際のChatGPTまたは公開Plugin DirectoryをCIへ必須依存させない。
 
-市販教科書そのものを公開リポジトリの自動テストデータとして含めない。著作権上問題のないテスト専用PDFを作成して使用する。
+## 37. 受け入れ条件
 
----
+1. OpenAI APIを使わない。
+2. APIキー入力を要求しない。
+3. 既存Skillをportable Pluginへパッケージできる。
+4. Plugin内Skillが正本Skillと一致する。
+5. 開発者本人のローカルMarketplaceへPluginを登録・インストールしてテストできる。
+6. 公開Plugin Directoryへの提出をv2.1完成条件としない。
+7. Skill実行前または必要処理前にRuntime Capability Probeを実施できる。
+8. primary図版crop依存関係が不足した場合、利用可能な同等代替経路を自動選択できる。
+9. 代替経路もなく必須図版がある場合、不完全な完成品を生成せずblockedにできる。
+10. WebMCP非対応でもMath Editor本体が動作する。
+11. WebMCP対応時にcapabilitiesを公開できる。
+12. Math Editor本番URLをコードまたはSkillへ固定しなくても自己テストできる。
+13. 対象Math Editor URLを解決できない場合、URLを推測せず安全に停止またはJSONへフォールバックできる。
+14. Schema hashを比較できる。
+15. 不一致時に直接取込しない。
+16. 完成候補をMath Editor側Schemaで再検証できる。
+17. 画像を既存検証処理で確認できる。
+18. 利用者の明示確定前に書き込まない。
+19. Math Editor側書込許可OFFでは書き込まない。
+20. 許可ONで新規プリントを保存できる。
+21. 既存プリントを上書きしない。
+22. 保存にはRepositoryを使用する。
+23. WebMCP層からDexieへ直接書かない。
+24. import時はcandidate確認より先にrequestId receiptを確認する。
+25. completed receiptからcandidate消失後でも成功済み結果を返せる。
+26. pending receiptとRepositoryを照合してクラッシュ/再読込直後の状態を回復できる。
+27. 同一requestIdの通常再試行で二重保存しない。
+28. 保存成功後にAI Import Eventを発行できる。
+29. Worksheet一覧がイベントを受信してRepositoryを再読込できる。
+30. WebMCP層がReact stateを直接変更しない。
+31. 直接取込容量超過時にJSONへフォールバックする。
+32. WebMCP利用不可時にJSONへフォールバックする。
+33. インポート後に既存編集機能を利用できる。
+34. PDF本体をMath Editorへ永続保存しない。
+35. AI利用量をMath Editor開発者のAPI課金へ集約しない。
+36. AIによる新規作問を初期版に含めない。
+37. 教科書掲載解答をAI独自解答で上書きしない。
+38. 図版をAI画像で置換しない。
 
-## 25. 受け入れ条件
+## 38. 段階導入
 
-初期Skill版は、最低限次を満たした場合に受け入れ可能とする。
+### Phase 1: portable Plugin自己テスト
 
-1. OpenAI APIキーを使用せずに実行できる。
-2. API従量課金を前提としない。
-3. ChatGPT Work上でSkillとして実行できる。
-4. PDFを毎回ユーザーが添付して利用できる。
-5. 開始ページ・開始問題を指定できる。
-6. 終了ページ・終了問題を指定できる。
-7. 指定範囲外の問題を最終出力へ含めない。
-8. 例題を`kind="example"`として変換できる。
-9. 通常問題を`kind="problem"`として変換できる。
-10. 小問を可能な範囲で既存小問構造へ変換できる。
-11. 数式をLaTeXへ変換できる。
-12. MathLiveで生成数式を再編集できる。
-13. 教科書掲載解答を優先して利用できる。
-14. AI独自解答で教科書解答を自動上書きしない。
-15. 解答色を既存`answerColor`で表現できる。
-16. 「普通に」では教科書解説を原則そのまま利用できる。
-17. 「ていねいに」では教科書解説を基に説明を補足できる。
-18. 「端的に」では教科書解説を基に説明を短縮できる。
-19. 3モードで最終正答を変更しない。
-20. 必要な図版を元PDFから切り出せる。
-21. Work上の指示により図版切り出し範囲を修正できる。
-22. AI生成画像で教科書図版を置き換えない。
-23. 最終JSON生成前に必ず確認ステップを行う。
-24. 問題ごとに採用・除外を指定できる。
-25. 利用者が明示的に確定するまで最終JSONを生成しない。
-26. 最終JSONが既存`math-worksheet`単一プリントSchemaに適合する。
-27. 図版Assetと`assetId`参照が整合する。
-28. Math EditorへJSONをインポートできる。
-29. インポート後に既存の編集・プレビュー・PDF出力が利用できる。
-30. AI自動作問を初期版に含めない。
+- `plugin.json`
+- build
+- verify
+- Skill同期
+- Runtime Capability Probe
+- 開発者本人のローカルMarketplace登録
+- Plugin install / uninstall
+- 新規会話でSkill起動確認
 
----
+### Phase 2: WebMCP read/validate
 
-## 26. Plugin移行要件
+- capabilities
+- validate
+- Schema hash
+- candidate store
+- URL解決規則
+- UI表示
 
-初期Skill版の設計では、将来Plugin化するときに次を満たせるようにする。
+### Phase 3: WebMCP direct import
 
-### 26.1 Skill再利用
+- 書込許可
+- import tool
+- receipt先行のrequestId冪等性
+- AI Import Event
+- Worksheet一覧再同期
+- Toast
 
-教科書解析ルール、数式変換、解答優先ルール、説明スタイル、Worksheet変換ルールをPlugin内のSkillとして再利用できること。
+### Phase 4: Skill配送統合
 
-### 26.2 App追加
+- SkillのWebMCP配送規則
+- runtime fallback
+- JSONフォールバック
+- manuals
+- E2E
 
-Math Editor Appを追加する場合は、Skillが生成する`AiWorksheetDraft`または検証済みMath Editorデータを入力として利用できること。
+### Phase 5: 将来の公開準備
 
-### 26.3 直接連携
+v2.1完成後、必要になった時点で別要件として次を検討する。
 
-将来は次を検討する。
+- 本番公開URL
+- 第三者配布
+- Plugin Directory提出
+- 公開審査
+- 更新ポリシー
+- 組織配布
 
-```text
-ChatGPT Work
-   ↓
-Math Editor Plugin
-   ├─ Skill
-   └─ App
-        ↓
-Math Editor
-```
+## 39. 将来機能
 
-これにより、JSONファイルを手動で保存・インポートする工程の削減を目指す。
-
-### 26.4 専用確認UI
-
-Plugin/App版では、問題一覧、採用・除外、数式修正、図版矩形トリミング等を専用UIとして実装することを検討する。
-
----
-
-## 27. 将来機能
-
-次を第2段階以降の候補とする。
-
-- AIによる類題生成
-- 問題数指定による自動作問
-- 基礎・標準・発展の難易度指定
+- 類題生成
+- 問題数指定作問
+- 難易度指定
 - 単元指定
-- 数値変更型の反復問題
 - 定期テスト生成
-- 複数バージョン生成
-- ヒント生成
-- 誤答例生成
-- 学習指導要領との対応付け
-- 教科書単元の自動認識
-- Math Editorへの直接インポート
-- 専用図版トリミングUI
+- ヒント
+- 誤答例
+- 学習指導要領対応
+- 図版crop座標だけを転送しMath Editor側で元PDFから切り出す方式
+- WebMCPの大容量データ転送方式が安定した場合の直接取込上限拡大
+- 複数Skillを `math-editor-ai` Pluginへ追加
+- Math Editor本番公開URL確定後のorigin固定・許可方針
+- Pluginの第三者配布
+- Plugin Directoryへの提出・公開
+- 組織向けPlugin配布・管理
+- ブラウザセッション終了後まで保証する永続的な冪等性
 
----
+将来機能は本要件の受け入れ条件に含めない。
 
-## 28. 設計上の最重要原則
-
-本追加機能では、次を最優先する。
+## 40. 設計上の最重要原則
 
 1. 教科書の数学的内容を勝手に変更しない。
-2. 正答は教科書掲載解答を優先する。
-3. 数式は再編集可能なLaTeXへ変換する。
-4. 図版は元PDFを利用する。
-5. AI結果を必ず利用者が確認してから確定する。
-6. OpenAI APIキーおよびAPI従量課金を必要としない。
-7. 初期版はSkillとして小さく開始し、Skillを再利用してPlugin/Appへ拡張できる構造にする。
-8. Math Editor既存Schemaを最終データの正本として維持する。
+2. 教科書掲載解答を優先する。
+3. AI結果は利用者確認後だけ確定する。
+4. Math Editor既存Schemaを正本とする。
+5. AI入力をMath Editor側でも再検証する。
+6. WebMCPへ最小権限しか公開しない。
+7. WebMCPをMath Editorの必須依存にしない。
+8. OpenAI APIとAPIキーを必要としない。
+9. Skillの正本を一つに保つ。
+10. 直接取込に失敗してもJSON経路を残す。
 
 ---
 
-## 29. 参考資料
+## 41. 参考資料
 
 - Math Editor Repository  
   https://github.com/drthomas246/math_editor
 - Math Editor Worksheet Schema  
   https://github.com/drthomas246/math_editor/blob/master/src/domain/worksheet/worksheet.schema.ts
-- Skills in ChatGPT - OpenAI Help Center  
-  https://help.openai.com/en/articles/20001066
-- Plugins in ChatGPT and Codex - OpenAI Help Center  
-  https://help.openai.com/en/articles/20001256
-- ChatGPT Work introduction / Business release notes - OpenAI Help Center  
-  https://help.openai.com/en/articles/11391654-chatgpt-business-release-notes
+- Math Editor backup implementation  
+  https://github.com/drthomas246/math_editor/blob/master/src/application/backup/backup.ts
+- OpenAI: Build plugins / local Marketplace  
+  https://learn.chatgpt.com/docs/build-plugins
+- OpenAI: Build skills  
+  https://learn.chatgpt.com/docs/build-skills
+- OpenAI: Site tools (WebMCP)  
+  https://learn.chatgpt.com/docs/webmcp
+- OpenAI: Browser  
+  https://learn.chatgpt.com/docs/browser
+- OpenAI: ChatGPT / API billing separation  
+  https://help.openai.com/en/articles/9039756-managing-billing-settings-on-the-chatgpt-web-and-api-platform
 
 ---
 
-## 30. 要点
+## 42. 要点
 
-初期AI機能はMath Editor本体にAI APIを組み込むのではなく、ChatGPT Work上のMath Editor Skillとして提供する。利用者は教科書PDFと対象範囲をSkillへ渡し、Skillは教科書の問題・数式・図版・解答・解説を解析する。例題の解説は「普通に・ていねいに・端的に」を選択でき、正答は教科書掲載解答を優先する。処理結果は必ずWork上で確認・修正した後に、既存Math Editor Schemaに適合する単一プリントJSONとして出力する。
+本AI機能は、利用者自身のChatGPT上で既存 `math-editor-textbook-import` Skillを実行し、portable Pluginとしてパッケージする。v2.1では開発者本人のローカルMarketplaceでのインストール・自己テストまでを配布範囲とし、一般公開は行わない。
 
-将来はこのSkillをMath Editor Pluginへ内包し、Appを追加してMath Editorとの直接連携、専用確認UI、図版トリミングUI等へ拡張する。初期Skillで作成した教科書解析ルールとデータ変換ルールは原則として再利用する。
+Skill実行環境は外部コマンドやPythonモジュールの存在を仮定せず、Runtime Capability Probeを行う。既存の図版crop経路が利用できない場合は元PDF由来の同等結果を保証できる代替経路を自動検出し、それも利用できず採用問題に図版が必須であれば完成処理を停止する。
+
+WebMCP対応環境では、Math Editorが提供するSite toolsを使って能力確認、Schema整合確認、候補検証、直接インポートを行う。インポート再試行ではcandidateより先にImport Receiptを確認し、同一タブ/ブラウザセッション内の通常再試行で重複保存を防ぐ。
+
+Repository保存成功後はApplication層のAI Import Eventを発行し、Worksheet一覧がRepositoryを再読込して画面を同期する。WebMCP層からReact stateを直接操作しない。
+
+Math Editorの本番公開URLはv2.1では未定とし、PluginやSkillに固定埋め込みしない。自己テストでは実行時に指定されたlocalhost等のURLを使用する。
+
+OpenAI API、APIキー、外部MCPサーバーは使用しない。WebMCPが利用できない、Schemaが一致しない、データが大きすぎる等の場合は、従来の単一プリントJSONへフォールバックする。

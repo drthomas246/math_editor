@@ -25,5 +25,10 @@ Fatalは解消するまで完成JSON生成を停止する。Warningは対象、�
 | `AI_ASSET_REFERENCE_INVALID` | fatal | Asset参照・所有・パス不整合 | Builder入力またはCropを修正 |
 | `AI_OUTPUT_TOO_LARGE` | fatal | JSONが100MiB超過 | 元PDFから低DPI再Cropまたは範囲分割 |
 | `AI_RUNTIME_TOOL_UNAVAILABLE` | fatal | Crop/Builder/Validator実行不能 | 対応ランタイムで再実行 |
+| `RUNTIME_CAPABILITY_CHECK_FAILED` | fatal | 能力検査または入出力アクセスに失敗 | 指定パス・実行環境を直して再検査 |
+| `FIGURE_PRIMARY_RUNTIME_UNAVAILABLE` | warning | 主Crop経路の依存不足 | 検出済み代替経路で元PDFから描画し確認 |
+| `FIGURE_RUNTIME_UNAVAILABLE` | fatal | 必須図版を処理できる代替経路もない | 対応環境を用意するまでblocked |
+| `BUILDER_RUNTIME_UNAVAILABLE` | fatal | 決定論的Builderを実行できない | Node環境を確保して再検査 |
+| `VALIDATOR_RUNTIME_UNAVAILABLE` | fatal | 決定論的Validatorの起動・Schema整合性検査に失敗 | 環境・Skill同梱物を修復して再検査 |
 
 利用者向け表示には内部スタックトレース、一時パス、長い技術ログをそのまま出さない。`code`、人が理解できる説明、対象問題・ページ、次の操作を示す。
