@@ -1,8 +1,12 @@
 import { z } from "zod";
 import { AiImportError, toAiImportErrorDetail } from "../../application/ai-import/ai-import-errors";
-import { createAiImportService, ValidateAiImportInputSchema } from "../../application/ai-import/ai-import-service";
+import { publishAiImportCompleted } from "../../application/ai-import/ai-import-events";
+import { createAiImportService, ImportAiCandidateInputSchema, ValidateAiImportInputSchema } from "../../application/ai-import/ai-import-service";
+import { worksheetRepository } from "../indexeddb/dexie-worksheet-repository";
 import { APP_SCHEMA_SHA256, getMathEditorCapabilities } from "./math-editor-capabilities";
 import { createWebMcpCandidateStore } from "./webmcp-candidate-store";
+import { createWebMcpImportReceiptStore, detectWebMcpSessionStorage } from "./webmcp-import-receipt";
+import { webMcpSession } from "./webmcp-session";
 import type { MathEditorModelContext, MathEditorModelContextTool } from "./webmcp";
 
 const EmptyInputSchema = z.strictObject({});
@@ -26,15 +30,24 @@ export function detectMathEditorModelContext(): MathEditorModelContext | undefin
 }
 
 /**
- * 読取・検証の2ツールを登録し、終了時に自分が登録したツールだけを解除する。
+ * 読取・検証・直接取込の3ツールを登録し、終了時に自分が登録したツールだけを解除する。
  * @param context 実行環境から検出する登録API。テスト時は差替え可能
  * @returns 登録結果のPromiseと、候補・登録を解放する終了処理
  */
 export function registerMathEditorTools(context = detectMathEditorModelContext()) {
   const controller = new AbortController();
   const store = createWebMcpCandidateStore();
-  const service = createAiImportService(store, APP_SCHEMA_SHA256);
   const ownedNames = new Set<string>();
+  webMcpSession.setSupported(Boolean(context));
+  webMcpSession.setRegistered(false);
+  webMcpSession.setDirectImportAvailable(false);
+  const receiptStorage = detectWebMcpSessionStorage();
+  const service = createAiImportService(store, APP_SCHEMA_SHA256, receiptStorage ? {
+    repository: worksheetRepository,
+    receiptStore: createWebMcpImportReceiptStore(receiptStorage),
+    isWriteConsentGranted: webMcpSession.isWriteConsentGranted,
+    publishCompleted: publishAiImportCompleted,
+  } : undefined);
 
   /**
    * 能力取得の入力も実行時検証し、余分な入力を拒否する。
@@ -74,6 +87,31 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
     }
   }
 
+  /**
+   * 検証済み候補をRepository経由で保存し、公開エラー以外の詳細を隠す。
+   * @param input 候補トークン、requestId、検証時のpayloadハッシュ
+   * @param options ブラウザが渡す中断シグナル
+   * @returns 保存結果または本文・内部例外を含まない失敗
+   */
+  async function importWorksheet(input: unknown, options?: { signal?: AbortSignal }): Promise<unknown> {
+    const signals = [controller.signal];
+    if (options?.signal instanceof AbortSignal) signals.push(options.signal);
+    const execution = new AbortController();
+    /** 実行または登録の中断をApplication層へ伝える。 */
+    function abortExecution(): void { execution.abort(); }
+    for (const signal of signals) {
+      if (signal.aborted) execution.abort();
+      signal.addEventListener("abort", abortExecution, { once: true });
+    }
+    try {
+      return await service.importCandidate(input, execution.signal);
+    } catch (error) {
+      return { success: false, error: toAiImportErrorDetail(error) };
+    } finally {
+      for (const signal of signals) signal.removeEventListener("abort", abortExecution);
+    }
+  }
+
   const tools: MathEditorModelContextTool[] = [
     {
       name: "math_editor_get_capabilities",
@@ -90,6 +128,13 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
       execute: validateImport,
     },
   ];
+  if (receiptStorage) tools.push({
+      name: "math_editor_import_worksheet",
+      description: "Save a previously validated candidate as a new Math Editor worksheet. This writes to browser storage and requires explicit in-page user consent.",
+      inputSchema: z.toJSONSchema(ImportAiCandidateInputSchema),
+      annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true },
+      execute: importWorksheet,
+  });
 
   /** 自分が所有する旧APIの登録だけを解除し、他のツールを保護する。 */
   function unregisterOwnedTools(): void {
@@ -106,6 +151,9 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
     controller.abort();
     store.dispose();
     unregisterOwnedTools();
+    webMcpSession.setRegistered(false);
+    webMcpSession.setDirectImportAvailable(false);
+    webMcpSession.revokeWriteConsent();
   }
 
   /**
@@ -127,6 +175,8 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
           return "unavailable";
         }
       }
+      webMcpSession.setRegistered(true);
+      webMcpSession.setDirectImportAvailable(Boolean(receiptStorage));
       return "registered";
     } catch {
       dispose();

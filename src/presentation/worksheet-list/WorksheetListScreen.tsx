@@ -2,6 +2,7 @@ import { ArchiveRestore, BookOpen, ChevronLeft, ChevronRight, FileDown, FileUp, 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assertBackupInputSize, createArchiveBackup, createSingleBackup, hydrateBackup, parseBackup, serializeBackup, } from "../../application/backup/backup";
+import { subscribeAiImportCompleted } from "../../application/ai-import/ai-import-events";
 import { STRUCTURE_LIMITS } from "../../domain/worksheet/structure-limits";
 import type { AssetRecord, MathWorksheetFile, Worksheet } from "../../domain/worksheet/worksheet";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
@@ -11,6 +12,7 @@ import { localTimestamp, prepareJsonTextDownload, sanitizeFileNamePart, type Pre
 import { worksheetRepository } from "../../infrastructure/indexeddb/dexie-worksheet-repository";
 import { database } from "../../infrastructure/indexeddb/database";
 import { Modal } from "../components/Modal";
+import { AiIntegrationStatus } from "../ai-integration/AiIntegrationStatus";
 import { ManualContextLink } from "../components/ManualContextLink";
 import { Toast } from "../components/Toast";
 import { useOutsidePointerDown } from "../components/useOutsidePointerDown";
@@ -99,6 +101,21 @@ export function WorksheetListScreen() {
         // 初期表示時に画面の状態をIndexedDBの内容と同期する。
         // oxlint-disable-next-line react/set-state-in-effect
         void load();
+    }), [load]);
+    useEffect((/**
+     * AI直接取込の完了時にRepositoryを再読込し、利用者へ結果を通知する。
+     * @returns コンポーネント破棄時にイベント購読を解除する処理
+     */
+    function subscribeAiImportEffect4() {
+        /**
+         * 保存済みデータを再読込し、取込完了のToastを表示する。
+         * @param event 本文や画像を含まないAI取込完了情報
+         */
+        function handleAiImportCompleted(event: { title: string }): void {
+            void load();
+            setToast({ message: `「${event.title}」をAIから追加しました` });
+        }
+        return subscribeAiImportCompleted(handleAiImportCompleted);
     }), [load]);
     useEffect((/**
      * set・TimeoutとReact状態を同期し、再実行前に古い購読や一時リソースを後始末する。
@@ -311,7 +328,7 @@ export function WorksheetListScreen() {
           <span className="brand-mark">Σ</span>
           <span>数学プリント作成</span>
         </button>
-        <div className="header-actions"><ManualContextLink topic="overview"><BookOpen size={16}/>使い方</ManualContextLink><button className="secondary-button" onClick={(/**
+        <div className="header-actions"><AiIntegrationStatus/><ManualContextLink topic="overview"><BookOpen size={16}/>使い方</ManualContextLink><button className="secondary-button" onClick={(/**
      * 「設定・バックアップ」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。
      */
     function handleClick20() {

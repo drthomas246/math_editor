@@ -47,7 +47,7 @@ export function createWebMcpCandidateStore() {
     const token = crypto.randomUUID();
     const createdAtMs = Date.now();
     const expiresAtMs = createdAtMs + WEBMCP_CANDIDATE_TTL_MS;
-    candidates.set(token, { token, payloadSha256, item: copy, createdAtMs, expiresAtMs });
+    candidates.set(token, { token, payloadSha256, item: copy, createdAtMs, expiresAtMs, consumed: false });
     /** 候補の期限が到来したら画像を含めて解放する。 */
     function expireCandidate(): void { expire(token); }
     timers.set(token, setTimeout(expireCandidate, WEBMCP_CANDIDATE_TTL_MS));
@@ -76,7 +76,18 @@ export function createWebMcpCandidateStore() {
       throw new AiImportError("CANDIDATE_EXPIRED");
     }
     if (candidate.payloadSha256 !== expectedPayloadSha256) throw new AiImportError("PAYLOAD_HASH_MISMATCH");
+    if (candidate.consumed) throw new AiImportError("CANDIDATE_ALREADY_CONSUMED");
     return structuredClone(candidate);
+  }
+
+  /**
+   * 保存が完了した候補を消費済みにし、別requestIdでの再利用を拒否する。
+   * @param token 消費済みにする候補トークン
+   */
+  function consume(token: string): void {
+    const candidate = candidates.get(token);
+    if (!candidate) return;
+    candidate.consumed = true;
   }
 
   /** ページ終了後の非同期処理による再保持も禁止し、すべての候補を破棄する。 */
@@ -85,5 +96,5 @@ export function createWebMcpCandidateStore() {
     for (const token of candidates.keys()) remove(token);
     expiredTokens.clear();
   }
-  return { create, get, dispose };
+  return { create, get, consume, dispose };
 }

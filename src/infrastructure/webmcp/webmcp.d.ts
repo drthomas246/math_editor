@@ -3,14 +3,14 @@ export type MathEditorModelContextTool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  annotations?: { readOnlyHint?: boolean; untrustedContentHint?: boolean };
+  annotations?: { readOnlyHint?: boolean; untrustedContentHint?: boolean; consequentialHint?: boolean };
   /**
    * 信頼しない入力から公開結果を生成する。
    * @param input ブラウザまたはエージェントからの入力
    * @param options 現行APIの実行中断通知
    * @returns JSONへ直列化可能な結果
    */
-  execute(input: unknown, options?: { signal?: AbortSignal }): Promise<unknown>;
+  execute(input: unknown, options: { signal: AbortSignal }): Promise<unknown>;
 };
 
 export interface MathEditorModelContext {
