@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+const REQUIRED_DISCOVERY_TOOLS = ["math_editor_get_capabilities", "math_editor_validate_import"];
+const DIRECT_IMPORT_TOOL = "math_editor_import_worksheet";
+
 /**
  * 観測されたURLを検証し、比較可能な形式にする。
  * @param value ホストまたは利用者から受け取ったURL
@@ -16,30 +19,72 @@ function targetUrl(value) {
 }
 
 /**
+ * ページ選択に利用できる空白以外の識別子を検証する。
+ * @param value ホストが観測したページ識別子
+ * @returns 利用可能な識別子。未指定や不正な値ならnull
+ */
+function targetPageId(value) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * 発見したページを配送処理が利用する最小情報へ変換する。
+ * @param page ホストが観測したページ
+ * @returns 必須ツールを持つページ。対象外ならnull
+ */
+function discoveredPage(page) {
+  const url = targetUrl(page?.url);
+  const toolNames = Array.isArray(page?.toolNames) ? page.toolNames : [];
+  if (!url || !REQUIRED_DISCOVERY_TOOLS.every(function hasRequiredTool(name) { return toolNames.includes(name); })) return null;
+  const pageId = targetPageId(page?.pageId);
+  return {
+    url,
+    source: "discovered",
+    directImportToolAvailable: toolNames.includes(DIRECT_IMPORT_TOOL),
+    ...(pageId ? { pageId } : {}),
+  };
+}
+
+/**
+ * 複数候補から一意なページだけを選択結果へ変換する。
+ * @param pages 条件に一致したページ
+ * @returns 一意な選択結果。複数なら選択待ちのエラー
+ */
+function uniquePage(pages) {
+  if (pages.length === 1) return { success: true, ...pages[0] };
+  return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "ambiguous", message: "Math Editorが複数あります。対象ページを指定してください。" } };
+}
+
+/**
  * ホストが観測したページ一覧から接続先を選ぶ。ネットワークへはアクセスしない。
- * @param input ページ一覧と利用者または自己テストが明示したURL
+ * @param input ページ一覧、選択済みページ識別子、利用者または自己テストが明示したURL
  * @returns 選択した接続先と根拠、または選択待ちのエラー
  */
 export function resolveMathEditorTarget(input) {
   const pages = Array.isArray(input?.pages) ? input.pages : [];
   const userUrl = targetUrl(input?.userTargetUrl);
   const testUrl = targetUrl(input?.testTargetUrl);
-  const discovered = [];
-  for (const page of pages) {
-    const url = targetUrl(page?.url);
-    if (url && Array.isArray(page?.toolNames)
-      && page.toolNames.includes("math_editor_get_capabilities")
-      && page.toolNames.includes("math_editor_validate_import")) {
-      discovered.push({ url, source: "discovered", ...(typeof page.pageId === "string" ? { pageId: page.pageId } : {}) });
+  const selectedPageId = targetPageId(input?.selectedPageId);
+  const discovered = pages.map(discoveredPage).filter(function isDiscovered(page) { return page !== null; });
+  if (input?.selectedPageId !== undefined && !selectedPageId) {
+    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "invalid-page-id", message: "Math Editorの有効なページ識別子を指定してください。" } };
+  }
+  if (selectedPageId) {
+    const matches = discovered.filter(function matchesSelectedPage(page) { return page.pageId === selectedPageId; });
+    if (matches.length === 0) {
+      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "page-not-found", message: "指定したMath Editorページを現在のページ一覧で確認できません。" } };
     }
+    if (userUrl && matches.some(function conflictsWithExplicitUrl(page) { return page.url !== userUrl; })) {
+      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "target-conflict", message: "指定したページ識別子とURLが同じMath Editorページを示していません。" } };
+    }
+    return uniquePage(matches);
   }
   if (discovered.length === 1) return { success: true, ...discovered[0] };
   if (discovered.length > 1) {
     // 同じURLでもタブごとの候補ストアは異なるため、重複を統合しない。
     const explicitUrl = userUrl ?? testUrl;
     const matches = discovered.filter(function matchesExplicit(page) { return page.url === explicitUrl; });
-    if (matches.length === 1) return { success: true, ...matches[0] };
-    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "ambiguous", message: "Math Editorが複数あります。対象ページを指定してください。" } };
+    return uniquePage(matches);
   }
   // 不正な明示URLを黙って別のテスト先に置換しない。
   if (input?.userTargetUrl !== undefined) {

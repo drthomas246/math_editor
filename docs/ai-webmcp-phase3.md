@@ -1,6 +1,6 @@
 # Phase 3: WebMCP direct import
 
-Phase 2の事前検証で作成したcandidateを、利用者の明示的な許可後に新規Worksheetとして保存できるようにした。実装範囲は`追加AI詳細設計書.md`のPhase 3であり、Skillの配送フロー変更と実ホストでのPlugin自己テストはPhase 4へ残す。
+Phase 2の事前検証で作成したcandidateを、利用者の明示的な許可後に新規Worksheetとして保存できるようにした。実装範囲は`追加AI詳細設計書.md`のPhase 3であり、この時点で残したSkillの配送フロー変更は[Phase 4](ai-skill-delivery-phase4.md)で統合した。実ホスト自己テストはWebMCPのロールアウト状態に応じて実施する。
 
 ## 公開ツール
 

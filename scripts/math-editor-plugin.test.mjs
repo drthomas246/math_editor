@@ -92,6 +92,11 @@ describe("portable Plugin配布物", function packageTests() {
     const probe = spawnSync(process.execPath, [path.join(skill, "scripts/check_runtime_capabilities.mjs"), "--python", "unavailable-python", "--output-dir", root], { cwd: os.tmpdir(), encoding: "utf8", timeout: 30000 });
     expect(probe.status).toBe(0);
     expect(JSON.parse(probe.stdout).decision.state).toBe("ready");
+    const deliveryState = path.join(root, "delivery-state.json");
+    await writeFile(deliveryState, JSON.stringify({ stage: "import", result: { success: false, error: { code: "REVALIDATION_REQUIRED" } } }));
+    const delivery = spawnSync(process.execPath, [path.join(skill, "scripts/plan_webmcp_delivery.mjs"), "--input", deliveryState], { cwd: os.tmpdir(), encoding: "utf8" });
+    expect(delivery.status).toBe(0);
+    expect(JSON.parse(delivery.stdout)).toMatchObject({ action: "revalidate", reuseRequestId: true });
   }, 40000);
   it("配布Builderの完成JSONを検証でき、未確定Draftは拒否する", async function standaloneBuild() {
     await buildPlugin(root);

@@ -12,6 +12,7 @@ const REQUIRED_SKILL_FILES = [
   "references/figure-cropping-rules.md", "references/validation-rules.md",
   "references/webmcp-integration.md",
   "scripts/resolve_math_editor_target.mjs",
+  "scripts/plan_webmcp_delivery.mjs",
   "scripts/check_runtime_capabilities.mjs", "scripts/crop_pdf_figure.py",
   "scripts/build_math_worksheet_file.mjs", "scripts/validate_math_worksheet.mjs",
   "schemas/math-worksheet.schema.json", "schemas/schema-manifest.json",

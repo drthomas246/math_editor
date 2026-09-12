@@ -1,6 +1,6 @@
 ---
 name: math-editor-textbook-import
-description: 教科書PDFの指定範囲から例題・問題・小問・数式・図版・教科書解答・解説を抽出し、確認後にMath Editor用の単一プリントJSONを作る。新規作問、一般的なPDF要約、Math Editor以外の教材生成には使わない。
+description: 教科書PDFの指定範囲から例題・問題・小問・数式・図版・教科書解答・解説を抽出し、確認後にMath Editor用の単一プリントをJSONまたは許可済みWebMCPで配送する。新規作問、一般的なPDF要約、Math Editor以外の教材生成には使わない。
 ---
 
 # Math Editor 教科書取込
@@ -11,7 +11,7 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 - 新規問題、類題、誤答例、ヒント、教科書にない解答の自動生成
 - 一般的なPDF要約、Math Editor以外の教材作成
-- Math Editorへの直接書込み、外部AI APIまたはMath Editorの事前検証以外の外部MCPの利用
+- 既存Worksheetの更新・削除、利用者のページ内Consentなしの直接書込み、Math Editor配送以外の外部MCPの利用
 - PDF本体の最終JSON格納、AI画像生成、教科書図版の描き直し
 
 ## 毎回の開始手順
@@ -31,13 +31,13 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 - 図版を含むときだけ [figure-cropping-rules.md](references/figure-cropping-rules.md) を読み、検出済み経路で元PDFから切り出す。同梱Cropperの代替もなければホストの元PDF切り出し能力を実測し、必須図版を処理できなければ`blocked`とする。
 - 確定DraftをWorksheetへ変換する前に [worksheet-mapping.md](references/worksheet-mapping.md) を読む。
 - Draft確認時と最終生成時に [validation-rules.md](references/validation-rules.md) を読む。
-- Issueを登録・表示・復旧するときだけ [error-catalog.md](references/error-catalog.md) を読む。
+- Issueを登録・表示・復旧するとき、または配送エラーを分類するときだけ [error-catalog.md](references/error-catalog.md) を読む。
 
 必要なreferenceだけを上記の時点で読み、同じ規則を実行コンテキストやDraftへ重複コピーしない。
 
 ## 状態と絶対ゲート
 
-`collecting-input → analyzing → review-required → confirmed → building → completed`で進める。修正後は`revision`を増やして確定を解除し、`review-required`へ戻す。継続不能なFatalは`blocked`とする。
+内容作成は`collecting-input → analyzing → review-required → confirmed → building`で進める。BuilderとValidator成功後は別の配送状態`resolving-target → validating → importing → delivered`を使い、direct import不可または利用者選択では`manual-fallback`へ進む。配送完了後に内容状態を`completed`とする。修正後は`revision`を増やして確定を解除し、`review-required`へ戻す。継続不能なFatalは`blocked`とする。
 
 最終JSONを生成できるのは、利用者が現revisionに対して「確定」「この内容でJSONを作成」「採用した問題で出力」など完成JSON生成を明示し、権利・送信確認済み、範囲解決済み、採用1件以上、保留0件、未解決Fatal 0件、確認対象Warning提示済み、採用図版の最終Crop選択済み、`confirmedRevision === revision`をすべて満たす場合だけである。「進めて」「確認した」など曖昧な表現を確定扱いにしない。
 
@@ -52,6 +52,10 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 BuilderまたはValidatorが失敗した候補を完成ファイルとして提供しない。修正可能ならIssueへ変換して`review-required`へ戻し、必須ツール不在、Schema drift、読取不能PDFなど継続不能なFatalでは停止して復旧方法を示す。
 
-## 完成JSONの配送と事前検証
+## 完成JSONの配送
 
-完成した検証済みJSONを利用者へ渡し、Math Editorの既存インポートから追加する。完成後、Math EditorのSite toolsが見えている、利用者が接続先を指定した、または事前検証を依頼した場合は [webmcp-integration.md](references/webmcp-integration.md) を読み、対象ページの能力取得と事前検証を行う。接続先URLは実行時に解決し、推測・固定しない。Phase 2は事前検証までで、候補の保持は保存完了を意味しない。
+BuilderとValidatorが成功したら [webmcp-integration.md](references/webmcp-integration.md) を読み、Math EditorのSite toolsが見える場合、利用者が接続先を指定した場合、または直接取込を依頼した場合は、対象ページの能力取得、事前検証、許可済みdirect importを行う。接続先は実行時に解決し、複数タブでは利用者が選んだ`pageId`へ全呼出しを固定する。
+
+direct importの`requestId`は同じ完成payloadを1回だけ追加する論理操作に固定する。Consent待ち、candidate再検証、応答不明時の安全な再試行で変更しない。`PAYLOAD_HASH_MISMATCH`では停止し、利用者の代わりにConsentを操作しない。
+
+Site tools未対応、互換性不一致、2 MiB上限超過、利用者が直接取込を選ばない場合は、検証済みJSONを変更せず既存インポートへフォールバックする。直接取込成功またはJSONの受渡しと手動取込案内のどちらかが終わるまで`completed`にしない。
