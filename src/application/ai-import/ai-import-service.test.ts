@@ -5,6 +5,7 @@ import { createId, createWorksheet } from "../../domain/worksheet/worksheet.defa
 import { createArchiveBackup, createSingleBackup } from "../backup/backup";
 import { APP_SCHEMA_SHA256 } from "../../infrastructure/webmcp/math-editor-capabilities";
 import { createWebMcpCandidateStore } from "../../infrastructure/webmcp/webmcp-candidate-store";
+import { createWebMcpImportReceiptStore } from "../../infrastructure/webmcp/webmcp-import-receipt";
 import { MAX_WEBMCP_CANDIDATES, MAX_WEBMCP_DIRECT_IMPORT_BYTES, WEBMCP_CANDIDATE_TTL_MS } from "./ai-import-types";
 import { createAiImportService, sha256Utf8 } from "./ai-import-service";
 
@@ -17,7 +18,28 @@ function prepare(): void {
   vi.stubGlobal("Blob", NodeBlob);
   vi.useFakeTimers();
   store = createWebMcpCandidateStore();
-  service = createAiImportService(store, APP_SCHEMA_SHA256);
+  service = createAiImportService(store, APP_SCHEMA_SHA256, {
+    repository: {
+      /**
+       * 検証専用Repositoryには保存済みデータがないことを示す。
+       * @returns 常にnull
+       */
+      async get() { return null; },
+      /**
+       * 検証テストではデータを保持せず保存完了だけを返す。
+       * @returns 完了済みPromise
+       */
+      async create() { return Promise.resolve(); },
+    },
+    receiptStore: createWebMcpImportReceiptStore(),
+    /**
+     * 検証テスト用の直接取込許可状態を返す。
+     * @returns 常にtrue
+     */
+    isWriteConsentGranted() { return true; },
+    /** 検証テストでは保存完了イベントを処理しない。 */
+    publishCompleted() {},
+  });
 }
 /** 候補の寿命と環境の変更をテストごとに終了する。 */
 function cleanup(): void {

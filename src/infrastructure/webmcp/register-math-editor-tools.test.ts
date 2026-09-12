@@ -58,18 +58,18 @@ function contextFixture(modern: boolean) {
 }
 
 /**
- * Schema manifestとの一致と保存機能の非公開を確認する。
+ * Schema manifestとの一致と直接取込ツールの公開を確認する。
  * @returns 登録と検証の完了
  */
 async function modernRegistration(): Promise<void> {
   const { context, tools } = contextFixture(true);
   registration = registerMathEditorTools(context);
   expect(await registration.ready).toBe("registered");
-  expect([...tools.keys()]).toEqual(["math_editor_get_capabilities", "math_editor_validate_import"]);
+  expect([...tools.keys()]).toEqual(["math_editor_get_capabilities", "math_editor_validate_import", "math_editor_import_worksheet"]);
   const read = tools.get("math_editor_get_capabilities")!;
   const validate = tools.get("math_editor_validate_import")!;
   expect(await read.execute({})).toEqual(getMathEditorCapabilities());
-  expect(getMathEditorCapabilities()).toMatchObject({ schemaSha256: APP_SCHEMA_SHA256, schemaVersion: 1, validationAvailable: true, directImportAvailable: false, writeConsentGranted: false });
+  expect(getMathEditorCapabilities()).toMatchObject({ schemaSha256: APP_SCHEMA_SHA256, schemaVersion: 1, validationAvailable: true, directImportAvailable: true, writeConsentGranted: false });
   expect(read.annotations?.readOnlyHint).toBe(true);
   expect(validate.annotations).toEqual({ readOnlyHint: false, untrustedContentHint: true });
   const payloadText = JSON.stringify(await createSingleBackup(createWorksheet(), []));
@@ -78,9 +78,9 @@ async function modernRegistration(): Promise<void> {
   expect(tools.size).toBe(0);
   registration = registerMathEditorTools(context);
   expect(await registration.ready).toBe("registered");
-  expect(tools.size).toBe(2);
+  expect(tools.size).toBe(3);
 }
-it("現行APIに2ツールだけを登録し、解除後も再登録できる", modernRegistration);
+it("現行APIに3ツールだけを登録し、解除後も再登録できる", modernRegistration);
 
 /**
  * 旧APIの登録・解除の互換性を確認する。
@@ -93,9 +93,9 @@ async function legacyRegistration(): Promise<void> {
   expect(await registration.ready).toBe("registered");
   registration.dispose();
   expect(tools.size).toBe(0);
-  expect(unregisterMock).toHaveBeenCalledTimes(2);
+  expect(unregisterMock).toHaveBeenCalledTimes(3);
 }
-it("旧navigator APIでも登録でき、自分の2ツールだけを解除する", legacyRegistration);
+it("旧navigator APIでも登録でき、自分の3ツールだけを解除する", legacyRegistration);
 
 /** 現行APIを優先し、非対応やアクセス拒否を検出する。 */
 function detection(): void {
@@ -129,6 +129,33 @@ async function unavailable(): Promise<void> {
   expect(registerMock).not.toHaveBeenCalled();
 }
 it("WebMCPまたは暗号APIが未対応でも通常アプリの起動を妨げない", unavailable);
+
+/**
+ * sessionStorageが拒否された環境では読取・検証だけを公開する。
+ * @returns Receiptを利用できない環境の登録確認完了
+ */
+async function unavailableReceiptStorage(): Promise<void> {
+  const original = Object.getOwnPropertyDescriptor(window, "sessionStorage")!;
+  /**
+   * ブラウザーによるsessionStorageアクセス拒否を再現する。
+   * @returns この検査では常に例外となる
+   */
+  function deniedStorage(): never { throw new DOMException("denied", "SecurityError"); }
+  Object.defineProperty(window, "sessionStorage", { configurable: true, get: deniedStorage });
+  try {
+    const { context, tools } = contextFixture(true);
+    registration = registerMathEditorTools(context);
+    expect(await registration.ready).toBe("registered");
+    expect([...tools.keys()]).toEqual(["math_editor_get_capabilities", "math_editor_validate_import"]);
+    expect(await tools.get("math_editor_get_capabilities")!.execute({})).toMatchObject({
+      directImportAvailable: false,
+      writeConsentGranted: false,
+    });
+  } finally {
+    Object.defineProperty(window, "sessionStorage", original);
+  }
+}
+it("sessionStorageが使えなくても読取・検証ツールは利用できる", unavailableReceiptStorage);
 
 /**
  * 部分登録失敗でも他者の同名ツールを登録解除しない。

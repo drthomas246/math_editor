@@ -8,6 +8,11 @@ export type AiImportErrorCode =
   | "CANDIDATE_NOT_FOUND"
   | "CANDIDATE_EXPIRED"
   | "PAYLOAD_HASH_MISMATCH"
+  | "CONSENT_REQUIRED"
+  | "CANDIDATE_ALREADY_CONSUMED"
+  | "REVALIDATION_REQUIRED"
+  | "WORKSHEET_LIMIT_REACHED"
+  | "IMPORT_FAILED"
   | "VALIDATION_ABORTED"
   | "VALIDATION_FAILED";
 
@@ -28,6 +33,11 @@ const ERROR_MESSAGES: Record<AiImportErrorCode, string> = {
   CANDIDATE_NOT_FOUND: "候補が見つかりません。同じJSONを再検証してください。",
   CANDIDATE_EXPIRED: "候補の有効期限が切れました。同じJSONを再検証してください。",
   PAYLOAD_HASH_MISMATCH: "検証したJSONとハッシュが一致しません。JSONを再検証してください。",
+  CONSENT_REQUIRED: "Math Editorで、このページセッションのAI連携を許可してください。",
+  CANDIDATE_ALREADY_CONSUMED: "この検証候補はすでに使用されています。JSONを再検証してください。",
+  REVALIDATION_REQUIRED: "保存済みデータを確認できませんでした。同じJSONを再検証して、同じrequestIdで再試行してください。",
+  WORKSHEET_LIMIT_REACHED: "プリント数の上限に達しています。不要なプリントを完全に削除してから再試行してください。",
+  IMPORT_FAILED: "プリントを保存できませんでした。Math Editorの状態を確認してください。",
   VALIDATION_ABORTED: "検証が中断されました。対象ページで再検証してください。",
   VALIDATION_FAILED: "検証を完了できませんでした。対象ページの状態を確認してください。",
 };
@@ -57,6 +67,9 @@ export function toAiImportErrorDetail(error: unknown): AiImportErrorDetail {
     code,
     message: ERROR_MESSAGES[code],
     recoverable: true,
-    fallbackRecommended: code === "SCHEMA_MISMATCH" || code === "DIRECT_IMPORT_TOO_LARGE",
+    fallbackRecommended: code === "SCHEMA_MISMATCH"
+      || code === "DIRECT_IMPORT_TOO_LARGE"
+      || code === "CANDIDATE_EXPIRED"
+      || code === "IMPORT_FAILED",
   };
 }

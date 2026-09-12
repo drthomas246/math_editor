@@ -38,10 +38,10 @@ function installModelContext(mode: "supported" | "unsupported" | "rejected"): vo
  */
 async function waitForTools(page: Page): Promise<void> {
   /**
-   * ページ上の2ツールの登録を確認する。
+   * ページ上の3ツールの登録を確認する。
    * @returns 必要な登録が完了していればtrue
    */
-  function hasTools(): boolean { return (window as unknown as TestWindow).mathEditorTestTools.size === 2; }
+  function hasTools(): boolean { return (window as unknown as TestWindow).mathEditorTestTools.size === 3; }
   await page.waitForFunction(hasTools);
 }
 
@@ -82,12 +82,12 @@ async function validatesInBrowser({ page }) {
     return { capabilities, valid, invalid, before, after, names: [...tools.keys()] };
   }
   const result = await page.evaluate(runValidation, input);
-  expect(result.capabilities).toMatchObject({ app: "math-editor", schemaSha256: APP_SCHEMA_SHA256, directImportAvailable: false });
+  expect(result.capabilities).toMatchObject({ app: "math-editor", schemaSha256: APP_SCHEMA_SHA256, directImportAvailable: true, writeConsentGranted: false });
   expect(result.valid).toMatchObject({ valid: true, assetCount: 1 });
   expect(result.invalid).toMatchObject({ valid: false, error: { code: "INVALID_ASSET" } });
   expect(result.before).toEqual([0, 0]);
   expect(result.after).toEqual(result.before);
-  expect(result.names).toEqual(["math_editor_get_capabilities", "math_editor_validate_import"]);
+  expect(result.names).toEqual(["math_editor_get_capabilities", "math_editor_validate_import", "math_editor_import_worksheet"]);
   await expect(page.getByText("まだプリントがありません", { exact: true })).toBeVisible();
   await page.reload();
   await waitForTools(page);
