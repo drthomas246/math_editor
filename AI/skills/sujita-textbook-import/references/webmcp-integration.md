@@ -27,7 +27,7 @@ resolving-target -> checking-capabilities -> validating -> importing -> delivere
 4. それもなければ、自己テストが明示した実際の起動URLを使う。
 5. どれもなければ正式URL `https://app.sujita.jp/` を使う。
 
-ページ一覧を取得できる場合は観測値を次の形で保存し、`node scripts/resolve_sugaku_jitate_target.mjs --input <observed-pages.json>`で解決する。
+ページ一覧を取得できる場合は観測値を次の形で保存し、`node scripts/resolve_sujita_target.mjs --input <observed-pages.json>`で解決する。
 
 ```json
 {

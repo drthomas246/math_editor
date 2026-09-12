@@ -9,7 +9,7 @@ Phase 1のマージ後、`develop/#33`で能力取得と事前検証を実装し
 | `sujita_get_capabilities` | `{}` | Schema version / SHA-256、UTF-8上限、実装済み機能、候補保持条件 |
 | `sujita_validate_import` | `{ payloadText, skillSchemaSha256 }` | 検証結果と候補のtoken / payload hash / 要約 / 期限 |
 
-能力情報は`app: sugaku-jitate`、`integrationVersion: 1`、`worksheetFormat: math-worksheet`、`worksheetFileVersion: 1`、`schemaVersion: 1`、`validationAvailable: true`を返す。`directImportAvailable`と`writeConsentGranted`はfalse。Schema hashはリポジトリのmanifestをビルド時に取り込み、小文字16進で返す。Skill同梱manifestの大文字ハッシュも同一値として受け付ける。
+能力情報は`app: sujita`、`integrationVersion: 1`、`worksheetFormat: math-worksheet`、`worksheetFileVersion: 1`、`schemaVersion: 1`、`validationAvailable: true`を返す。`directImportAvailable`と`writeConsentGranted`はfalse。Schema hashはリポジトリのmanifestをビルド時に取り込み、小文字16進で返す。Skill同梱manifestの大文字ハッシュも同一値として受け付ける。
 
 `validate_import`は永続保存を行わないがメモリ状態を変えるため、`readOnlyHint: false`を指定する。題名などの入力由来文字列を返すため`untrustedContentHint: true`を指定する。能力取得は`readOnlyHint: true`。
 
@@ -43,7 +43,7 @@ API未対応・Web Crypto不足・登録拒否・部分登録失敗は通常の�
 
 正本Skillの`references/webmcp-integration.md`に、完成確認・Builder・Validator成功後の能力取得と事前検証を追加した。配送は引き続き検証済みJSONを利用者へ渡す。
 
-`scripts/resolve_sugaku_jitate_target.mjs`は、ホストが観測したページ一覧から対象を選ぶportableな補助CLI。ブラウザ操作やネットワーク通信は行わない。
+`scripts/resolve_sujita_target.mjs`は、ホストが観測したページ一覧から対象を選ぶportableな補助CLI。ブラウザ操作やネットワーク通信は行わない。
 
 - 発見した同一ページの2ツールを優先する。
 - 発見できなければ、利用者が明示したURL、自己テストが明示した実起動URL、正式URL `https://app.sujita.jp/` の順で選ぶ。

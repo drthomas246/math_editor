@@ -75,7 +75,7 @@ type ValidationResult = {
 3. 保存形式を変更した場合は最新`worksheet.schema.ts`とZodからValidatorをbundleし直す
 4. `npm run schema:generate`でルートSchema/manifestとSkillのSchema/共通manifestを同期する（LFで保存）
 5. 同じSchemaの再生成では`generatedAt`を維持する。Validatorのhashはこのコマンドで自動追認しない
-6. Validator先頭の`sugaku-jitate-validator-metadata`とmanifestの`validator`を更新
+6. Validator先頭の`sujita-validator-metadata`とmanifestの`validator`を更新
 7. `npm run skill:schema:check`
 8. 代表JSONをすうがく仕立ての`parseBackup()`へ通す
 

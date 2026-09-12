@@ -46,13 +46,13 @@ jobs:
           sudo apt-get install -y poppler-utils
       - name: Verify Plugin runtime and PDF fallback
         run: |
-          node dist/sugaku-jitate-ai/skills/sugaku-jitate-textbook-import/scripts/check_runtime_capabilities.mjs --python python --figures-required
+          node dist/sujita-ai/skills/sujita-textbook-import/scripts/check_runtime_capabilities.mjs --python python --figures-required
           python scripts/test-plugin-crop.py
       - name: Upload tested portable Plugin
         uses: actions/upload-artifact@v4
         with:
-          name: sugaku-jitate-ai-v2.1
-          path: dist/sugaku-jitate-ai/
+          name: sujita-ai-v2.1
+          path: dist/sujita-ai/
           include-hidden-files: false
           if-no-files-found: error
       - name: Install Playwright Chromium

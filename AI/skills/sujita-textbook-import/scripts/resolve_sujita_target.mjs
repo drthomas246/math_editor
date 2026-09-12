@@ -61,7 +61,7 @@ function uniquePage(pages) {
  * @param input ページ一覧、選択済みページ識別子、利用者または自己テストが明示したURL
  * @returns 選択した接続先と根拠、または選択待ちのエラー
  */
-export function resolveSugakuJitateTarget(input) {
+export function resolveSujitaTarget(input) {
   const pages = Array.isArray(input?.pages) ? input.pages : [];
   const userUrl = targetUrl(input?.userTargetUrl);
   const testUrl = targetUrl(input?.testTargetUrl);
@@ -102,7 +102,7 @@ export function resolveSugakuJitateTarget(input) {
  */
 async function main() {
   if (process.argv.length !== 4 || process.argv[2] !== "--input") throw new Error("Usage: --input <observed-pages.json>");
-  const result = resolveSugakuJitateTarget(JSON.parse(await readFile(process.argv[3], "utf8")));
+  const result = resolveSujitaTarget(JSON.parse(await readFile(process.argv[3], "utf8")));
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.success) process.exitCode = 1;
 }

@@ -26,7 +26,7 @@ Skillはすうがく仕立て画面の中で動く機能ではありません。
 
 1. 使用するAIサービスまたはAIエージェントを開きます。
 2. Skills、拡張機能、Pluginなどの一覧を開きます。画面上の名前はサービスによって異なります。
-3. すうがく仕立ての教科書取込Skillを選びます。名前で探す場合は `sugaku-jitate-textbook-import` を目印にします。
+3. すうがく仕立ての教科書取込Skillを選びます。名前で探す場合は `sujita-textbook-import` を目印にします。
 4. 新しいチャットやタスクを始め、教科書取込Skillを使うことを伝えます。
 
 Skillの選び方には、一覧から押す方法、メッセージ内でSkill名を選ぶ方法、名前を入力して呼び出す方法などがあります。詳しい操作は、使用するAIサービスのヘルプを確認してください。
@@ -35,7 +35,7 @@ Skillの選び方には、一覧から押す方法、メッセージ内でSkill�
 
 ```text
 利用できるSkillsの一覧を見せてください。
-sugaku-jitate-textbook-import が利用できるか確認してください。
+sujita-textbook-import が利用できるか確認してください。
 ```
 
 > **注意**
@@ -50,7 +50,7 @@ sugaku-jitate-textbook-import が利用できるか確認してください。
 
 1. ChatGPTを開き、新しいチャットを始めます。
 2. メッセージ入力欄に半角の `@` を入力します。
-3. 表示されたSkillsの一覧から `sugaku-jitate-textbook-import` を選びます。
+3. 表示されたSkillsの一覧から `sujita-textbook-import` を選びます。
 4. 入力欄にSkill名が表示されたことを確認します。
 5. 教科書PDFを添付し、下の「PDFと取り込み範囲を伝える」へ進みます。
 
@@ -61,14 +61,14 @@ Skillが一覧にない場合は、ChatGPTのSkillsまたはPluginに教科書�
 ### Claudeの場合
 
 1. Claudeを開き、「Customize」から「Skills」を開きます。
-2. `sugaku-jitate-textbook-import` が一覧にある場合は、スイッチをオンにします。
+2. `sujita-textbook-import` が一覧にある場合は、スイッチをオンにします。
 3. 一覧にない場合は、教科書取込Skillの配布元から受け取ったZIPファイルを用意します。
 4. 「+」、「+ Create skill」、「Upload a skill」の順に選び、ZIPファイルをアップロードします。
 5. 新しいチャットを始め、教科書PDFを添付します。
 6. 次のように、使用するSkill名を依頼文へ入れます。
 
 ```text
-sugaku-jitate-textbook-import Skillを使って、
+sujita-textbook-import Skillを使って、
 添付した教科書PDFをすうがく仕立て用に取り込んでください。
 ```
 

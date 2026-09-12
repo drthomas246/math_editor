@@ -4,6 +4,6 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["scripts/sugaku-jitate-plugin.test.mjs", "scripts/runtime-capabilities.test.mjs", "scripts/webmcp-target.test.mjs", "scripts/webmcp-delivery.test.mjs"],
+    include: ["scripts/sujita-plugin.test.mjs", "scripts/runtime-capabilities.test.mjs", "scripts/webmcp-target.test.mjs", "scripts/webmcp-delivery.test.mjs"],
   },
 });

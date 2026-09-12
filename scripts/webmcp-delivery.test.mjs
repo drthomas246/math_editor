@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { planCapabilities, planImport, planValidation } from "../AI/skills/sugaku-jitate-textbook-import/scripts/plan_webmcp_delivery.mjs";
+import { planCapabilities, planImport, planValidation } from "../AI/skills/sujita-textbook-import/scripts/plan_webmcp_delivery.mjs";
 
 const hash = "a".repeat(64);
 const capabilities = {
@@ -93,9 +93,9 @@ describe("SkillのWebMCP配送判断", function deliveryPlanner() {
       .toEqual({ action: "completed", worksheetId: "worksheet", title: "確認済み", editorPath: "/worksheets/worksheet" });
   });
   it("CLIも配送状態をJSONで判定し、不正入力を安全に停止する", function cli() {
-    const directory = mkdtempSync(join(tmpdir(), "sugaku-jitate-delivery-test-"));
+    const directory = mkdtempSync(join(tmpdir(), "sujita-delivery-test-"));
     const input = join(directory, "state.json");
-    const script = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/scripts/plan_webmcp_delivery.mjs", import.meta.url));
+    const script = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/scripts/plan_webmcp_delivery.mjs", import.meta.url));
     try {
       writeFileSync(input, JSON.stringify({ stage: "import", result: { success: false, error: { code: "REVALIDATION_REQUIRED" } } }));
       const success = spawnSync(process.execPath, [script, "--input", input], { encoding: "utf8" });

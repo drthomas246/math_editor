@@ -1,25 +1,25 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createWorksheet } from "../src/domain/worksheet/worksheet.defaults";
 import { createSingleBackup } from "../src/application/backup/backup";
-import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/sugaku-jitate-capabilities";
-import type { SugakuJitateModelContextTool } from "../src/infrastructure/webmcp/webmcp";
+import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/sujita-capabilities";
+import type { SujitaModelContextTool } from "../src/infrastructure/webmcp/webmcp";
 
-type TestWindow = Window & { sugakuJitateTestTools: Map<string, SugakuJitateModelContextTool> };
+type TestWindow = Window & { sujitaTestTools: Map<string, SujitaModelContextTool> };
 
 /**
  * 登録APIだけを再現し、アプリの検証・暗号処理・画像デコードは実装を使う。
  * @param mode 現行API、未対応、登録拒否のいずれを再現するか
  */
 function installModelContext(mode: "supported" | "unsupported" | "rejected"): void {
-  const tools = new Map<string, SugakuJitateModelContextTool>();
-  (window as unknown as TestWindow).sugakuJitateTestTools = tools;
+  const tools = new Map<string, SujitaModelContextTool>();
+  (window as unknown as TestWindow).sujitaTestTools = tools;
   /**
    * ブラウザによるツール登録を再現する。
    * @param tool 登録されたアプリのツール
    * @param options アプリの登録解除シグナル
    * @returns ツール登録の完了
    */
-  async function registerTool(tool: SugakuJitateModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
+  async function registerTool(tool: SujitaModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
     if (mode === "rejected") throw new DOMException("Rejected", "NotAllowedError");
     if (tools.has(tool.name)) throw new Error("Duplicate tool");
     tools.set(tool.name, tool);
@@ -41,7 +41,7 @@ async function waitForTools(page: Page): Promise<void> {
    * ページ上の3ツールの登録を確認する。
    * @returns 必要な登録が完了していればtrue
    */
-  function hasTools(): boolean { return (window as unknown as TestWindow).sugakuJitateTestTools.size === 3; }
+  function hasTools(): boolean { return (window as unknown as TestWindow).sujitaTestTools.size === 3; }
   await page.waitForFunction(hasTools);
 }
 
@@ -63,7 +63,7 @@ async function validatesInBrowser({ page }) {
    * @returns 能力情報、検証結果、保存件数
    */
   async function runValidation(data: typeof input) {
-    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    const tools = (window as unknown as TestWindow).sujitaTestTools;
     const modulePath = "/src/infrastructure/indexeddb/database.ts";
     const { database } = await import(modulePath);
     const before = [await database.worksheets.count(), await database.assets.count()];

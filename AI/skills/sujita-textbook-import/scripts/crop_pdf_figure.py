@@ -332,7 +332,7 @@ def main() -> None:
     backend, renderer = select_backend(request, base_dir)
 
     try:
-        with tempfile.TemporaryDirectory(prefix="sugaku-jitate-crop-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="sujita-crop-") as temp_dir:
             rendered_path, native_rotation = render_original(
                 backend,
                 renderer,

@@ -51,7 +51,7 @@
 
 すうがく仕立てはブラウザ上で問題・例題・数式・画像・表・解答色・教師用解説を編集し、IndexedDBへローカル保存してPDF出力できる。
 
-既存の `sugaku-jitate-textbook-import` Skill は、利用権限のある教科書PDFから指定範囲の問題・例題・数式・図版・教科書解答・解説を抽出し、利用者確認後にすうがく仕立て単一プリントJSONを生成できる。
+既存の `sujita-textbook-import` Skill は、利用権限のある教科書PDFから指定範囲の問題・例題・数式・図版・教科書解答・解説を抽出し、利用者確認後にすうがく仕立て単一プリントJSONを生成できる。
 
 一方、現行フローでは、AI処理完了後に次の手動操作が必要である。
 
@@ -140,7 +140,7 @@ ChatGPT側の利用可能量、モデル、クレジット、レート制限等�
 
 Plugin化のために教科書解析ロジックを別実装しない。
 
-`AI/skills/sugaku-jitate-textbook-import/` をSkillの正本とし、Plugin配布物へ機械的にコピーする。
+`AI/skills/sujita-textbook-import/` をSkillの正本とし、Plugin配布物へ機械的にコピーする。
 
 ### 4.5 WebMCPは任意機能とする
 
@@ -211,7 +211,7 @@ v2.1ではportable Pluginを作成し、開発者本人のローカルMarketplac
 ChatGPT
   │
   ├─ すうがく仕立て portable Plugin
-  │    └─ sugaku-jitate-textbook-import Skill
+  │    └─ sujita-textbook-import Skill
   │          ├─ PDF解析
   │          ├─ Draft生成
   │          ├─ 確認
@@ -295,28 +295,28 @@ Pluginはportable形式を採用する。
 配布候補物:
 
 ```text
-sugaku-jitate-ai/
+sujita-ai/
 ├─ plugin.json
 └─ skills/
-   └─ sugaku-jitate-textbook-import/
+   └─ sujita-textbook-import/
       └─ <Skill一式>
 ```
 
 ### 8.2 Plugin名
 
-推奨Plugin名を `sugaku-jitate-ai` とする。
+推奨Plugin名を `sujita-ai` とする。
 
 理由:
 
 - 現在の教科書取込以外のSkillを将来追加できる。
 - すうがく仕立て本体とAI連携パッケージを区別できる。
-- Skill名 `sugaku-jitate-textbook-import` を変更せずに済む。
+- Skill名 `sujita-textbook-import` を変更せずに済む。
 
 ### 8.3 Skill同期
 
 Plugin内Skillは手作業で編集してはならない。
 
-ビルド時に `AI/skills/sugaku-jitate-textbook-import/` からコピーし、ファイル一覧とSHA-256を検証する。
+ビルド時に `AI/skills/sujita-textbook-import/` からコピーし、ファイル一覧とSHA-256を検証する。
 
 ### 8.4 v2.1のインストール・配布範囲
 
@@ -612,7 +612,7 @@ sujita_get_capabilities
 
 ```json
 {
-  "app": "sugaku-jitate",
+  "app": "sujita",
   "integrationVersion": 1,
   "worksheetFormat": "math-worksheet",
   "worksheetFileVersion": 1,
@@ -1256,7 +1256,7 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 - 学習指導要領対応
 - 図版crop座標だけを転送しすうがく仕立て側で元PDFから切り出す方式
 - WebMCPの大容量データ転送方式が安定した場合の直接取込上限拡大
-- 複数Skillを `sugaku-jitate-ai` Pluginへ追加
+- 複数Skillを `sujita-ai` Pluginへ追加
 - Pluginの第三者配布
 - Plugin Directoryへの提出・公開
 - 組織向けPlugin配布・管理
@@ -1302,7 +1302,7 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 
 ## 42. 要点
 
-本AI機能は、利用者自身のChatGPT上で既存 `sugaku-jitate-textbook-import` Skillを実行し、portable Pluginとしてパッケージする。v2.1では開発者本人のローカルMarketplaceでのインストール・自己テストまでを配布範囲とし、一般公開は行わない。
+本AI機能は、利用者自身のChatGPT上で既存 `sujita-textbook-import` Skillを実行し、portable Pluginとしてパッケージする。v2.1では開発者本人のローカルMarketplaceでのインストール・自己テストまでを配布範囲とし、一般公開は行わない。
 
 Skill実行環境は外部コマンドやPythonモジュールの存在を仮定せず、Runtime Capability Probeを行う。既存の図版crop経路が利用できない場合は元PDF由来の同等結果を保証できる代替経路を自動検出し、それも利用できず採用問題に図版が必須であれば完成処理を停止する。
 

@@ -41,10 +41,10 @@ export async function checkFilesystem(inputPath, outputDir) {
   } catch { readable = false; }
   let temp;
   try {
-    temp = await mkdtemp(path.join(outputDir, ".sugaku-jitate-probe-"));
+    temp = await mkdtemp(path.join(outputDir, ".sujita-probe-"));
     const file = path.join(temp, "check");
-    await writeFile(file, "sugaku-jitate-runtime", { flag: "wx" });
-    writable = await readFile(file, "utf8") === "sugaku-jitate-runtime";
+    await writeFile(file, "sujita-runtime", { flag: "wx" });
+    writable = await readFile(file, "utf8") === "sujita-runtime";
     await unlink(file);
   } catch { writable = false; }
   finally {

@@ -20,8 +20,8 @@ const jsonSchema = {
 };
 const nextContents = `${JSON.stringify(jsonSchema, null, 2)}\n`;
 const manifestPath = fileURLToPath(new URL("../schemas/math-worksheet.schema-manifest.json", import.meta.url));
-const skillManifestPath = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/schemas/schema-manifest.json", import.meta.url));
-const skillSchemaPath = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/schemas/math-worksheet.schema.json", import.meta.url));
+const skillManifestPath = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/schemas/schema-manifest.json", import.meta.url));
+const skillSchemaPath = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/schemas/math-worksheet.schema.json", import.meta.url));
 const skillManifest = JSON.parse(await readFile(skillManifestPath, "utf8"));
 const sha256 = createHash("sha256").update(nextContents).digest("hex").toUpperCase();
 let previousManifest = skillManifest;

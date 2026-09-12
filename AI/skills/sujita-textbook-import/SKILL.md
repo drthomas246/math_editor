@@ -1,5 +1,5 @@
 ---
-name: sugaku-jitate-textbook-import
+name: sujita-textbook-import
 description: 教科書PDFの指定範囲から例題・問題・小問・数式・図版・教科書解答・解説を抽出し、確認後にすうがく仕立て用の単一プリントをJSONまたは許可済みWebMCPで配送する。新規作問、一般的なPDF要約、すうがく仕立て以外の教材生成には使わない。
 ---
 

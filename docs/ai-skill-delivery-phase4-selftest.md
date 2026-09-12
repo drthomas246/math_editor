@@ -17,9 +17,9 @@
 |---|---|---|
 | 最終portable Pluginをbuild / verify | PASS | 22ファイルを再生成し、正本との全バイト一致を確認 |
 | ローカルPluginをcachebuster付きで再インストール | PASS | personal marketplaceから`2.1.0+codex.20260912093415`をインストール |
-| Phase 4配送ファイルをインストール先で確認 | PASS | `webmcp-integration.md`、`plan_webmcp_delivery.mjs`、`resolve_sugaku_jitate_target.mjs`を確認 |
+| Phase 4配送ファイルをインストール先で確認 | PASS | `webmcp-integration.md`、`plan_webmcp_delivery.mjs`、`resolve_sujita_target.mjs`を確認 |
 | ChatGPTで新規会話を開く | PASS | Edge上のChatGPT Webで新規会話を開始 |
-| `sugaku-jitate-textbook-import` Skillを選択 | BLOCKED | ChatGPT Webのインストール済みPluginにすうがく仕立て AIがなく、Skill一覧も「まだスキルがありません」。`@sugaku-jitate`でもSkill候補が出ない |
+| `sujita-textbook-import` Skillを選択 | BLOCKED | ChatGPT Webのインストール済みPluginにすうがく仕立て AIがなく、Skill一覧も「まだスキルがありません」。`@sujita`でもSkill候補が出ない |
 | すうがく仕立てを実ブラウザで開く | PASS | localhostの一覧画面をEdgeで表示 |
 | WebMCP Site toolsを発見 | BLOCKED | 実ページで`document.modelContext`が未注入。ブラウザホストが公開したtab capabilityにもSite toolsがない |
 | capabilities取得 | NOT RUN | Site tools未発見のため |

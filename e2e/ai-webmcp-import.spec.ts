@@ -1,22 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createSingleBackup } from "../src/application/backup/backup";
 import { createWorksheet } from "../src/domain/worksheet/worksheet.defaults";
-import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/sugaku-jitate-capabilities";
-import type { SugakuJitateModelContextTool } from "../src/infrastructure/webmcp/webmcp";
+import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/sujita-capabilities";
+import type { SujitaModelContextTool } from "../src/infrastructure/webmcp/webmcp";
 
-type TestWindow = Window & { sugakuJitateTestTools: Map<string, SugakuJitateModelContextTool> };
+type TestWindow = Window & { sujitaTestTools: Map<string, SujitaModelContextTool> };
 
 /** WebMCP登録APIを再現し、登録ツールをブラウザー内テストから呼べるようにする。 */
 function installModelContext(): void {
-  const tools = new Map<string, SugakuJitateModelContextTool>();
-  (window as unknown as TestWindow).sugakuJitateTestTools = tools;
+  const tools = new Map<string, SujitaModelContextTool>();
+  (window as unknown as TestWindow).sujitaTestTools = tools;
   /**
    * すうがく仕立てから公開されたツールを保持する。
    * @param tool 登録するWebMCPツール
    * @param options ページ終了時の登録解除シグナル
    * @returns 登録完了時に解決するPromise
    */
-  async function registerTool(tool: SugakuJitateModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
+  async function registerTool(tool: SujitaModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
     tools.set(tool.name, tool);
     /** ページ終了時に対象ツールを登録一覧から取り除く。 */
     function unregister(): void { tools.delete(tool.name); }
@@ -37,7 +37,7 @@ async function waitForTools(page: Page): Promise<void> {
    * @returns 3ツールすべてが登録されていればtrue
    */
   function hasAllTools(): boolean {
-    return (window as unknown as TestWindow).sugakuJitateTestTools.size === 3;
+    return (window as unknown as TestWindow).sujitaTestTools.size === 3;
   }
   await page.waitForFunction(hasAllTools);
 }
@@ -62,7 +62,7 @@ async function importsDirectlyAndRecovers({ page }) {
    * @returns 互換性判定に使うすうがく仕立て能力情報
    */
   async function readCapabilities() {
-    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    const tools = (window as unknown as TestWindow).sujitaTestTools;
     return tools.get("sujita_get_capabilities")!.execute({}, { signal: new AbortController().signal });
   }
   const capabilities = await page.evaluate(readCapabilities);
@@ -84,7 +84,7 @@ async function importsDirectlyAndRecovers({ page }) {
    * @returns 検証済み候補の要約
    */
   async function validateCandidate(input: { payloadText: string; schemaSha256: string }) {
-    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    const tools = (window as unknown as TestWindow).sujitaTestTools;
     return tools.get("sujita_validate_import")!.execute({
       payloadText: input.payloadText,
       skillSchemaSha256: input.schemaSha256,
@@ -107,7 +107,7 @@ async function importsDirectlyAndRecovers({ page }) {
    * @returns ツール結果とIndexedDBのプリント件数
    */
   async function importCandidate(input: typeof importInput) {
-    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    const tools = (window as unknown as TestWindow).sujitaTestTools;
     const modulePath = "/src/infrastructure/indexeddb/database.ts";
     const { database } = await import(modulePath);
     const result = await tools.get("sujita_import_worksheet")!.execute(input, { signal: new AbortController().signal });

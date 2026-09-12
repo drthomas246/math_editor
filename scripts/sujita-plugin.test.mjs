@@ -3,19 +3,19 @@ import { cp, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "nod
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { buildPlugin, listPackageFiles, PROJECT_ROOT, SKILL_NAME, verifyPlugin } from "./sugaku-jitate-plugin";
+import { buildPlugin, listPackageFiles, PROJECT_ROOT, SKILL_NAME, verifyPlugin } from "./sujita-plugin";
 
 let root;
 let output;
 beforeEach(async function createIsolatedSource() {
-  root = await mkdtemp(path.join(os.tmpdir(), "sugaku-jitate-plugin-test-"));
+  root = await mkdtemp(path.join(os.tmpdir(), "sujita-plugin-test-"));
   await cp(path.join(PROJECT_ROOT, "AI"), path.join(root, "AI"), { recursive: true });
   await cp(path.join(PROJECT_ROOT, "schemas"), path.join(root, "schemas"), { recursive: true });
-  output = path.join(root, "dist/sugaku-jitate-ai");
+  output = path.join(root, "dist/sujita-ai");
 });
 afterEach(async function removeIsolatedSource() {
   // mkdtempで作った専用ディレクトリ以外は削除しない。
-  if (root && path.dirname(root) === os.tmpdir() && path.basename(root).startsWith("sugaku-jitate-plugin-test-")) {
+  if (root && path.dirname(root) === os.tmpdir() && path.basename(root).startsWith("sujita-plugin-test-")) {
     await rm(root, { recursive: true, force: true });
   }
 });

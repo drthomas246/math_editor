@@ -1,6 +1,0 @@
-interface:
-  display_name: "すうがく仕立て 教科書取込"
-  short_description: "教科書PDFの指定範囲を確認後にすうがく仕立てへ配送"
-  default_prompt: "Use $sugaku-jitate-textbook-import to convert a textbook PDF range into a reviewed worksheet for すうがく仕立て and deliver it through consent-gated WebMCP when available, with a validated JSON fallback."
-policy:
-  allow_implicit_invocation: true

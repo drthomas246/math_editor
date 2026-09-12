@@ -3,7 +3,7 @@ import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { createWebMcpCandidateStore } from "../../infrastructure/webmcp/webmcp-candidate-store";
 import { createWebMcpImportReceiptStore } from "../../infrastructure/webmcp/webmcp-import-receipt";
 import type { WorksheetWithAssets } from "../repositories/worksheet-repository";
-import { APP_SCHEMA_SHA256 } from "../../infrastructure/webmcp/sugaku-jitate-capabilities";
+import { APP_SCHEMA_SHA256 } from "../../infrastructure/webmcp/sujita-capabilities";
 import type { AiImportCompletedEvent, AiImportReceiptStore } from "./ai-import-types";
 import { createAiImportService } from "./ai-import-service";
 

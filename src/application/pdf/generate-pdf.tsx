@@ -11,9 +11,9 @@ const PDF_PIXEL_RATIO = 4;
 const PDF_IMAGE_TYPE = "image/jpeg";
 const PDF_IMAGE_QUALITY = 0.98;
 const PDF_PERFORMANCE_MEASURES = {
-    fonts: "sugaku-jitate.pdf.fonts",
-    rasterization: "sugaku-jitate.pdf.rasterization",
-    assembly: "sugaku-jitate.pdf.assembly",
+    fonts: "sujita.pdf.fonts",
+    rasterization: "sujita.pdf.rasterization",
+    assembly: "sujita.pdf.assembly",
 } as const;
 const styles = StyleSheet.create({
     page: { backgroundColor: "#fff" },

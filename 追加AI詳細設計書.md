@@ -43,7 +43,7 @@
 5. Repository契約: `src/application/repositories/worksheet-repository.ts`
 6. IndexedDB実装: `src/infrastructure/indexeddb/`
 7. 本書の業務要件: `追加AI要件定義書.md`
-8. Skill実行規則: `AI/skills/sugaku-jitate-textbook-import/`
+8. Skill実行規則: `AI/skills/sujita-textbook-import/`
 9. Plugin/WebMCP仕様: リリース時点のOpenAI公式ドキュメント
 10. 本詳細設計書
 
@@ -93,7 +93,7 @@ WebMCP経路のフォールバックとして維持する。
 |---|---|
 | ADR-AI-101 | OpenAI APIを使用しない。 |
 | ADR-AI-102 | 既存Skillをportable Pluginとして配布可能な形へパッケージする。 |
-| ADR-AI-103 | Skill正本は `AI/skills/sugaku-jitate-textbook-import/` の1か所とする。 |
+| ADR-AI-103 | Skill正本は `AI/skills/sujita-textbook-import/` の1か所とする。 |
 | ADR-AI-104 | portable Pluginはビルド時に生成し、Plugin内Skillを手編集しない。 |
 | ADR-AI-105 | すうがく仕立て連携は外部MCPサーバーではなくWebMCP Site toolsを第一方式とする。 |
 | ADR-AI-106 | WebMCPは追加機能とし、すうがく仕立て起動の必須条件にしない。 |
@@ -125,8 +125,8 @@ WebMCP経路のフォールバックとして維持する。
 ┌─────────────────────────────────────────────┐
 │ ChatGPT                                     │
 │                                             │
-│  portable Plugin: sugaku-jitate-ai            │
-│   └─ Skill: sugaku-jitate-textbook-import     │
+│  portable Plugin: sujita-ai            │
+│   └─ Skill: sujita-textbook-import     │
 │        ├─ PDF解析                           │
 │        ├─ AiWorksheetDraft                  │
 │        ├─ 利用者確認                        │
@@ -160,7 +160,7 @@ WebMCP経路のフォールバックとして維持する。
 ```text
 AI/
 ├─ skills/
-│  └─ sugaku-jitate-textbook-import/
+│  └─ sujita-textbook-import/
 │     ├─ SKILL.md
 │     ├─ agents/openai.yaml
 │     ├─ references/
@@ -180,8 +180,8 @@ schemas/
 └─ math-worksheet.schema-manifest.json     # 新規
 
 scripts/
-├─ build-sugaku-jitate-plugin.ts             # 新規
-└─ verify-sugaku-jitate-plugin.ts            # 新規
+├─ build-sujita-plugin.ts             # 新規
+└─ verify-sujita-plugin.ts            # 新規
 
 src/application/ai-import/
 ├─ ai-import-service.ts
@@ -195,9 +195,9 @@ src/infrastructure/webmcp/
 ├─ webmcp-session.ts
 ├─ webmcp-candidate-store.ts
 ├─ webmcp-import-receipt.ts                # v2.1で責務を明示
-├─ sugaku-jitate-capabilities.ts
-├─ register-sugaku-jitate-tools.ts
-└─ register-sugaku-jitate-tools.test.ts
+├─ sujita-capabilities.ts
+├─ register-sujita-tools.ts
+└─ register-sujita-tools.test.ts
 
 src/presentation/ai-integration/
 ├─ AiIntegrationStatus.tsx
@@ -242,7 +242,7 @@ WorksheetRepository
 ```json
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "sugaku-jitate-ai",
+  "name": "sujita-ai",
   "version": "2.1.0",
   "description": "Convert authorized textbook PDF ranges into reviewed すうがく仕立て worksheets and deliver them through WebMCP or JSON fallback."
 }
@@ -251,18 +251,18 @@ WorksheetRepository
 ### 7.2 生成物
 
 ```text
-dist/sugaku-jitate-ai/
+dist/sujita-ai/
 ├─ plugin.json
 └─ skills/
-   └─ sugaku-jitate-textbook-import/
+   └─ sujita-textbook-import/
       └─ ...
 ```
 
 ### 7.3 build script
 
-`build-sugaku-jitate-plugin.ts` の責務:
+`build-sujita-plugin.ts` の責務:
 
-1. `dist/sugaku-jitate-ai` を安全に再生成
+1. `dist/sujita-ai` を安全に再生成
 2. `AI/plugin/plugin.json` をコピー
 3. Skill正本を再帰コピー
 4. シンボリックリンクを配布物へ含めない
@@ -272,10 +272,10 @@ dist/sugaku-jitate-ai/
 
 ### 7.4 verify script
 
-`verify-sugaku-jitate-plugin.ts` の責務:
+`verify-sujita-plugin.ts` の責務:
 
 - `plugin.json` が存在
-- `skills/sugaku-jitate-textbook-import/SKILL.md` が存在
+- `skills/sujita-textbook-import/SKILL.md` が存在
 - 正本Skillと配布Skillの相対パス集合が一致
 - 各ファイルSHA-256一致
 - Schema manifestのhash一致
@@ -292,7 +292,7 @@ npm run plugin:build
   ↓
 npm run plugin:verify
   ↓
-dist/sugaku-jitate-ai/
+dist/sujita-ai/
   ↓
 ローカルMarketplaceへ追加
   ↓
@@ -370,7 +370,7 @@ Skillは、図版処理または決定論的build/validate前に必要能力を�
 新規:
 
 ```text
-AI/skills/sugaku-jitate-textbook-import/scripts/check_runtime_capabilities.mjs
+AI/skills/sujita-textbook-import/scripts/check_runtime_capabilities.mjs
 ```
 
 出力例:
@@ -713,7 +713,7 @@ async function sha256Utf8(text: string): Promise<string>
 ### 17.3 output
 
 ```ts
-type SugakuJitateCapabilities = {
+type SujitaCapabilities = {
   app: "sujita";
   integrationVersion: 1;
   worksheetFormat: "math-worksheet";
@@ -914,7 +914,7 @@ Repository保存成功後・completed receipt確定後にAI Import Eventを発�
 キー例:
 
 ```text
-sugaku-jitate:webmcp-import:<requestId>
+sujita:webmcp-import:<requestId>
 ```
 
 ### 20.2 値
@@ -1569,7 +1569,7 @@ export async function importAiCandidate(
 ## 33. WebMCP tool登録擬似コード
 
 ```ts
-export async function registerSugakuJitateTools(deps: Dependencies) {
+export async function registerSujitaTools(deps: Dependencies) {
   const context = document.modelContext;
   if (!context?.registerTool) return;
 
@@ -1677,7 +1677,7 @@ useEffect(() => {
 
 `WorksheetListScreen` は `application/ai-import/ai-import-events` を購読してよい。
 
-`infrastructure/webmcp/register-sugaku-jitate-tools.ts` から `WorksheetListScreen` またはReactのsetterをimportしてはならない。
+`infrastructure/webmcp/register-sujita-tools.ts` から `WorksheetListScreen` またはReactのsetterをimportしてはならない。
 
 ## 36. StrictMode対策
 
@@ -1690,7 +1690,7 @@ Site tool登録をReact component Effectから行わず、module/composition roo
 ```ts
 let registered = false;
 
-export async function registerSugakuJitateTools(...) {
+export async function registerSujitaTools(...) {
   if (registered) return;
   ...
   registered = true;
@@ -1740,8 +1740,8 @@ D. どれもない
 ```json
 {
   "scripts": {
-    "plugin:build": "tsx scripts/build-sugaku-jitate-plugin.ts",
-    "plugin:verify": "tsx scripts/verify-sugaku-jitate-plugin.ts",
+    "plugin:build": "tsx scripts/build-sujita-plugin.ts",
+    "plugin:verify": "tsx scripts/verify-sujita-plugin.ts",
     "verify": "npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run plugin:verify && npm run schema:test && npm run manual:check && npm run test"
   }
 }
@@ -1777,7 +1777,7 @@ D. どれもない
 18. import成功時のAI Import Event
 19. save failure時にsuccess eventを出さない
 
-### 38.2 `register-sugaku-jitate-tools.test.ts`
+### 38.2 `register-sujita-tools.test.ts`
 
 - `document.modelContext` undefined
 - registerTool存在
@@ -1966,16 +1966,16 @@ WebMCP実ブラウザ機能はロールアウト依存のため、CIの必須成
 
 ## 43. すうがく仕立て側の能力情報
 
-`sugaku-jitate-capabilities.ts`:
+`sujita-capabilities.ts`:
 
 ```ts
-export const SUGAKU_JITATE_AI_INTEGRATION_VERSION = 1;
+export const SUJITA_AI_INTEGRATION_VERSION = 1;
 export const MAX_WEBMCP_DIRECT_IMPORT_BYTES = 2 * 1024 * 1024;
 
-export function getSugakuJitateCapabilities(): SugakuJitateCapabilities {
+export function getSujitaCapabilities(): SujitaCapabilities {
   return {
     app: "sujita",
-    integrationVersion: SUGAKU_JITATE_AI_INTEGRATION_VERSION,
+    integrationVersion: SUJITA_AI_INTEGRATION_VERSION,
     worksheetFormat: "math-worksheet",
     worksheetFileVersion: 1,
     schemaSha256: SCHEMA_MANIFEST.sha256,

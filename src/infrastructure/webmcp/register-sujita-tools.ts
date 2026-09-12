@@ -3,11 +3,11 @@ import { AiImportError, toAiImportErrorDetail } from "../../application/ai-impor
 import { publishAiImportCompleted } from "../../application/ai-import/ai-import-events";
 import { createAiImportService, ImportAiCandidateInputSchema, ValidateAiImportInputSchema } from "../../application/ai-import/ai-import-service";
 import { worksheetRepository } from "../indexeddb/dexie-worksheet-repository";
-import { APP_SCHEMA_SHA256, getSugakuJitateCapabilities } from "./sugaku-jitate-capabilities";
+import { APP_SCHEMA_SHA256, getSujitaCapabilities } from "./sujita-capabilities";
 import { createWebMcpCandidateStore } from "./webmcp-candidate-store";
 import { createWebMcpImportReceiptStore, detectWebMcpSessionStorage } from "./webmcp-import-receipt";
 import { webMcpSession } from "./webmcp-session";
-import type { SugakuJitateModelContext, SugakuJitateModelContextTool } from "./webmcp";
+import type { SujitaModelContext, SujitaModelContextTool } from "./webmcp";
 
 const EmptyInputSchema = z.strictObject({});
 
@@ -15,7 +15,7 @@ const EmptyInputSchema = z.strictObject({});
  * 現行APIを優先し、旧ブラウザの登録APIも検出する。
  * @returns 利用可能な登録API。非対応またはアクセス拒否時はundefined
  */
-export function detectSugakuJitateModelContext(): SugakuJitateModelContext | undefined {
+export function detectSujitaModelContext(): SujitaModelContext | undefined {
   try {
     if (typeof document !== "undefined" && typeof document.modelContext?.registerTool === "function") {
       return document.modelContext;
@@ -34,7 +34,7 @@ export function detectSugakuJitateModelContext(): SugakuJitateModelContext | und
  * @param context 実行環境から検出する登録API。テスト時は差替え可能
  * @returns 登録結果のPromiseと、候補・登録を解放する終了処理
  */
-export function registerSugakuJitateTools(context = detectSugakuJitateModelContext()) {
+export function registerSujitaTools(context = detectSujitaModelContext()) {
   const controller = new AbortController();
   const store = createWebMcpCandidateStore();
   const ownedNames = new Set<string>();
@@ -58,7 +58,7 @@ export function registerSugakuJitateTools(context = detectSugakuJitateModelConte
     if (!EmptyInputSchema.safeParse(input).success) {
       return { success: false, error: toAiImportErrorDetail(new AiImportError("INVALID_INPUT")) };
     }
-    return getSugakuJitateCapabilities();
+    return getSujitaCapabilities();
   }
 
   /**
@@ -112,7 +112,7 @@ export function registerSugakuJitateTools(context = detectSugakuJitateModelConte
     }
   }
 
-  const tools: SugakuJitateModelContextTool[] = [
+  const tools: SujitaModelContextTool[] = [
     {
       name: "sujita_get_capabilities",
       description: "Read the schema identity, payload limit, and available AI import features for すうがく仕立て.",

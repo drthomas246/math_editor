@@ -4,14 +4,14 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { CURRENT_SCHEMA_VERSION } from "../src/domain/worksheet/worksheet.schema";
 const rootSchemaPath = fileURLToPath(new URL("../schemas/math-worksheet.schema.json", import.meta.url));
-const skillSchemaPath = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/schemas/math-worksheet.schema.json", import.meta.url));
-const manifestPath = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/schemas/schema-manifest.json", import.meta.url));
+const skillSchemaPath = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/schemas/math-worksheet.schema.json", import.meta.url));
+const manifestPath = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/schemas/schema-manifest.json", import.meta.url));
 const rootManifestPath = fileURLToPath(new URL("../schemas/math-worksheet.schema-manifest.json", import.meta.url));
-const validatorPath = fileURLToPath(new URL("../AI/skills/sugaku-jitate-textbook-import/scripts/validate_math_worksheet.mjs", import.meta.url));
+const validatorPath = fileURLToPath(new URL("../AI/skills/sujita-textbook-import/scripts/validate_math_worksheet.mjs", import.meta.url));
 const EXPECTED_SOURCE = "src/domain/worksheet/worksheet.schema.ts";
 const EXPECTED_GENERATED_SCHEMA = "schemas/math-worksheet.schema.json";
 const EXPECTED_VALIDATOR_PATH = "scripts/validate_math_worksheet.mjs";
-const VALIDATOR_METADATA_PATTERN = /^\/\* sugaku-jitate-validator-metadata (\{[^\r\n]+\}) \*\/$/mu;
+const VALIDATOR_METADATA_PATTERN = /^\/\* sujita-validator-metadata (\{[^\r\n]+\}) \*\/$/mu;
 type JsonObject = Record<string, unknown>;
 /**
  * Objectが仕様上の条件を満たすか判定する。
@@ -202,7 +202,7 @@ else {
 }
 const metadataMatch = validator.match(VALIDATOR_METADATA_PATTERN);
 if (!metadataMatch?.[1]) {
-    errors.push("Validatorにsugaku-jitate-validator-metadataがありません。");
+    errors.push("Validatorにsujita-validator-metadataがありません。");
 }
 else {
     const metadata = parseJson(metadataMatch[1], "Validator metadata", errors);

@@ -1,5 +1,5 @@
 // 現行仕様と旧Navigator実装の差分を、この登録用の最小型だけに閉じ込める。
-export type SugakuJitateModelContextTool = {
+export type SujitaModelContextTool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
@@ -13,14 +13,14 @@ export type SugakuJitateModelContextTool = {
   execute(input: unknown, options: { signal: AbortSignal }): Promise<unknown>;
 };
 
-export interface SugakuJitateModelContext {
+export interface SujitaModelContext {
   /**
    * ページのツールを登録する。
    * @param tool 公開するツール
    * @param options 現行APIの登録解除シグナル
    * @returns 現行APIでは登録完了、旧APIでは即座に終了
    */
-  registerTool(tool: SugakuJitateModelContextTool, options?: { signal: AbortSignal }): void | Promise<void>;
+  registerTool(tool: SujitaModelContextTool, options?: { signal: AbortSignal }): void | Promise<void>;
   /**
    * 旧APIで所有ツールを登録解除する。
    * @param name 登録したツール名
@@ -29,6 +29,6 @@ export interface SugakuJitateModelContext {
 }
 
 declare global {
-  interface Document { readonly modelContext?: SugakuJitateModelContext; }
-  interface Navigator { readonly modelContext?: SugakuJitateModelContext; }
+  interface Document { readonly modelContext?: SujitaModelContext; }
+  interface Navigator { readonly modelContext?: SujitaModelContext; }
 }
