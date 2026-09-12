@@ -35,6 +35,17 @@ function errorCode(result) {
 }
 
 /**
+ * 配送状態に保存した自動再試行回数を安全に読み取る。
+ * @param input 配送状態
+ * @param name 回数を保持するプロパティ名
+ * @returns 0以上の安全な整数。不正ならnull
+ */
+function retryAttempts(input, name) {
+  const value = input?.[name] ?? 0;
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+/**
  * Math Editorの能力情報と完成payloadから直接取込の開始可否を判定する。
  * @param input 能力情報、Skill Schemaハッシュ、payloadバイト数、ツール発見結果
  * @returns 事前検証またはJSONフォールバックの判断
@@ -56,7 +67,7 @@ export function planCapabilities(input) {
     || capabilities.schemaSha256.toLowerCase() !== skillSchemaSha256.toLowerCase()) {
     return manualImport("SCHEMA_MISMATCH");
   }
-  if (capabilities.directImportAvailable !== true || input.directImportToolAvailable === false) {
+  if (capabilities.directImportAvailable !== true || input.directImportToolAvailable !== true) {
     return manualImport("WEBMCP_UNAVAILABLE");
   }
   if (!Number.isSafeInteger(capabilities.maxDirectImportBytes) || capabilities.maxDirectImportBytes < 0) {
@@ -91,7 +102,16 @@ export function planValidation(input) {
   if (CONTENT_ERROR_CODES.has(code)) return { action: "repair-candidate", code };
   if (code === "SCHEMA_MISMATCH" || code === "DIRECT_IMPORT_TOO_LARGE") return manualImport(code);
   if (code === "VALIDATION_ABORTED" || code === "VALIDATION_FAILED") {
-    return { action: "retry-validation", code, automaticRetryLimit: 1, samePayloadRequired: true };
+    const attempts = retryAttempts(input, "validationRetryAttempts");
+    if (attempts === null) return stopDirectImport("INVALID_DELIVERY_STATE");
+    if (attempts >= 1) return manualImport(code);
+    return {
+      action: "retry-validation",
+      code,
+      automaticRetryLimit: 1,
+      nextValidationRetryAttempts: attempts + 1,
+      samePayloadRequired: true,
+    };
   }
   return stopDirectImport(code);
 }
@@ -99,9 +119,10 @@ export function planValidation(input) {
 /**
  * 直接取込の結果を、receipt冪等性を壊さない次の操作へ分類する。
  * @param result Math Editorのimport toolから受け取った応答
+ * @param state 再検証とimport再試行の回数を含む配送状態
  * @returns 完了、利用者操作待ち、再検証、再試行、修正、停止の判断
  */
-export function planImport(result) {
+export function planImport(result, state = {}) {
   if (result?.success === true) {
     if (typeof result.worksheetId !== "string" || !result.worksheetId
       || typeof result.title !== "string" || typeof result.editorPath !== "string") {
@@ -117,10 +138,29 @@ export function planImport(result) {
   const code = errorCode(result);
   if (USER_ACTION_CODES.has(code)) return { action: "await-user", code, reuseRequestId: true };
   if (REVALIDATION_CODES.has(code)) {
-    return { action: "revalidate", code, reuseRequestId: true, samePayloadRequired: true };
+    const attempts = retryAttempts(state, "revalidationAttempts");
+    if (attempts === null) return stopDirectImport("INVALID_DELIVERY_STATE");
+    if (attempts >= 1) return manualImport(code);
+    return {
+      action: "revalidate",
+      code,
+      reuseRequestId: true,
+      samePayloadRequired: true,
+      automaticRetryLimit: 1,
+      nextRevalidationAttempts: attempts + 1,
+    };
   }
   if (TRANSIENT_IMPORT_CODES.has(code)) {
-    return { action: "retry-import", code, reuseRequestId: true, automaticRetryLimit: 1 };
+    const attempts = retryAttempts(state, "importRetryAttempts");
+    if (attempts === null) return stopDirectImport("INVALID_DELIVERY_STATE");
+    if (attempts >= 1) return manualImport(code);
+    return {
+      action: "retry-import",
+      code,
+      reuseRequestId: true,
+      automaticRetryLimit: 1,
+      nextImportRetryAttempts: attempts + 1,
+    };
   }
   if (code === "SCHEMA_MISMATCH" || code === "DIRECT_IMPORT_TOO_LARGE") return manualImport(code);
   if (CONTENT_ERROR_CODES.has(code)) return { action: "repair-candidate", code };
@@ -135,7 +175,7 @@ export function planImport(result) {
 export function planWebMcpDelivery(input) {
   if (input?.stage === "capabilities") return planCapabilities(input);
   if (input?.stage === "validation") return planValidation(input);
-  if (input?.stage === "import") return planImport(input.result);
+  if (input?.stage === "import") return planImport(input.result, input);
   return stopDirectImport("INVALID_DELIVERY_STATE");
 }
 

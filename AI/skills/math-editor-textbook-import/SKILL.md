@@ -37,7 +37,7 @@ description: 教科書PDFの指定範囲から例題・問題・小問・数式�
 
 ## 状態と絶対ゲート
 
-内容作成は`collecting-input → analyzing → review-required → confirmed → building`で進める。BuilderとValidator成功後は別の配送状態`resolving-target → validating → importing → delivered`を使い、direct import不可または利用者選択では`manual-fallback`へ進む。配送完了後に内容状態を`completed`とする。修正後は`revision`を増やして確定を解除し、`review-required`へ戻す。継続不能なFatalは`blocked`とする。
+内容作成は`collecting-input → analyzing → review-required → confirmed → building`で進める。BuilderとValidator成功後は別の配送状態`resolving-target → checking-capabilities → validating → importing → delivered`を使い、direct import不可または利用者選択では`manual-fallback`へ進む。配送完了後に内容状態を`completed`とする。修正後は`revision`を増やして確定を解除し、`review-required`へ戻す。継続不能なFatalは`blocked`とする。
 
 最終JSONを生成できるのは、利用者が現revisionに対して「確定」「この内容でJSONを作成」「採用した問題で出力」など完成JSON生成を明示し、権利・送信確認済み、範囲解決済み、採用1件以上、保留0件、未解決Fatal 0件、確認対象Warning提示済み、採用図版の最終Crop選択済み、`confirmedRevision === revision`をすべて満たす場合だけである。「進めて」「確認した」など曖昧な表現を確定扱いにしない。
 

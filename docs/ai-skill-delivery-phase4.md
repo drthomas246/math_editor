@@ -24,7 +24,7 @@ Skillは内容確認の状態と配送状態を分け、Builder / Validator成�
 
 Consent待ち、candidate期限切れ・消失、`REVALIDATION_REQUIRED`、応答不明時の安全な再試行では、同じ完成payloadと同じ`requestId`を維持する。再検証時だけ新しい`candidateToken`へ更新する。payload hash不一致ではdirect importを停止し、自動再試行しない。
 
-`plan_webmcp_delivery.mjs`はcapabilities、validation、importの不信頼な応答を次の操作へ決定論的に分類する。WebMCP固有障害は完成JSONを変更せず手動インポートへ戻し、内容不正はfallbackで隠さず確認・修正工程へ戻す。transport系の自動再試行上限は1回である。
+`plan_webmcp_delivery.mjs`はcapabilities、validation、importの不信頼な応答を次の操作へ決定論的に分類する。WebMCP固有障害は完成JSONを変更せず手動インポートへ戻し、内容不正はfallbackで隠さず確認・修正工程へ戻す。`directImportToolAvailable`は厳密な`true`だけを利用可能とみなす。transport系とcandidate再検証の自動再試行上限は各1回であり、呼出側はplannerが返す`nextValidationRetryAttempts`、`nextImportRetryAttempts`、`nextRevalidationAttempts`を次の配送状態へ保存する。
 
 ## Runtime fallbackとの接続
 
@@ -37,7 +37,7 @@ Consent待ち、candidate期限切れ・消失、`REVALIDATION_REQUIRED`、応�
 ## 自動検証
 
 - `webmcp-target.test.mjs`: 同一URL複数タブの`selectedPageId`選択、競合拒否、import tool有無
-- `webmcp-delivery.test.mjs`: capabilities互換性、Schema・サイズfallback、payload hash照合、Consent待ち、同一`requestId`再検証、fatal停止、成功判定、CLI
+- `webmcp-delivery.test.mjs`: capabilities互換性、Schema・サイズfallback、import toolのfail-closed判定、payload hash照合、Consent待ち、同一`requestId`再検証、再検証・transport再試行の上限、fatal停止、成功判定、CLI
 - `ai-webmcp-import.spec.ts`: 実ブラウザーでcapabilities、validate、Consent拒否・許可、import、同一requestId replay、reload後のreceipt回復、一覧反映
 - portable Plugin build / verify: 正本からの再生成、新しい配送helperを含む相対パスと全バイトの一致
 

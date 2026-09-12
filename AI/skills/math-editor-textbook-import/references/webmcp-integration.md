@@ -105,7 +105,7 @@ resolving-target -> checking-capabilities -> validating -> importing -> delivere
 
 `CONSENT_REQUIRED`では、利用者に対象ページの「AI連携: OFF」から書込み許可をONにしてもらい、操作完了の返答を待つ。Skill自身がクリック、許可、設定変更を代行しない。許可後は同じ`requestId`で再試行する。Consentはページ再読込でOFFへ戻る。
 
-`REVALIDATION_REQUIRED`、`CANDIDATE_NOT_FOUND`、`CANDIDATE_EXPIRED`、`CANDIDATE_ALREADY_CONSUMED`では、保存してある同じ`payloadText`を同じページで再検証し、新しい`candidateToken`を得る。SHA-256一致を再確認してから、同じ`requestId`でimportする。
+`REVALIDATION_REQUIRED`、`CANDIDATE_NOT_FOUND`、`CANDIDATE_EXPIRED`、`CANDIDATE_ALREADY_CONSUMED`では、保存してある同じ`payloadText`を同じページで最大1回だけ自動再検証し、新しい`candidateToken`を得る。SHA-256一致を再確認してから、同じ`requestId`でimportする。同じ論理操作で再検証要求が繰り返された場合は、自動再検証を止めてJSONフォールバックへ進む。
 
 `IMPORT_ABORTED`、`IMPORT_FAILED`、Site tool transport failureなど結果が不明な場合は、receiptによる回復のため同じ`requestId`で最大1回だけ自動再試行できる。繰り返し失敗したら自動再試行を止め、状態を説明してJSONフォールバックを提案する。異なる`requestId`で結果確認を試みない。
 
@@ -115,7 +115,7 @@ resolving-target -> checking-capabilities -> validating -> importing -> delivere
 |---|---|
 | `WEBMCP_UNAVAILABLE`、`TARGET_URL_REQUIRED`、`SCHEMA_MISMATCH`、`DIRECT_IMPORT_TOO_LARGE` | 完成JSONを変更せず通常インポートへフォールバック |
 | `CONSENT_REQUIRED`、`WORKSHEET_LIMIT_REACHED` | 利用者操作を待ち、解消後に同じ`requestId`で再試行 |
-| `REVALIDATION_REQUIRED`、candidate不在・期限切れ・消費済み | 同じpayloadを再検証し、新candidateと同じ`requestId`で再試行 |
+| `REVALIDATION_REQUIRED`、candidate不在・期限切れ・消費済み | 同じpayloadを最大1回再検証し、新candidateと同じ`requestId`で再試行。再発ならJSONフォールバック |
 | `VALIDATION_ABORTED`、`VALIDATION_FAILED` | 同じページとpayloadで最大1回再検証。再失敗ならJSONフォールバック |
 | `IMPORT_ABORTED`、`IMPORT_FAILED`、transport failure | 同じ`requestId`で最大1回再試行。再失敗ならJSONフォールバック |
 | `INVALID_JSON`、`INVALID_WORKSHEET_FILE`、`INVALID_ASSET` | 配送方法では直らないためIssue化し`review-required`へ戻る |

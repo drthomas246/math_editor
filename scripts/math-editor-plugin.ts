@@ -113,7 +113,7 @@ async function sourceFiles(root: string): Promise<Map<string, string>> {
     || manifest.$schema !== "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
     || manifest.name !== PLUGIN_NAME || !/^\d+\.\d+\.\d+$/u.test(manifest.version)
     || typeof manifest.description !== "string" || !manifest.description.trim()) {
-    throw new Error("Phase 1のportable Plugin manifestが不正です。");
+    throw new Error("portable Plugin manifestが不正です。");
   }
   const skillRoot = path.join(root, "AI/skills", SKILL_NAME);
   if (await realpath(skillRoot) !== skillRoot) throw new Error("Skill正本へのリンクは許可しません。");

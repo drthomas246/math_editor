@@ -43,10 +43,10 @@ Fatalは解消するまで完成JSON生成を停止する。Warningは対象、�
 | `DIRECT_IMPORT_TOO_LARGE` | fallback | 内容を削らずJSON |
 | `CONSENT_REQUIRED` | user | 対象ページで利用者がAI連携をONにした後、同じ`requestId` |
 | `WORKSHEET_LIMIT_REACHED` | user | 不要データの完全削除後、同じ`requestId` |
-| `REVALIDATION_REQUIRED` | retry | 同じpayloadをvalidateし、新candidateと同じ`requestId` |
-| `CANDIDATE_NOT_FOUND` | retry | 同じpayloadをvalidateし、新candidateと同じ`requestId` |
+| `REVALIDATION_REQUIRED` | retry / fallback | 同じpayloadを最大1回validateし、新candidateと同じ`requestId`。再発はJSON |
+| `CANDIDATE_NOT_FOUND` | retry / fallback | 同じpayloadを最大1回validateし、新candidateと同じ`requestId`。再発はJSON |
 | `CANDIDATE_EXPIRED` | retry / fallback | 同じpayloadで1回再検証。繰返す場合はJSON |
-| `CANDIDATE_ALREADY_CONSUMED` | retry | 同じpayloadをvalidateし、receipt確認のため同じ`requestId` |
+| `CANDIDATE_ALREADY_CONSUMED` | retry / fallback | 同じpayloadを最大1回validateし、receipt確認のため同じ`requestId`。再発はJSON |
 | `IMPORT_ABORTED`、`IMPORT_FAILED` | retry / fallback | 結果不明なら同じ`requestId`で最大1回。再失敗はJSON |
 | `VALIDATION_ABORTED`、`VALIDATION_FAILED` | retry / fallback | 同じページとpayloadで最大1回。再失敗はJSON |
 | `PAYLOAD_HASH_MISMATCH` | fatal for direct import | 自動再試行せず、payloadと論理操作の対応を確認 |
