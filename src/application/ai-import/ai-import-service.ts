@@ -45,6 +45,14 @@ function assertActive(signal: AbortSignal | undefined): void {
 }
 
 /**
+ * 中断後にReceipt作成やRepository保存が始まることを防ぐ。
+ * @param signal 呼出元の中断シグナル
+ */
+function assertImportActive(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) throw new AiImportError("IMPORT_ABORTED");
+}
+
+/**
  * 保存先へ依存しない事前検証サービスを組み立てる。
  * @param candidateStore ページ内で検証済み候補を保持するストア
  * @param schemaSha256 ビルドに同梱されたSchema正本のハッシュ
@@ -56,7 +64,10 @@ export function createAiImportService(
   schemaSha256: string,
   dependencies?: AiImportDependencies,
 ): AiImportService {
-  const pendingImports = new Map<string, Promise<AiImportResult>>();
+  const pendingImports = new Map<string, {
+    payloadSha256: string;
+    promise: Promise<AiImportResult>;
+  }>();
 
   /**
    * サイズ、Schema、画像を順に検証して候補を保持する。
@@ -150,9 +161,11 @@ export function createAiImportService(
   /**
    * 同じrequestIdの直列化後に、Receiptを候補より先に確認して保存する。
    * @param input 実行時検証済みの直接取込入力
+   * @param signal 保存開始前の中断通知
    * @returns 新規保存または過去の保存から回復した結果
    */
-  async function importCandidateOnce(input: ImportAiCandidateInput): Promise<AiImportResult> {
+  async function importCandidateOnce(input: ImportAiCandidateInput, signal?: AbortSignal): Promise<AiImportResult> {
+    assertImportActive(signal);
     if (!dependencies) throw new AiImportError("IMPORT_FAILED");
     if (!dependencies.isWriteConsentGranted()) throw new AiImportError("CONSENT_REQUIRED");
 
@@ -174,6 +187,7 @@ export function createAiImportService(
       } catch {
         throw new AiImportError("IMPORT_FAILED");
       }
+      assertImportActive(signal);
       if (saved) {
         let recovered;
         try {
@@ -192,6 +206,7 @@ export function createAiImportService(
       stalePending = true;
     }
 
+    assertImportActive(signal);
     let candidate;
     try {
       candidate = candidateStore.get(input.candidateToken, input.expectedPayloadSha256.toLowerCase());
@@ -203,6 +218,7 @@ export function createAiImportService(
       throw error;
     }
 
+    assertImportActive(signal);
     let pendingReceipt;
     try {
       pendingReceipt = dependencies.receiptStore.writePending({
@@ -215,6 +231,7 @@ export function createAiImportService(
       throw new AiImportError("IMPORT_FAILED");
     }
 
+    assertImportActive(signal);
     try {
       await dependencies.repository.create(candidate.item);
     } catch (error) {
@@ -239,9 +256,11 @@ export function createAiImportService(
   /**
    * 信頼しない入力を検証し、同時に届いた同一要求も一つの保存へまとめる。
    * @param input 候補トークン、要求ID、想定payloadハッシュ
+   * @param signal 保存開始前の中断通知
    * @returns 保存済みプリントへの参照情報
    */
-  async function importCandidate(input: unknown): Promise<AiImportResult> {
+  async function importCandidate(input: unknown, signal?: AbortSignal): Promise<AiImportResult> {
+    assertImportActive(signal);
     const parsedInput = ImportAiCandidateInputSchema.safeParse(input);
     if (!parsedInput.success) throw new AiImportError("INVALID_INPUT");
     const parsed = {
@@ -249,13 +268,18 @@ export function createAiImportService(
       expectedPayloadSha256: parsedInput.data.expectedPayloadSha256.toLowerCase(),
     };
     const current = pendingImports.get(parsed.requestId);
-    if (current) return current;
-    const execution = importCandidateOnce(parsed);
-    pendingImports.set(parsed.requestId, execution);
+    if (current) {
+      if (current.payloadSha256 !== parsed.expectedPayloadSha256) {
+        throw new AiImportError("PAYLOAD_HASH_MISMATCH");
+      }
+      return current.promise;
+    }
+    const execution = importCandidateOnce(parsed, signal);
+    pendingImports.set(parsed.requestId, { payloadSha256: parsed.expectedPayloadSha256, promise: execution });
     try {
       return await execution;
     } finally {
-      if (pendingImports.get(parsed.requestId) === execution) pendingImports.delete(parsed.requestId);
+      if (pendingImports.get(parsed.requestId)?.promise === execution) pendingImports.delete(parsed.requestId);
     }
   }
 

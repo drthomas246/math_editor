@@ -67,7 +67,7 @@ async function importsDirectlyAndRecovers({ page }) {
     return tools.get("math_editor_validate_import")!.execute({
       payloadText: input.payloadText,
       skillSchemaSha256: input.schemaSha256,
-    });
+    }, { signal: new AbortController().signal });
   }
   const candidate = await page.evaluate(validateCandidate, { payloadText, schemaSha256: APP_SCHEMA_SHA256 }) as {
     candidateToken: string;
@@ -89,7 +89,7 @@ async function importsDirectlyAndRecovers({ page }) {
     const tools = (window as unknown as TestWindow).mathEditorTestTools;
     const modulePath = "/src/infrastructure/indexeddb/database.ts";
     const { database } = await import(modulePath);
-    const result = await tools.get("math_editor_import_worksheet")!.execute(input);
+    const result = await tools.get("math_editor_import_worksheet")!.execute(input, { signal: new AbortController().signal });
     return { result, count: await database.worksheets.count() };
   }
   const denied = await page.evaluate(importCandidate, importInput);

@@ -74,10 +74,10 @@ async function validatesInBrowser({ page }) {
     const id = crypto.randomUUID();
     data.file.worksheet.problems[0]!.contents.push({ id: crypto.randomUUID(), type: "image", assetId: id, alt: "実画像", placement: "block", widthPercent: 50 });
     data.file.assets.push({ id, worksheetId: data.file.worksheet.id, mimeType: "image/png", dataBase64: canvas.toDataURL("image/png").split(",")[1]!, width: 2, height: 2, createdAt: data.file.worksheet.createdAt });
-    const capabilities = await tools.get("math_editor_get_capabilities")!.execute({});
-    const valid = await tools.get("math_editor_validate_import")!.execute({ payloadText: JSON.stringify(data.file), skillSchemaSha256: data.skillSchemaSha256 });
+    const capabilities = await tools.get("math_editor_get_capabilities")!.execute({}, { signal: new AbortController().signal });
+    const valid = await tools.get("math_editor_validate_import")!.execute({ payloadText: JSON.stringify(data.file), skillSchemaSha256: data.skillSchemaSha256 }, { signal: new AbortController().signal });
     data.file.assets[0]!.width = 3;
-    const invalid = await tools.get("math_editor_validate_import")!.execute({ payloadText: JSON.stringify(data.file), skillSchemaSha256: data.skillSchemaSha256 });
+    const invalid = await tools.get("math_editor_validate_import")!.execute({ payloadText: JSON.stringify(data.file), skillSchemaSha256: data.skillSchemaSha256 }, { signal: new AbortController().signal });
     const after = [await database.worksheets.count(), await database.assets.count()];
     return { capabilities, valid, invalid, before, after, names: [...tools.keys()] };
   }

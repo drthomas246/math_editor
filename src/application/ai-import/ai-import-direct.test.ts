@@ -229,8 +229,23 @@ function defineDirectImportSuite() {
     expect(events).toHaveLength(0);
   });
 
-  it("同時に届いた同一requestIdを一つのRepository保存へまとめる", /**
-   * 通信層の並行再試行でも二重作成しないことを確認する。
+  it("Abort済みの直接取込はReceipt作成とRepository保存を開始しない", /**
+   * WebMCPから渡された実行中断をApplication層の保存境界で確認する。
+   * @returns 中断時に副作用がないことの検証完了
+   */
+  async function abortsBeforePersistence() {
+    const service = createService();
+    const { input } = candidateFixture("request-aborted");
+    const controller = new AbortController();
+    controller.abort();
+    await expect(service.importCandidate(input, controller.signal)).rejects.toMatchObject({ code: "IMPORT_ABORTED" });
+    expect(repository.createCalls).toBe(0);
+    expect(receiptStore.read(input.requestId)).toBeNull();
+    expect(events).toHaveLength(0);
+  });
+
+  it("同時に届いた同一requestIdは同じhashだけをまとめ、異なるhashを拒否する", /**
+   * 通信層の並行再試行で二重作成とpayload取り違えを防ぐことを確認する。
    * @returns 並行要求の検証完了
    */
   async function serializesConcurrentRequest() {
@@ -255,6 +270,8 @@ function defineDirectImportSuite() {
     repository.create = delayedCreate;
     const first = service.importCandidate(input);
     const second = service.importCandidate(input);
+    const conflicting = service.importCandidate({ ...input, expectedPayloadSha256: "b".repeat(64) });
+    await expect(conflicting).rejects.toMatchObject({ code: "PAYLOAD_HASH_MISMATCH" });
     release?.();
     expect(await Promise.all([first, second])).toEqual([await first, await first]);
     expect(repository.createCalls).toBe(1);

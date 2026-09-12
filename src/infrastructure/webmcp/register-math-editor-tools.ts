@@ -90,16 +90,25 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
   /**
    * 検証済み候補をRepository経由で保存し、公開エラー以外の詳細を隠す。
    * @param input 候補トークン、requestId、検証時のpayloadハッシュ
+   * @param options ブラウザが渡す中断シグナル
    * @returns 保存結果または本文・内部例外を含まない失敗
    */
-  async function importWorksheet(input: unknown): Promise<unknown> {
-    if (controller.signal.aborted) {
-      return { success: false, error: toAiImportErrorDetail(new AiImportError("IMPORT_FAILED")) };
+  async function importWorksheet(input: unknown, options?: { signal?: AbortSignal }): Promise<unknown> {
+    const signals = [controller.signal];
+    if (options?.signal instanceof AbortSignal) signals.push(options.signal);
+    const execution = new AbortController();
+    /** 実行または登録の中断をApplication層へ伝える。 */
+    function abortExecution(): void { execution.abort(); }
+    for (const signal of signals) {
+      if (signal.aborted) execution.abort();
+      signal.addEventListener("abort", abortExecution, { once: true });
     }
     try {
-      return await service.importCandidate(input);
+      return await service.importCandidate(input, execution.signal);
     } catch (error) {
       return { success: false, error: toAiImportErrorDetail(error) };
+    } finally {
+      for (const signal of signals) signal.removeEventListener("abort", abortExecution);
     }
   }
 
@@ -123,7 +132,7 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
       name: "math_editor_import_worksheet",
       description: "Save a previously validated candidate as a new Math Editor worksheet. This writes to browser storage and requires explicit in-page user consent.",
       inputSchema: z.toJSONSchema(ImportAiCandidateInputSchema),
-      annotations: { readOnlyHint: false, untrustedContentHint: true },
+      annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true },
       execute: importWorksheet,
   });
 

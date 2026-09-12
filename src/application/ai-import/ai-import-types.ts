@@ -128,7 +128,8 @@ export interface AiImportService {
   /**
    * 検証済み候補を冪等に新規保存する。
    * @param input 候補トークン、要求ID、想定payloadハッシュ
+   * @param signal 保存開始前の中断を通知する任意のシグナル
    * @returns 保存したプリントへの参照情報
    */
-  importCandidate(input: unknown): Promise<AiImportResult>;
+  importCandidate(input: unknown, signal?: AbortSignal): Promise<AiImportResult>;
 }
