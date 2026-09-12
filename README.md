@@ -133,6 +133,8 @@ math-editor-textbook-import Skillを使って、添付した教科書PDFの
 
 v2.1のPhase 1として、portable Pluginの生成・検証とRuntime自己テストを追加しています。`npm run plugin:build`で`dist/math-editor-ai/`を生成し、`npm run plugin:verify`で正本との一致を検証できます。個人ローカルMarketplaceへの導入、実行環境の検査、図版の代替描画は[Phase 1自己テスト手順](docs/ai-plugin-phase1.md)を参照してください。
 
+Phase 4では、完成JSONをMath Editorの3つのWebMCP toolで検証・新規追加する配送フローをSkillへ統合しています。利用者のページ内Consent、同一`requestId`による再試行、candidate再検証、同一URL複数タブの`pageId`選択、WebMCP非対応時のJSONフォールバックを含みます。実装範囲と検証項目は[Phase 4実装記録](docs/ai-skill-delivery-phase4.md)を参照してください。
+
 ```text
 AI/skills/math-editor-textbook-import/
 ├─ SKILL.md               適用範囲、状態遷移、確認ゲート、実行手順

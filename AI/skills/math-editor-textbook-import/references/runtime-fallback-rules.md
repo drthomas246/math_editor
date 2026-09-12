@@ -32,4 +32,4 @@ Tier 2/3でも、元PDFからの描画、座標、cropRevision、Preview、MIME�
 
 検査不能は`RUNTIME_CAPABILITY_CHECK_FAILED`。ファイル読取/書込先を直すか実行環境を確保して再検査する。ValidatorにSchema driftがあればSkillパッケージを更新する。AIの目視だけで決定論的Validatorを置き換えない。
 
-配送するのは、明示確定したDraftから生成し、Validatorが成功した単一プリントJSON。Math Editor側の事前検証を行う場合は [webmcp-integration.md](webmcp-integration.md) の対象ページ解決と検証手順を使う。接続先が未解決ならURLを作らず、JSONファイルと既存インポート手順を示す。
+配送するのは、明示確定したDraftから生成し、Validatorが成功した単一プリントJSON。Math Editorへ配送するときは [webmcp-integration.md](webmcp-integration.md) の対象ページ解決、検証、許可済みdirect import、エラー別routingを使う。接続先が未解決、WebMCP非対応、互換性不一致、直接取込上限超過ならURLや不足能力を捏造せず、同じJSONファイルと既存インポート手順を示す。Runtime fallbackで生成した図版を含む場合も、payloadをWebMCP向けに再圧縮・削除せず、2 MiBを超えた時点でJSONへフォールバックする。

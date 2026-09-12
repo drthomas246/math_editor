@@ -12,6 +12,7 @@ const REQUIRED_SKILL_FILES = [
   "references/figure-cropping-rules.md", "references/validation-rules.md",
   "references/webmcp-integration.md",
   "scripts/resolve_math_editor_target.mjs",
+  "scripts/plan_webmcp_delivery.mjs",
   "scripts/check_runtime_capabilities.mjs", "scripts/crop_pdf_figure.py",
   "scripts/build_math_worksheet_file.mjs", "scripts/validate_math_worksheet.mjs",
   "schemas/math-worksheet.schema.json", "schemas/schema-manifest.json",
@@ -112,7 +113,7 @@ async function sourceFiles(root: string): Promise<Map<string, string>> {
     || manifest.$schema !== "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
     || manifest.name !== PLUGIN_NAME || !/^\d+\.\d+\.\d+$/u.test(manifest.version)
     || typeof manifest.description !== "string" || !manifest.description.trim()) {
-    throw new Error("Phase 1のportable Plugin manifestが不正です。");
+    throw new Error("portable Plugin manifestが不正です。");
   }
   const skillRoot = path.join(root, "AI/skills", SKILL_NAME);
   if (await realpath(skillRoot) !== skillRoot) throw new Error("Skill正本へのリンクは許可しません。");

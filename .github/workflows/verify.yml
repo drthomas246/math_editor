@@ -51,7 +51,7 @@ jobs:
       - name: Upload tested portable Plugin
         uses: actions/upload-artifact@v4
         with:
-          name: math-editor-ai-phase1
+          name: math-editor-ai-v2.1
           path: dist/math-editor-ai/
           include-hidden-files: false
           if-no-files-found: error

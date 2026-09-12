@@ -27,7 +27,7 @@ function installModelContext(): void {
 }
 
 /**
- * Phase 3の3ツールが利用可能になるまで待機する。
+ * 配送フローの3ツールが利用可能になるまで待機する。
  * @param page 実行中のブラウザーページ
  * @returns ツール登録待ちの完了
  */
@@ -56,6 +56,27 @@ async function importsDirectlyAndRecovers({ page }) {
   worksheet.header.title = worksheet.title;
   const payloadText = JSON.stringify(await createSingleBackup(worksheet, []));
   const requestId = "e2e-direct-import-request";
+
+  /**
+   * 配送前に対象ページの能力とConsent初期状態を取得する。
+   * @returns 互換性判定に使うMath Editor能力情報
+   */
+  async function readCapabilities() {
+    const tools = (window as unknown as TestWindow).mathEditorTestTools;
+    return tools.get("math_editor_get_capabilities")!.execute({}, { signal: new AbortController().signal });
+  }
+  const capabilities = await page.evaluate(readCapabilities);
+  expect(capabilities).toMatchObject({
+    app: "math-editor",
+    integrationVersion: 1,
+    worksheetFormat: "math-worksheet",
+    worksheetFileVersion: 1,
+    schemaVersion: 1,
+    schemaSha256: APP_SCHEMA_SHA256,
+    validationAvailable: true,
+    directImportAvailable: true,
+    writeConsentGranted: false,
+  });
 
   /**
    * 検証ツールで候補を作成する。
