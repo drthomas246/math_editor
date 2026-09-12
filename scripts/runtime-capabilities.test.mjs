@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { checkFilesystem, probeRuntime } from "../AI/skills/math-editor-textbook-import/scripts/check_runtime_capabilities.mjs";
+import { checkFilesystem, probeRuntime } from "../AI/skills/sujita-textbook-import/scripts/check_runtime_capabilities.mjs";
 
 /**
  * CIのインストール状態に依存しない検出用スタブを作る。
@@ -101,12 +101,12 @@ describe("Runtime能力検査", function runtimeTests() {
     expect(result.decision.errors).toContain("RUNTIME_CAPABILITY_CHECK_FAILED");
   });
   it("不正なCLI引数でもJSONを返す", function invalidCli() {
-    const result = spawnSync(process.execPath, ["AI/skills/math-editor-textbook-import/scripts/check_runtime_capabilities.mjs", "--unknown"], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, ["AI/skills/sujita-textbook-import/scripts/check_runtime_capabilities.mjs", "--unknown"], { encoding: "utf8" });
     expect(result.status).toBe(1);
     expect(JSON.parse(result.stdout).decision.errors).toEqual(["RUNTIME_CAPABILITY_CHECK_FAILED"]);
   });
   it("実際の入力を変更せず書込みを検査し一時物を残さない", async function actualFilesystem() {
-    const root = await mkdtemp(path.join(os.tmpdir(), "math-editor-runtime-test-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "sujita-runtime-test-"));
     try {
       const source = path.join(root, "source.pdf");
       await writeFile(source, "original-input");

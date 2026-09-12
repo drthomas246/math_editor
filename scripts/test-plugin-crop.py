@@ -37,14 +37,14 @@ def create_source(output: Path, rotation: int) -> None:
 def main() -> None:
     """指定した実Backendすべてで合成PDFを切り出し完成JSONまで検証する。"""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--plugin", default="dist/math-editor-ai")
+    parser.add_argument("--plugin", default="dist/sujita-ai")
     parser.add_argument("--backends", default="poppler,pypdfium2")
     parser.add_argument("--node", default="node")
     args = parser.parse_args()
-    skill = Path(args.plugin).resolve() / "skills" / "math-editor-textbook-import"
+    skill = Path(args.plugin).resolve() / "skills" / "sujita-textbook-import"
     fixture = Path(__file__).parent / "fixtures" / "ai-plugin" / "confirmed-draft.json"
     tested = []
-    with tempfile.TemporaryDirectory(prefix="math-editor-crop-test-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="sujita-crop-test-") as temporary:
         root = Path(temporary)
         for backend in args.backends.split(","):
             for native_rotation, rotation in [(0, 0), (90, 0), (90, 90)]:

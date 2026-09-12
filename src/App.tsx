@@ -31,7 +31,7 @@ export default function App() {
 function RequiredApiGate() {
     if (supportsRequiredApis())
         return <Outlet />;
-    return <main className="centered-state unsupported"><div className="brand-mark large">Σ</div><h1>このブラウザは対応していません</h1><p>最新版のChromeまたはEdgeを使用してください。</p></main>;
+    return <main className="centered-state unsupported"><img className="brand-mark large" src="/favicon.png" alt="" aria-hidden="true"/><h1>このブラウザは対応していません</h1><p>最新版のChromeまたはEdgeを使用してください。</p></main>;
 }
 /**
  * アプリの保存・画像処理・印刷に必須のブラウザーAPIが利用可能か判定する。

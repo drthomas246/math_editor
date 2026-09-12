@@ -30,8 +30,8 @@ export function ManualHeader(props: ManualHeaderProps) {
     });
     return (<header className="manual-header">
       <Link className="brand" to="/" aria-label="プリント一覧へ戻る">
-        <span className="brand-mark">Σ</span>
-        <span>数学プリント作成</span>
+        <img className="brand-mark" src="/favicon.png" alt="" aria-hidden="true"/>
+        <span>すうがく仕立て</span>
       </Link>
       <span className="manual-header-divider"/>
       <span className="manual-header-title"><BookOpen size={18}/>使い方</span>

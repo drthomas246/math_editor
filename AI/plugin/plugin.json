@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "math-editor-ai",
+  "name": "sujita-ai",
   "version": "2.1.0",
-  "description": "Convert authorized textbook PDF ranges into reviewed Math Editor worksheets, with consent-gated WebMCP delivery or validated JSON fallback."
+  "description": "Convert authorized textbook PDF ranges into reviewed worksheets for すうがく仕立て, with consent-gated WebMCP delivery or validated JSON fallback."
 }

@@ -376,9 +376,9 @@ async function readPdfPerformanceMeasures(page: Page): Promise<{
             return performance.getEntriesByName(name, "measure").at(-1)?.duration ?? null;
         });
         return {
-            fonts: duration("math-editor.pdf.fonts"),
-            rasterization: duration("math-editor.pdf.rasterization"),
-            assembly: duration("math-editor.pdf.assembly"),
+            fonts: duration("sujita.pdf.fonts"),
+            rasterization: duration("sujita.pdf.rasterization"),
+            assembly: duration("sujita.pdf.assembly"),
         };
     }));
 }

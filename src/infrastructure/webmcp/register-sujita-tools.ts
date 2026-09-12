@@ -3,11 +3,11 @@ import { AiImportError, toAiImportErrorDetail } from "../../application/ai-impor
 import { publishAiImportCompleted } from "../../application/ai-import/ai-import-events";
 import { createAiImportService, ImportAiCandidateInputSchema, ValidateAiImportInputSchema } from "../../application/ai-import/ai-import-service";
 import { worksheetRepository } from "../indexeddb/dexie-worksheet-repository";
-import { APP_SCHEMA_SHA256, getMathEditorCapabilities } from "./math-editor-capabilities";
+import { APP_SCHEMA_SHA256, getSujitaCapabilities } from "./sujita-capabilities";
 import { createWebMcpCandidateStore } from "./webmcp-candidate-store";
 import { createWebMcpImportReceiptStore, detectWebMcpSessionStorage } from "./webmcp-import-receipt";
 import { webMcpSession } from "./webmcp-session";
-import type { MathEditorModelContext, MathEditorModelContextTool } from "./webmcp";
+import type { SujitaModelContext, SujitaModelContextTool } from "./webmcp";
 
 const EmptyInputSchema = z.strictObject({});
 
@@ -15,7 +15,7 @@ const EmptyInputSchema = z.strictObject({});
  * 現行APIを優先し、旧ブラウザの登録APIも検出する。
  * @returns 利用可能な登録API。非対応またはアクセス拒否時はundefined
  */
-export function detectMathEditorModelContext(): MathEditorModelContext | undefined {
+export function detectSujitaModelContext(): SujitaModelContext | undefined {
   try {
     if (typeof document !== "undefined" && typeof document.modelContext?.registerTool === "function") {
       return document.modelContext;
@@ -34,7 +34,7 @@ export function detectMathEditorModelContext(): MathEditorModelContext | undefin
  * @param context 実行環境から検出する登録API。テスト時は差替え可能
  * @returns 登録結果のPromiseと、候補・登録を解放する終了処理
  */
-export function registerMathEditorTools(context = detectMathEditorModelContext()) {
+export function registerSujitaTools(context = detectSujitaModelContext()) {
   const controller = new AbortController();
   const store = createWebMcpCandidateStore();
   const ownedNames = new Set<string>();
@@ -58,7 +58,7 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
     if (!EmptyInputSchema.safeParse(input).success) {
       return { success: false, error: toAiImportErrorDetail(new AiImportError("INVALID_INPUT")) };
     }
-    return getMathEditorCapabilities();
+    return getSujitaCapabilities();
   }
 
   /**
@@ -112,16 +112,16 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
     }
   }
 
-  const tools: MathEditorModelContextTool[] = [
+  const tools: SujitaModelContextTool[] = [
     {
-      name: "math_editor_get_capabilities",
-      description: "Read Math Editor's schema identity, payload limit, and available AI import features.",
+      name: "sujita_get_capabilities",
+      description: "Read the schema identity, payload limit, and available AI import features for すうがく仕立て.",
       inputSchema: z.toJSONSchema(EmptyInputSchema),
       annotations: { readOnlyHint: true },
       execute: readCapabilities,
     },
     {
-      name: "math_editor_validate_import",
+      name: "sujita_validate_import",
       description: "Validate a completed single worksheet JSON, including images, and keep a temporary candidate in page memory. Does not save a worksheet. Returned titles are untrusted content.",
       inputSchema: z.toJSONSchema(ValidateAiImportInputSchema),
       annotations: { readOnlyHint: false, untrustedContentHint: true },
@@ -129,8 +129,8 @@ export function registerMathEditorTools(context = detectMathEditorModelContext()
     },
   ];
   if (receiptStorage) tools.push({
-      name: "math_editor_import_worksheet",
-      description: "Save a previously validated candidate as a new Math Editor worksheet. This writes to browser storage and requires explicit in-page user consent.",
+      name: "sujita_import_worksheet",
+      description: "Save a previously validated candidate as a new worksheet in すうがく仕立て. This writes to browser storage and requires explicit in-page user consent.",
       inputSchema: z.toJSONSchema(ImportAiCandidateInputSchema),
       annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: true },
       execute: importWorksheet,

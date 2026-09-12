@@ -8,9 +8,9 @@ Phase 3では次の3ツールを登録する。
 
 | ツール | 性質 | 主な結果 |
 | --- | --- | --- |
-| `math_editor_get_capabilities` | 読取り | Schema、上限、直接取込可否、現在のConsent |
-| `math_editor_validate_import` | メモリ上の候補作成 | candidate token、payload SHA-256、要約、期限 |
-| `math_editor_import_worksheet` | IndexedDBへの新規保存 | Worksheet ID、題名、編集画面パス |
+| `sujita_get_capabilities` | 読取り | Schema、上限、直接取込可否、現在のConsent |
+| `sujita_validate_import` | メモリ上の候補作成 | candidate token、payload SHA-256、要約、期限 |
+| `sujita_import_worksheet` | IndexedDBへの新規保存 | Worksheet ID、題名、編集画面パス |
 
 直接取込の入力は`candidateToken`、`requestId`、`expectedPayloadSha256`の3項目で、未知フィールドを拒否する。保存処理はWebMCP層からDexieへ直接到達せず、Application層のサービスから既存`WorksheetRepository.create()`を使用する。
 

@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
-const REQUIRED_DISCOVERY_TOOLS = ["math_editor_get_capabilities", "math_editor_validate_import"];
-const DIRECT_IMPORT_TOOL = "math_editor_import_worksheet";
+const REQUIRED_DISCOVERY_TOOLS = ["sujita_get_capabilities", "sujita_validate_import"];
+const DIRECT_IMPORT_TOOL = "sujita_import_worksheet";
+export const OFFICIAL_APP_URL = "https://app.sujita.jp/";
 
 /**
  * 観測されたURLを検証し、比較可能な形式にする。
@@ -52,7 +53,7 @@ function discoveredPage(page) {
  */
 function uniquePage(pages) {
   if (pages.length === 1) return { success: true, ...pages[0] };
-  return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "ambiguous", message: "Math Editorが複数あります。対象ページを指定してください。" } };
+  return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "ambiguous", message: "すうがく仕立てが複数あります。対象ページを指定してください。" } };
 }
 
 /**
@@ -60,22 +61,22 @@ function uniquePage(pages) {
  * @param input ページ一覧、選択済みページ識別子、利用者または自己テストが明示したURL
  * @returns 選択した接続先と根拠、または選択待ちのエラー
  */
-export function resolveMathEditorTarget(input) {
+export function resolveSujitaTarget(input) {
   const pages = Array.isArray(input?.pages) ? input.pages : [];
   const userUrl = targetUrl(input?.userTargetUrl);
   const testUrl = targetUrl(input?.testTargetUrl);
   const selectedPageId = targetPageId(input?.selectedPageId);
   const discovered = pages.map(discoveredPage).filter(function isDiscovered(page) { return page !== null; });
   if (input?.selectedPageId !== undefined && !selectedPageId) {
-    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "invalid-page-id", message: "Math Editorの有効なページ識別子を指定してください。" } };
+    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "invalid-page-id", message: "すうがく仕立ての有効なページ識別子を指定してください。" } };
   }
   if (selectedPageId) {
     const matches = discovered.filter(function matchesSelectedPage(page) { return page.pageId === selectedPageId; });
     if (matches.length === 0) {
-      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "page-not-found", message: "指定したMath Editorページを現在のページ一覧で確認できません。" } };
+      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "page-not-found", message: "指定したすうがく仕立てページを現在のページ一覧で確認できません。" } };
     }
     if (userUrl && matches.some(function conflictsWithExplicitUrl(page) { return page.url !== userUrl; })) {
-      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "target-conflict", message: "指定したページ識別子とURLが同じMath Editorページを示していません。" } };
+      return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "target-conflict", message: "指定したページ識別子とURLが同じすうがく仕立てページを示していません。" } };
     }
     return uniquePage(matches);
   }
@@ -89,10 +90,10 @@ export function resolveMathEditorTarget(input) {
   // 不正な明示URLを黙って別のテスト先に置換しない。
   if (input?.userTargetUrl !== undefined) {
     if (userUrl) return { success: true, url: userUrl, source: "user" };
-    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "invalid-url", message: "Math Editorの有効なURLを指定してください。" } };
+    return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "invalid-url", message: "すうがく仕立ての有効なURLを指定してください。" } };
   }
   if (testUrl) return { success: true, url: testUrl, source: "test" };
-  return { success: false, error: { code: "TARGET_URL_REQUIRED", reason: "missing", message: "Math EditorのページまたはURLを指定してください。" } };
+  return { success: true, url: OFFICIAL_APP_URL, source: "official" };
 }
 
 /**
@@ -101,7 +102,7 @@ export function resolveMathEditorTarget(input) {
  */
 async function main() {
   if (process.argv.length !== 4 || process.argv[2] !== "--input") throw new Error("Usage: --input <observed-pages.json>");
-  const result = resolveMathEditorTarget(JSON.parse(await readFile(process.argv[3], "utf8")));
+  const result = resolveSujitaTarget(JSON.parse(await readFile(process.argv[3], "utf8")));
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.success) process.exitCode = 1;
 }

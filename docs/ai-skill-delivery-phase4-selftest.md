@@ -7,7 +7,7 @@
 - ChatGPT環境: ChatGPT Web、Plus、Chat mode、Microsoft Edge
 - portable Plugin version: `2.1.0`
 - ローカルインストール版: `2.1.0+codex.20260912093415`
-- Math Editor URL種別: localhost（`http://127.0.0.1:5173/`。秘密情報なし）
+- すうがく仕立て URL種別: localhost（`http://127.0.0.1:5173/`。秘密情報なし）
 - GitHub Actions: Verify run `34679344031` PASS
 - 総合判定: **BLOCKED**。実ChatGPTホストがローカルPluginとWebMCP Site toolsを発見できないため、Issue #37の完了条件6は未達のままとする。
 
@@ -17,10 +17,10 @@
 |---|---|---|
 | 最終portable Pluginをbuild / verify | PASS | 22ファイルを再生成し、正本との全バイト一致を確認 |
 | ローカルPluginをcachebuster付きで再インストール | PASS | personal marketplaceから`2.1.0+codex.20260912093415`をインストール |
-| Phase 4配送ファイルをインストール先で確認 | PASS | `webmcp-integration.md`、`plan_webmcp_delivery.mjs`、`resolve_math_editor_target.mjs`を確認 |
+| Phase 4配送ファイルをインストール先で確認 | PASS | `webmcp-integration.md`、`plan_webmcp_delivery.mjs`、`resolve_sujita_target.mjs`を確認 |
 | ChatGPTで新規会話を開く | PASS | Edge上のChatGPT Webで新規会話を開始 |
-| `math-editor-textbook-import` Skillを選択 | BLOCKED | ChatGPT Webのインストール済みPluginにMath Editor AIがなく、Skill一覧も「まだスキルがありません」。`@math-editor`でもSkill候補が出ない |
-| Math Editorを実ブラウザで開く | PASS | localhostの一覧画面をEdgeで表示 |
+| `sujita-textbook-import` Skillを選択 | BLOCKED | ChatGPT Webのインストール済みPluginにすうがく仕立て AIがなく、Skill一覧も「まだスキルがありません」。`@sujita`でもSkill候補が出ない |
+| すうがく仕立てを実ブラウザで開く | PASS | localhostの一覧画面をEdgeで表示 |
 | WebMCP Site toolsを発見 | BLOCKED | 実ページで`document.modelContext`が未注入。ブラウザホストが公開したtab capabilityにもSite toolsがない |
 | capabilities取得 | NOT RUN | Site tools未発見のため |
 | validate成功 | NOT RUN | Site tools未発見のため |
@@ -51,6 +51,6 @@ plannerはWebMCP未提供、import tool発見結果が`true`以外、Schema不�
 ## 既知の制限と再テスト条件
 
 - ローカルPluginはCodex側へ正常にインストールされたが、今回利用可能だったChatGPT Webホストからは発見できなかった。
-- localhostのMath Editorには通常のEdgeタブだけでは`document.modelContext`が注入されない。WebMCP対応ホストからページを開く必要がある。
+- localhostのすうがく仕立てには通常のEdgeタブだけでは`document.modelContext`が注入されない。WebMCP対応ホストからページを開く必要がある。
 - 実ホストでPluginとSite toolsの両方が発見できる環境が利用可能になったら、本書の`NOT RUN`項目を順番に実施してPASSへ更新する。
 - 実ホスト確認が完了するまではIssue #37を閉じず、Phase 4完了としてmasterへマージしない。

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AiImportReceiptStore, ImportReceipt } from "../../application/ai-import/ai-import-types";
 
-const RECEIPT_KEY_PREFIX = "math-editor:webmcp-import:";
+const RECEIPT_KEY_PREFIX = "sujita:webmcp-import:";
 const ImportReceiptSchema = z.strictObject({
   requestId: z.string().min(1).max(256),
   payloadSha256: z.string().regex(/^[a-f0-9]{64}$/u),
@@ -18,7 +18,7 @@ const ImportReceiptSchema = z.strictObject({
  */
 export function detectWebMcpSessionStorage(): Storage | undefined {
   if (typeof window === "undefined") return undefined;
-  const probeKey = "math-editor:webmcp-storage-probe";
+  const probeKey = "sujita:webmcp-storage-probe";
   try {
     const storage = window.sessionStorage;
     const previous = storage.getItem(probeKey);

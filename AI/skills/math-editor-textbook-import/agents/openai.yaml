@@ -1,6 +1,0 @@
-interface:
-  display_name: "Math Editor 教科書取込"
-  short_description: "教科書PDFの指定範囲を確認後にMath Editorへ配送"
-  default_prompt: "Use $math-editor-textbook-import to convert a textbook PDF range into a reviewed Math Editor worksheet and deliver it through consent-gated WebMCP when available, with a validated JSON fallback."
-policy:
-  allow_implicit_invocation: true

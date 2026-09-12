@@ -325,8 +325,8 @@ export function WorksheetListScreen() {
     function handleClick19() {
         return navigate("/");
     })} aria-label="プリント一覧">
-          <span className="brand-mark">Σ</span>
-          <span>数学プリント作成</span>
+          <img className="brand-mark" src="/favicon.png" alt="" aria-hidden="true"/>
+          <span>すうがく仕立て</span>
         </button>
         <div className="header-actions"><AiIntegrationStatus/><ManualContextLink topic="overview"><BookOpen size={16}/>使い方</ManualContextLink><button className="secondary-button" onClick={(/**
      * 「設定・バックアップ」ボタンからクリック操作を受け、対応する編集状態と画面表示を更新する。

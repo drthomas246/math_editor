@@ -1,6 +1,6 @@
 # AiWorksheetDraft
 
-Draftは認識・確認用の内部形式であり、Math Editorへインポートせず、最終`worksheet`にも埋め込まない。
+Draftは認識・確認用の内部形式であり、すうがく仕立てへインポートせず、最終`worksheet`にも埋め込まない。
 
 ## 型
 

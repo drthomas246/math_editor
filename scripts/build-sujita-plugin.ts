@@ -1,4 +1,4 @@
-import { buildPlugin } from "./math-editor-plugin";
+import { buildPlugin } from "./sujita-plugin";
 
 try {
   const result = await buildPlugin();

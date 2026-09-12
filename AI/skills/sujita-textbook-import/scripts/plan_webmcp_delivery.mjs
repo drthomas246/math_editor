@@ -46,7 +46,7 @@ function retryAttempts(input, name) {
 }
 
 /**
- * Math Editorの能力情報と完成payloadから直接取込の開始可否を判定する。
+ * すうがく仕立ての能力情報と完成payloadから直接取込の開始可否を判定する。
  * @param input 能力情報、Skill Schemaハッシュ、payloadバイト数、ツール発見結果
  * @returns 事前検証またはJSONフォールバックの判断
  */
@@ -58,7 +58,7 @@ export function planCapabilities(input) {
     || !Number.isSafeInteger(payloadBytes) || payloadBytes < 0) {
     return stopDirectImport("INVALID_DELIVERY_STATE");
   }
-  if (capabilities.app !== "math-editor" || capabilities.integrationVersion !== 1
+  if (capabilities.app !== "sujita" || capabilities.integrationVersion !== 1
     || capabilities.worksheetFormat !== "math-worksheet" || capabilities.worksheetFileVersion !== 1
     || capabilities.schemaVersion !== 1 || capabilities.validationAvailable !== true) {
     return manualImport("WEBMCP_INCOMPATIBLE");
@@ -78,7 +78,7 @@ export function planCapabilities(input) {
 }
 
 /**
- * Math Editor側の事前検証結果を、直接取込または安全な復旧判断へ変換する。
+ * すうがく仕立て側の事前検証結果を、直接取込または安全な復旧判断へ変換する。
  * @param input 検証応答と送信した完成payloadのSHA-256
  * @returns import入力に使う候補情報、再試行、修正、停止の判断
  */
@@ -118,7 +118,7 @@ export function planValidation(input) {
 
 /**
  * 直接取込の結果を、receipt冪等性を壊さない次の操作へ分類する。
- * @param result Math Editorのimport toolから受け取った応答
+ * @param result すうがく仕立てのimport toolから受け取った応答
  * @param state 再検証とimport再試行の回数を含む配送状態
  * @returns 完了、利用者操作待ち、再検証、再試行、修正、停止の判断
  */
