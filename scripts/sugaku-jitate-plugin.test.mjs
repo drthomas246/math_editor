@@ -3,19 +3,19 @@ import { cp, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "nod
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { buildPlugin, listPackageFiles, PROJECT_ROOT, SKILL_NAME, verifyPlugin } from "./math-editor-plugin";
+import { buildPlugin, listPackageFiles, PROJECT_ROOT, SKILL_NAME, verifyPlugin } from "./sugaku-jitate-plugin";
 
 let root;
 let output;
 beforeEach(async function createIsolatedSource() {
-  root = await mkdtemp(path.join(os.tmpdir(), "math-editor-plugin-test-"));
+  root = await mkdtemp(path.join(os.tmpdir(), "sugaku-jitate-plugin-test-"));
   await cp(path.join(PROJECT_ROOT, "AI"), path.join(root, "AI"), { recursive: true });
   await cp(path.join(PROJECT_ROOT, "schemas"), path.join(root, "schemas"), { recursive: true });
-  output = path.join(root, "dist/math-editor-ai");
+  output = path.join(root, "dist/sugaku-jitate-ai");
 });
 afterEach(async function removeIsolatedSource() {
   // mkdtempで作った専用ディレクトリ以外は削除しない。
-  if (root && path.dirname(root) === os.tmpdir() && path.basename(root).startsWith("math-editor-plugin-test-")) {
+  if (root && path.dirname(root) === os.tmpdir() && path.basename(root).startsWith("sugaku-jitate-plugin-test-")) {
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -66,7 +66,7 @@ describe("portable Plugin配布物", function packageTests() {
     await writeFile(path.join(root, "AI/skills", SKILL_NAME, "references/private.md"), `sk-proj-${"a".repeat(40)}`);
     await expect(buildPlugin(root)).rejects.toThrow("秘密情報");
   });
-  it("本番の代わりに固定されたlocalhostを配布しない", async function hardcodedTarget() {
+  it("正式URLの代わりに固定されたlocalhostを配布しない", async function hardcodedTarget() {
     await writeFile(path.join(root, "AI/skills", SKILL_NAME, "references/target.md"), "http://localhost:5173");
     await expect(buildPlugin(root)).rejects.toThrow("接続URL");
   });

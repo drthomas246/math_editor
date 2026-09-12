@@ -1,22 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createSingleBackup } from "../src/application/backup/backup";
 import { createWorksheet } from "../src/domain/worksheet/worksheet.defaults";
-import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/math-editor-capabilities";
-import type { MathEditorModelContextTool } from "../src/infrastructure/webmcp/webmcp";
+import { APP_SCHEMA_SHA256 } from "../src/infrastructure/webmcp/sugaku-jitate-capabilities";
+import type { SugakuJitateModelContextTool } from "../src/infrastructure/webmcp/webmcp";
 
-type TestWindow = Window & { mathEditorTestTools: Map<string, MathEditorModelContextTool> };
+type TestWindow = Window & { sugakuJitateTestTools: Map<string, SugakuJitateModelContextTool> };
 
 /** WebMCP登録APIを再現し、登録ツールをブラウザー内テストから呼べるようにする。 */
 function installModelContext(): void {
-  const tools = new Map<string, MathEditorModelContextTool>();
-  (window as unknown as TestWindow).mathEditorTestTools = tools;
+  const tools = new Map<string, SugakuJitateModelContextTool>();
+  (window as unknown as TestWindow).sugakuJitateTestTools = tools;
   /**
-   * Math Editorから公開されたツールを保持する。
+   * すうがく仕立てから公開されたツールを保持する。
    * @param tool 登録するWebMCPツール
    * @param options ページ終了時の登録解除シグナル
    * @returns 登録完了時に解決するPromise
    */
-  async function registerTool(tool: MathEditorModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
+  async function registerTool(tool: SugakuJitateModelContextTool, options?: { signal: AbortSignal }): Promise<void> {
     tools.set(tool.name, tool);
     /** ページ終了時に対象ツールを登録一覧から取り除く。 */
     function unregister(): void { tools.delete(tool.name); }
@@ -37,7 +37,7 @@ async function waitForTools(page: Page): Promise<void> {
    * @returns 3ツールすべてが登録されていればtrue
    */
   function hasAllTools(): boolean {
-    return (window as unknown as TestWindow).mathEditorTestTools.size === 3;
+    return (window as unknown as TestWindow).sugakuJitateTestTools.size === 3;
   }
   await page.waitForFunction(hasAllTools);
 }
@@ -59,15 +59,15 @@ async function importsDirectlyAndRecovers({ page }) {
 
   /**
    * 配送前に対象ページの能力とConsent初期状態を取得する。
-   * @returns 互換性判定に使うMath Editor能力情報
+   * @returns 互換性判定に使うすうがく仕立て能力情報
    */
   async function readCapabilities() {
-    const tools = (window as unknown as TestWindow).mathEditorTestTools;
-    return tools.get("math_editor_get_capabilities")!.execute({}, { signal: new AbortController().signal });
+    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    return tools.get("sujita_get_capabilities")!.execute({}, { signal: new AbortController().signal });
   }
   const capabilities = await page.evaluate(readCapabilities);
   expect(capabilities).toMatchObject({
-    app: "math-editor",
+    app: "sujita",
     integrationVersion: 1,
     worksheetFormat: "math-worksheet",
     worksheetFileVersion: 1,
@@ -84,8 +84,8 @@ async function importsDirectlyAndRecovers({ page }) {
    * @returns 検証済み候補の要約
    */
   async function validateCandidate(input: { payloadText: string; schemaSha256: string }) {
-    const tools = (window as unknown as TestWindow).mathEditorTestTools;
-    return tools.get("math_editor_validate_import")!.execute({
+    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
+    return tools.get("sujita_validate_import")!.execute({
       payloadText: input.payloadText,
       skillSchemaSha256: input.schemaSha256,
     }, { signal: new AbortController().signal });
@@ -107,10 +107,10 @@ async function importsDirectlyAndRecovers({ page }) {
    * @returns ツール結果とIndexedDBのプリント件数
    */
   async function importCandidate(input: typeof importInput) {
-    const tools = (window as unknown as TestWindow).mathEditorTestTools;
+    const tools = (window as unknown as TestWindow).sugakuJitateTestTools;
     const modulePath = "/src/infrastructure/indexeddb/database.ts";
     const { database } = await import(modulePath);
-    const result = await tools.get("math_editor_import_worksheet")!.execute(input, { signal: new AbortController().signal });
+    const result = await tools.get("sujita_import_worksheet")!.execute(input, { signal: new AbortController().signal });
     return { result, count: await database.worksheets.count() };
   }
   const denied = await page.evaluate(importCandidate, importInput);

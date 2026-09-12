@@ -1,30 +1,31 @@
-# 数学プリント作成ソフト 追加AI要件定義書
+# すうがく仕立て 追加AI要件定義書
 
 ## 1. 文書情報
 
 | 項目 | 内容 |
 |---|---|
-| 文書名 | 数学プリント作成ソフト 追加AI要件定義書 |
-| 文書版 | 2.1 |
-| 基準日 | 2026-09-11 |
+| 文書名 | すうがく仕立て 追加AI要件定義書 |
+| 文書版 | 2.2 |
+| 基準日 | 2026-09-13 |
 | 対象システム | `drthomas246/math_editor` |
 | 基準ブランチ | `master` |
 | 基準コミット | `1ef632ad20d24dbb1e12e0bf022ecc1d6168837d` |
 | 対象 | 中学校数学を中心とする授業プリント作成 |
-| AI実行方式 | 利用者自身のChatGPT上で実行するMath Editor Skill |
+| AI実行方式 | 利用者自身のChatGPT上で実行するすうがく仕立て Skill |
 | 配布方式 | portable Plugin |
-| Math Editor連携方式 | WebMCP Site tools |
+| すうがく仕立て連携方式 | WebMCP Site tools |
+| 正式URL | `https://app.sujita.jp/` |
 | フォールバック | `math-worksheet` 単一プリントJSON |
 | OpenAI API | 使用しない |
 | APIキー | 使用しない |
 | 永続データ正本 | `src/domain/worksheet/worksheet.schema.ts` |
 | 生成意味論の正本 | `src/application/backup/backup.ts` |
-| Math Editor保存先 | ブラウザIndexedDB |
-| 教科書PDF保存 | Math Editorへ永続保存しない |
+| すうがく仕立て保存先 | ブラウザIndexedDB |
+| 教科書PDF保存 | すうがく仕立てへ永続保存しない |
 
-本書は、既存Math Editorの教科書PDF取込Skillをportable Pluginとして配布し、WebMCPに対応したMath Editorと直接連携させるための要件を定義する。
+本書は、既存すうがく仕立ての教科書PDF取込Skillをportable Pluginとして配布し、WebMCPに対応したすうがく仕立てと直接連携させるための要件を定義する。
 
-従来の「ChatGPTでJSONを生成し、利用者が手動でMath Editorへインポートする」方式を廃止するのではなく、WebMCPが利用可能な環境では直接インポートを主経路とし、利用できない環境では既存JSON方式へ安全にフォールバックする。
+従来の「ChatGPTでJSONを生成し、利用者が手動ですうがく仕立てへインポートする」方式を廃止するのではなく、WebMCPが利用可能な環境では直接インポートを主経路とし、利用できない環境では既存JSON方式へ安全にフォールバックする。
 
 ---
 
@@ -34,22 +35,23 @@
 |---|---|---|
 | 2.0 | 2026-09-11 | portable Plugin + WebMCP直接取込の基本構成を定義 |
 | 2.1 | 2026-09-11 | Skill実行環境フォールバック、WebMCP保存後のReact画面同期、receipt先行の冪等性、未確定公開URLの扱い、個人ローカルMarketplaceでのPlugin利用・テスト範囲を確定 |
+| 2.2 | 2026-09-13 | 正式URLを `https://app.sujita.jp/`、WebMCPツール名を `sujita_*` に確定 |
 
-### 1.2 v2.1で確定した判断
+### 1.2 現行版で確定した判断
 
 本版では次を正式な設計判断とする。
 
 1. Skill実行環境で既存のPDF図版切り出し依存関係が不足する場合、同等の結果を生成できる利用可能な代替経路を自動検出して使用する。代替経路も利用できず、採用問題に図版が必須である場合は完成処理を停止する。
 2. WebMCP直接インポート成功後は、Application層のAI Import Eventを発行し、Worksheet一覧画面がRepositoryを再読込して表示を同期する。
 3. WebMCPインポートの再試行では、candidate確認より先に`requestId`のImport Receiptを確認する。
-4. Math Editorの本番公開URLは未定とする。SkillおよびPluginへ本番URLを固定埋め込みしない。
+4. すうがく仕立ての正式URLは `https://app.sujita.jp/` とし、接続先を発見・明示できない場合の既定値として使用する。
 5. v2.1のPlugin配布対象は開発者本人によるローカルMarketplaceへの導入・テストまでとし、第三者配布・公開Plugin Directoryへの提出は対象外とする。
 
 ## 2. 背景
 
-Math Editorはブラウザ上で問題・例題・数式・画像・表・解答色・教師用解説を編集し、IndexedDBへローカル保存してPDF出力できる。
+すうがく仕立てはブラウザ上で問題・例題・数式・画像・表・解答色・教師用解説を編集し、IndexedDBへローカル保存してPDF出力できる。
 
-既存の `math-editor-textbook-import` Skill は、利用権限のある教科書PDFから指定範囲の問題・例題・数式・図版・教科書解答・解説を抽出し、利用者確認後にMath Editor単一プリントJSONを生成できる。
+既存の `sugaku-jitate-textbook-import` Skill は、利用権限のある教科書PDFから指定範囲の問題・例題・数式・図版・教科書解答・解説を抽出し、利用者確認後にすうがく仕立て単一プリントJSONを生成できる。
 
 一方、現行フローでは、AI処理完了後に次の手動操作が必要である。
 
@@ -60,7 +62,7 @@ JSONファイル生成
   ↓
 ダウンロード
   ↓
-Math Editorを開く
+すうがく仕立てを開く
   ↓
 インポート
   ↓
@@ -76,19 +78,19 @@ WebMCPを利用し、この中の「JSONファイルの手動受け渡し」を�
 本追加機能の目的は次のとおり。
 
 1. 既存Skillをportable Pluginとして再利用可能な形で配布する。
-2. ChatGPTからMath Editorへ検証済みプリントを直接追加できるようにする。
+2. ChatGPTからすうがく仕立てへ検証済みプリントを直接追加できるようにする。
 3. OpenAI API、APIキー、外部MCPサーバーを必要としない構成を維持する。
-4. Math Editorのローカル保存と既存Schemaを維持する。
+4. すうがく仕立てのローカル保存と既存Schemaを維持する。
 5. AI結果を利用者が明示確定した後だけ書き込む。
-6. WebMCPの提供状況に依存してMath Editor本体が使えなくなることを防ぐ。
+6. WebMCPの提供状況に依存してすうがく仕立て本体が使えなくなることを防ぐ。
 7. WebMCPが使えない場合は既存JSON方式へ戻れるようにする。
-8. Math Editor開発者が利用者のAI従量料金を負担する構造にしない。
+8. すうがく仕立て開発者が利用者のAI従量料金を負担する構造にしない。
 
 ---
 
 ## 4. 基本方針
 
-### 4.1 AIとMath Editorの責務を分離する
+### 4.1 AIとすうがく仕立ての責務を分離する
 
 AI処理はChatGPT側で行う。
 
@@ -107,7 +109,7 @@ ChatGPT側の責務:
 - Skill側Validator
 - WebMCP直接配送またはJSONフォールバックの選択
 
-Math Editor側の責務:
+すうがく仕立て側の責務:
 
 - WebMCP Site tools提供
 - 最終データ再検証
@@ -122,29 +124,29 @@ Math Editor側の責務:
 
 ### 4.2 OpenAI APIを使用しない
 
-Math Editor本体、Plugin、Skillの通常利用にOpenAI APIキーを必要としない。
+すうがく仕立て本体、Plugin、Skillの通常利用にOpenAI APIキーを必要としない。
 
-利用者またはMath Editor運営者へAPIキー入力を要求しない。
+利用者またはすうがく仕立て運営者へAPIキー入力を要求しない。
 
 ### 4.3 AI利用量
 
 AI推論は、Plugin/Skillを実行している利用者本人のChatGPT環境で行う。
 
-Math Editor開発者のAPIアカウントへ利用量を集約しない。
+すうがく仕立て開発者のAPIアカウントへ利用量を集約しない。
 
-ChatGPT側の利用可能量、モデル、クレジット、レート制限等はOpenAIの利用条件に従い、Math Editorが保証しない。
+ChatGPT側の利用可能量、モデル、クレジット、レート制限等はOpenAIの利用条件に従い、すうがく仕立てが保証しない。
 
 ### 4.4 Skillを正本として再利用する
 
 Plugin化のために教科書解析ロジックを別実装しない。
 
-`AI/skills/math-editor-textbook-import/` をSkillの正本とし、Plugin配布物へ機械的にコピーする。
+`AI/skills/sugaku-jitate-textbook-import/` をSkillの正本とし、Plugin配布物へ機械的にコピーする。
 
 ### 4.5 WebMCPは任意機能とする
 
-`document.modelContext` が存在しないブラウザでもMath Editor本体を正常動作させる。
+`document.modelContext` が存在しないブラウザでもすうがく仕立て本体を正常動作させる。
 
-WebMCPはMath Editorの必須ブラウザーAPIに含めない。
+WebMCPはすうがく仕立ての必須ブラウザーAPIに含めない。
 
 ### 4.6 Skill実行環境を事前検査する
 
@@ -173,11 +175,11 @@ WebMCP層はReact componentを直接操作しない。
 
 Repository保存成功後にApplication層からAI Import Eventを発行し、表示中のWorksheet一覧がイベントを購読してRepositoryを再読込する。
 
-### 4.8 本番URLを固定しない
+### 4.8 正式URL
 
-Math Editorの本番公開URLはv2.1時点では未定である。
+すうがく仕立ての正式URLは `https://app.sujita.jp/` とする。
 
-Plugin、Skill、WebMCPコードへ本番URLをハードコードしない。開発・自己テストでは、実行時に利用者またはテスト手順から与えられたMath Editor URLを使用する。
+PluginとSkillは、開いているSite tools、利用者が明示したURL、自己テストURLを優先し、いずれもない場合に正式URLを使用する。開発・自己テストではlocalhostを利用できるが、ポート番号は固定しない。
 
 ### 4.9 v2.1のPlugin利用範囲は個人テストとする
 
@@ -196,7 +198,7 @@ v2.1ではportable Pluginを作成し、開発者本人のローカルMarketplac
 - WebMCPの利用可能モデル・プラン・ワークスペース・ロールアウト状況はOpenAI側で変更されうる。
 - 2026-09-11時点ではWebMCP Site toolsに利用環境上の制限があるため、リリース時に公式仕様を再確認する。
 
-これらはMath Editorの永続仕様ではなく、外部プラットフォーム依存条件として扱う。
+これらはすうがく仕立ての永続仕様ではなく、外部プラットフォーム依存条件として扱う。
 
 ---
 
@@ -208,8 +210,8 @@ v2.1ではportable Pluginを作成し、開発者本人のローカルMarketplac
   ▼
 ChatGPT
   │
-  ├─ Math Editor portable Plugin
-  │    └─ math-editor-textbook-import Skill
+  ├─ すうがく仕立て portable Plugin
+  │    └─ sugaku-jitate-textbook-import Skill
   │          ├─ PDF解析
   │          ├─ Draft生成
   │          ├─ 確認
@@ -218,7 +220,7 @@ ChatGPT
   │
   │ WebMCP Site tools
   ▼
-Math Editor
+すうがく仕立て
   ├─ WebMCP登録層
   ├─ AI Import Application Service
   ├─ MathWorksheetFileSchema
@@ -241,16 +243,16 @@ Math Editor
 4. 開始ページ・開始問題を指定できる。
 5. 終了ページ・終了問題を指定できる。
 6. 例題・問題・小問を抽出できる。
-7. 数式をMath Editorで再編集可能なLaTeXへ変換できる。
+7. 数式をすうがく仕立てで再編集可能なLaTeXへ変換できる。
 8. 必要な図版を元PDFから切り出せる。
 9. 教科書掲載解答を取得できる。
 10. 教科書掲載解説を利用できる。
 11. 「普通に・ていねいに・端的に」を指定できる。
 12. 問題単位で採用・除外・修正できる。
 13. 現revisionを利用者が明示確定するまで完成データを書き込まない。
-14. WebMCP対応Math Editorの能力情報を取得できる。
-15. Skill側とMath Editor側のSchema互換性を確認できる。
-16. Math Editor側で完成候補を再検証できる。
+14. WebMCP対応すうがく仕立ての能力情報を取得できる。
+15. Skill側とすうがく仕立て側のSchema互換性を確認できる。
+16. すうがく仕立て側で完成候補を再検証できる。
 17. AI連携書込許可後だけIndexedDBへ新規プリントを保存できる。
 18. 既存プリントをAI連携で上書きしない。
 19. 保存後に新規Worksheet IDを返せる。
@@ -263,15 +265,15 @@ Math Editor
 - OpenAI API呼び出し
 - APIキー登録
 - 外部MCPサーバー
-- Math Editor独自AIバックエンド
-- ChatGPTアカウント認証のMath Editorへの組み込み
+- すうがく仕立て独自AIバックエンド
+- ChatGPTアカウント認証のすうがく仕立てへの組み込み
 - クラウド同期
 - 既存プリントのAIによる自動上書き
 - AIによるプリント削除
 - AIによるごみ箱操作
 - AIによる任意IndexedDB操作
 - AIによる任意JavaScript実行
-- 教科書PDFのMath Editor内永続保存
+- 教科書PDFのすうがく仕立て内永続保存
 - 市販教科書PDFのリポジトリ格納
 - AI画像による教科書図版の描き直し
 - 類題生成
@@ -293,28 +295,28 @@ Pluginはportable形式を採用する。
 配布候補物:
 
 ```text
-math-editor-ai/
+sugaku-jitate-ai/
 ├─ plugin.json
 └─ skills/
-   └─ math-editor-textbook-import/
+   └─ sugaku-jitate-textbook-import/
       └─ <Skill一式>
 ```
 
 ### 8.2 Plugin名
 
-推奨Plugin名を `math-editor-ai` とする。
+推奨Plugin名を `sugaku-jitate-ai` とする。
 
 理由:
 
 - 現在の教科書取込以外のSkillを将来追加できる。
-- Math Editor本体とAI連携パッケージを区別できる。
-- Skill名 `math-editor-textbook-import` を変更せずに済む。
+- すうがく仕立て本体とAI連携パッケージを区別できる。
+- Skill名 `sugaku-jitate-textbook-import` を変更せずに済む。
 
 ### 8.3 Skill同期
 
 Plugin内Skillは手作業で編集してはならない。
 
-ビルド時に `AI/skills/math-editor-textbook-import/` からコピーし、ファイル一覧とSHA-256を検証する。
+ビルド時に `AI/skills/sugaku-jitate-textbook-import/` からコピーし、ファイル一覧とSHA-256を検証する。
 
 ### 8.4 v2.1のインストール・配布範囲
 
@@ -369,8 +371,8 @@ Skill実行環境で読取不能な暗号化PDFは処理対象外とする。
 
 PDF解析前に利用者へ次を説明する。
 
-- PDFはMath EditorではなくChatGPT側で解析される。
-- Math Editorのローカル保存経路とは異なる。
+- PDFはすうがく仕立てではなくChatGPT側で解析される。
+- すうがく仕立てのローカル保存経路とは異なる。
 - 利用者自身がPDFの利用権限を確認する。
 - 完成WorksheetにPDF本体を保存しない。
 
@@ -457,7 +459,7 @@ PDF物理ページと紙面ページが異なる場合は両方を記録でき�
 - 元PDFから切り出す。
 - 不要な別問題や本文を含めない。
 - 修正時も元PDFから再切り出す。
-- 採用した図版だけをMath Editor Assetへ含める。
+- 採用した図版だけをすうがく仕立て Assetへ含める。
 - 図版候補は利用者が確認できるようにする。
 - WebMCP直接取込上限を超える場合はJSONファイルへフォールバックする。
 
@@ -538,7 +540,7 @@ AiWorksheetDraft
 └─ validationSummary
 ```
 
-DraftはChatGPT/Skill側の作業形式であり、Math Editorの永続データ正本にしない。
+DraftはChatGPT/Skill側の作業形式であり、すうがく仕立ての永続データ正本にしない。
 
 ---
 
@@ -546,7 +548,7 @@ DraftはChatGPT/Skill側の作業形式であり、Math Editorの永続データ
 
 ### 17.1 自動確定禁止
 
-PDF解析完了後に自動でMath Editorへ書き込まない。
+PDF解析完了後に自動ですうがく仕立てへ書き込まない。
 
 ### 17.2 確認内容
 
@@ -568,7 +570,7 @@ PDF解析完了後に自動でMath Editorへ書き込まない。
 
 ### 17.3 明示確定
 
-「確定」「この内容でMath Editorへ追加」「採用した問題で出力」等、完成データ生成意図が明確な発話のみ確定として扱う。
+「確定」「この内容ですうがく仕立てへ追加」「採用した問題で出力」等、完成データ生成意図が明確な発話のみ確定として扱う。
 
 「進めて」「確認した」「よいと思う」等だけでは確定扱いにしない。
 
@@ -600,17 +602,17 @@ PDF解析完了後に自動でMath Editorへ書き込まない。
 
 ## 19. WebMCP能力確認要件
 
-Math Editorは次のSite toolを提供する。
+すうがく仕立ては次のSite toolを提供する。
 
 ```text
-math_editor_get_capabilities
+sujita_get_capabilities
 ```
 
 最低限返す情報:
 
 ```json
 {
-  "app": "math-editor",
+  "app": "sugaku-jitate",
   "integrationVersion": 1,
   "worksheetFormat": "math-worksheet",
   "worksheetFileVersion": 1,
@@ -621,13 +623,13 @@ math_editor_get_capabilities
 }
 ```
 
-`maxDirectImportBytes = 2 MiB` はMath Editor初期実装で採用する保守的な設計値であり、OpenAI公式上限を意味しない。
+`maxDirectImportBytes = 2 MiB` はすうがく仕立て初期実装で採用する保守的な設計値であり、OpenAI公式上限を意味しない。
 
 ---
 
 ## 20. Schema互換性要件
 
-直接インポート前に、Skill同梱SchemaとMath Editor側Schemaの互換性を確認する。
+直接インポート前に、Skill同梱Schemaとすうがく仕立て側Schemaの互換性を確認する。
 
 初期版ではSHA-256完全一致を要求する。
 
@@ -649,7 +651,7 @@ AIが「たぶん互換」と判断して無視してはならない。
 Site tool:
 
 ```text
-math_editor_validate_import
+sujita_validate_import
 ```
 
 は、完成JSON相当の `payloadText` を受け取り、保存せずに検証する。
@@ -694,7 +696,7 @@ math_editor_validate_import
 
 ### 22.2 許可範囲
 
-許可は現在のMath Editorページセッションだけに限定する。
+許可は現在のすうがく仕立てページセッションだけに限定する。
 
 ### 22.3 永続化
 
@@ -706,7 +708,7 @@ WebMCP対応環境で、利用者が明示的にONへ変更できるUIを用意�
 
 ### 22.5 拒否
 
-許可OFF時に `math_editor_import_worksheet` が呼ばれた場合、データを書き込まず `CONSENT_REQUIRED` 相当を返す。
+許可OFF時に `sujita_import_worksheet` が呼ばれた場合、データを書き込まず `CONSENT_REQUIRED` 相当を返す。
 
 ---
 
@@ -715,7 +717,7 @@ WebMCP対応環境で、利用者が明示的にONへ変更できるUIを用意�
 Site tool:
 
 ```text
-math_editor_import_worksheet
+sujita_import_worksheet
 ```
 
 入力:
@@ -731,7 +733,7 @@ math_editor_import_worksheet
 3. candidate未失効
 4. SHA-256一致
 5. candidate未消費
-6. Math Editor件数上限内
+6. すうがく仕立て件数上限内
 7. Repository保存可能
 
 保存は必ず既存 `WorksheetRepository` を通す。
@@ -748,7 +750,7 @@ WebMCP登録コードからDexieテーブルへ直接 `put()` してはならな
 
 ### 24.1 確認順序
 
-`math_editor_import_worksheet` はcandidateより先にImport Receiptを確認する。
+`sujita_import_worksheet` はcandidateより先にImport Receiptを確認する。
 
 ```text
 requestId receipt確認
@@ -771,7 +773,7 @@ requestId receipt確認
 
 ページ再読込等によりcandidateが失われ、かつpending receiptのWorksheetがRepositoryにも存在しない場合は、`REVALIDATION_REQUIRED` を返してよい。
 
-Skillは同じ完成payloadを再度 `math_editor_validate_import` し、新しいcandidateを作った後、**同じrequestId** で再試行する。
+Skillは同じ完成payloadを再度 `sujita_validate_import` し、新しいcandidateを作った後、**同じrequestId** で再試行する。
 
 payload SHA-256が以前のreceiptと一致しない場合は再試行せず `PAYLOAD_HASH_MISMATCH` とする。
 
@@ -861,20 +863,20 @@ WebMCP層からReactの`setState`を直接呼び出してはならない。
 
 - WebMCP非対応
 - Site toolsが利用不可
-- Math Editorが開かれていない
+- すうがく仕立てが開かれていない
 - Schema hash不一致
 - WebMCP直接取込サイズ超過
 - WebMCP候補検証失敗
 - Site tool呼び出し失敗
 - 利用者が直接取込を望まない
 - OpenAI側のロールアウト・モデル・プラン等によりSite toolsを使えない
-- Math Editor側が安全に直接取込できないと判断した
+- すうがく仕立て側が安全に直接取込できないと判断した
 
 フォールバック時もSkill完成ゲートとValidatorを省略しない。
 
 ---
 
-## 27. Math Editor JSON要件
+## 27. すうがく仕立て JSON要件
 
 完成データの形式は既存単一プリント形式を維持する。
 
@@ -946,7 +948,7 @@ APIキーをソース、LocalStorage、sessionStorage、IndexedDB、生成JSON�
 
 ChatGPTから渡されるWebMCP入力を信頼済みデータとして扱わない。
 
-必ずサイズ・JSON・Schema・画像・構造制約をMath Editor側で再検証する。
+必ずサイズ・JSON・Schema・画像・構造制約をすうがく仕立て側で再検証する。
 
 ### 30.3 出力不信頼
 
@@ -954,7 +956,7 @@ Site toolの結果もAIが誤解する可能性を前提とし、成功・失敗
 
 ### 30.4 PDF
 
-PDF本体をMath EditorのIndexedDBへ保存しない。
+PDF本体をすうがく仕立てのIndexedDBへ保存しない。
 
 ### 30.5 既存データ保護
 
@@ -971,9 +973,9 @@ AI連携は新規プリント作成だけを許可する。
 | コード例 | 種別 | 内容 |
 |---|---|---|
 | `WEBMCP_UNAVAILABLE` | Warning | Site toolsを利用できない |
-| `SCHEMA_MISMATCH` | Warning | SkillとMath EditorのSchemaが一致しない |
+| `SCHEMA_MISMATCH` | Warning | Skillとすうがく仕立てのSchemaが一致しない |
 | `DIRECT_IMPORT_TOO_LARGE` | Warning | WebMCP直接取込上限超過 |
-| `CONSENT_REQUIRED` | Recoverable | Math Editor側書込許可が必要 |
+| `CONSENT_REQUIRED` | Recoverable | すうがく仕立て側書込許可が必要 |
 | `CANDIDATE_EXPIRED` | Recoverable | 検証候補が失効 |
 | `CANDIDATE_NOT_FOUND` | Recoverable | candidateTokenが無効 |
 | `PAYLOAD_HASH_MISMATCH` | Fatal for direct import | 検証時と取込時のデータが一致しない |
@@ -992,7 +994,7 @@ WebMCP経路だけの失敗であればJSONフォールバックを検討する�
 
 - WebMCP非対応時に通常起動性能を大きく悪化させない。
 - WebMCPツール登録はアプリ起動後に軽量に実施する。
-- PDF解析をMath Editor側で行わない。
+- PDF解析をすうがく仕立て側で行わない。
 - WebMCP直接取込の初期上限を2 MiBとする。
 - 通常JSONバックアップ上限は既存仕様を維持する。
 - 画像検証は既存処理を再利用する。
@@ -1014,7 +1016,7 @@ WebMCPは追加機能であり、障害時に次を維持する。
 - ごみ箱
 - マニュアル
 
-OpenAI側の機能変更でMath Editor本体が起動不能になってはならない。
+OpenAI側の機能変更ですうがく仕立て本体が起動不能になってはならない。
 
 ---
 
@@ -1024,39 +1026,36 @@ ChatGPT内蔵ブラウザは通常ブラウザと別プロファイルを利用�
 
 そのため利用者向けマニュアルに次を明示する。
 
-- AI統合モードで保存したプリントは、そのMath Editorを開いているブラウザプロファイルに保存される。
+- AI統合モードで保存したプリントは、そのすうがく仕立てを開いているブラウザプロファイルに保存される。
 - 普段のChrome/Edgeと自動共有されるとは限らない。
 - 必要に応じてJSONエクスポート/インポートで移動できる。
 
 ---
 
-### 34.1 Math Editor URL解決要件
+### 34.1 すうがく仕立て URL解決要件
 
-v2.1では本番公開URLを確定しない。
-
-SkillおよびPluginに特定の本番originをハードコードしない。
+正式URLを `https://app.sujita.jp/` とする。
 
 直接連携時は次の優先順位で対象ページを解決する。
 
 ```text
-1. 現在のChatGPTブラウザでMath Editorページが既に開いており、
+1. 現在のChatGPTブラウザですうがく仕立てページが既に開いており、
    Site toolsを発見できる
       → そのページを使用
 
-2. 利用者が今回のセッションでMath Editor URLを明示している
+2. 利用者が今回のセッションですうがく仕立て URLを明示している
       → そのURLを開く
 
 3. 開発・自己テスト手順からURLが与えられている
       → そのURLを開く
 
-4. URLを解決できない
-      → URLを推測しない
-      → 利用者へ対象URLを求めるかJSON方式へフォールバック
+4. 上記でURLを解決できない
+      → 正式URL https://app.sujita.jp/ を使用
 ```
 
 開発時はVite等のローカル開発サーバーURLを利用できるが、ポート番号をSkillへ固定しない。
 
-本番公開URL確定後は、要件定義書の改版で正式なdeployment originと許可origin方針を追加する。
+本番のdeployment originと許可originは `https://app.sujita.jp` とする。
 
 ## 35. UI要件
 
@@ -1074,7 +1073,7 @@ AI連携: ON
 - ChatGPTから新規プリントを追加できること
 - 既存プリントは変更しないこと
 - 許可は現在のページセッションだけであること
-- PDF本体をMath Editorへ保存しないこと
+- PDF本体をすうがく仕立てへ保存しないこと
 - 無効化方法
 
 ---
@@ -1095,7 +1094,7 @@ AI連携: ON
 - 図版不要問題では図版runtime不足だけを理由に不必要にblockedにしない。
 - 代替経路でも元PDF由来図版であることを維持する。
 
-### 36.2 Math Editor application
+### 36.2 すうがく仕立て application
 
 - 正常singleデータを候補化できる。
 - archiveを拒否する。
@@ -1166,16 +1165,16 @@ AI連携: ON
 7. Skill実行前または必要処理前にRuntime Capability Probeを実施できる。
 8. primary図版crop依存関係が不足した場合、利用可能な同等代替経路を自動選択できる。
 9. 代替経路もなく必須図版がある場合、不完全な完成品を生成せずblockedにできる。
-10. WebMCP非対応でもMath Editor本体が動作する。
+10. WebMCP非対応でもすうがく仕立て本体が動作する。
 11. WebMCP対応時にcapabilitiesを公開できる。
-12. Math Editor本番URLをコードまたはSkillへ固定しなくても自己テストできる。
-13. 対象Math Editor URLを解決できない場合、URLを推測せず安全に停止またはJSONへフォールバックできる。
+12. 本番URL未指定時に正式URL `https://app.sujita.jp/` を解決できる。
+13. 不正な明示URLは拒否し、安全に停止またはJSONへフォールバックできる。
 14. Schema hashを比較できる。
 15. 不一致時に直接取込しない。
-16. 完成候補をMath Editor側Schemaで再検証できる。
+16. 完成候補をすうがく仕立て側Schemaで再検証できる。
 17. 画像を既存検証処理で確認できる。
 18. 利用者の明示確定前に書き込まない。
-19. Math Editor側書込許可OFFでは書き込まない。
+19. すうがく仕立て側書込許可OFFでは書き込まない。
 20. 許可ONで新規プリントを保存できる。
 21. 既存プリントを上書きしない。
 22. 保存にはRepositoryを使用する。
@@ -1190,8 +1189,8 @@ AI連携: ON
 31. 直接取込容量超過時にJSONへフォールバックする。
 32. WebMCP利用不可時にJSONへフォールバックする。
 33. インポート後に既存編集機能を利用できる。
-34. PDF本体をMath Editorへ永続保存しない。
-35. AI利用量をMath Editor開発者のAPI課金へ集約しない。
+34. PDF本体をすうがく仕立てへ永続保存しない。
+35. AI利用量をすうがく仕立て開発者のAPI課金へ集約しない。
 36. AIによる新規作問を初期版に含めない。
 37. 教科書掲載解答をAI独自解答で上書きしない。
 38. 図版をAI画像で置換しない。
@@ -1239,7 +1238,6 @@ AI連携: ON
 
 v2.1完成後、必要になった時点で別要件として次を検討する。
 
-- 本番公開URL
 - 第三者配布
 - Plugin Directory提出
 - 公開審査
@@ -1256,10 +1254,9 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 - ヒント
 - 誤答例
 - 学習指導要領対応
-- 図版crop座標だけを転送しMath Editor側で元PDFから切り出す方式
+- 図版crop座標だけを転送しすうがく仕立て側で元PDFから切り出す方式
 - WebMCPの大容量データ転送方式が安定した場合の直接取込上限拡大
-- 複数Skillを `math-editor-ai` Pluginへ追加
-- Math Editor本番公開URL確定後のorigin固定・許可方針
+- 複数Skillを `sugaku-jitate-ai` Pluginへ追加
 - Pluginの第三者配布
 - Plugin Directoryへの提出・公開
 - 組織向けPlugin配布・管理
@@ -1272,10 +1269,10 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 1. 教科書の数学的内容を勝手に変更しない。
 2. 教科書掲載解答を優先する。
 3. AI結果は利用者確認後だけ確定する。
-4. Math Editor既存Schemaを正本とする。
-5. AI入力をMath Editor側でも再検証する。
+4. すうがく仕立て既存Schemaを正本とする。
+5. AI入力をすうがく仕立て側でも再検証する。
 6. WebMCPへ最小権限しか公開しない。
-7. WebMCPをMath Editorの必須依存にしない。
+7. WebMCPをすうがく仕立ての必須依存にしない。
 8. OpenAI APIとAPIキーを必要としない。
 9. Skillの正本を一つに保つ。
 10. 直接取込に失敗してもJSON経路を残す。
@@ -1284,11 +1281,11 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 
 ## 41. 参考資料
 
-- Math Editor Repository  
+- すうがく仕立て Repository
   https://github.com/drthomas246/math_editor
-- Math Editor Worksheet Schema  
+- すうがく仕立て Worksheet Schema
   https://github.com/drthomas246/math_editor/blob/master/src/domain/worksheet/worksheet.schema.ts
-- Math Editor backup implementation  
+- すうがく仕立て backup implementation
   https://github.com/drthomas246/math_editor/blob/master/src/application/backup/backup.ts
 - OpenAI: Build plugins / local Marketplace  
   https://learn.chatgpt.com/docs/build-plugins
@@ -1305,14 +1302,14 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 
 ## 42. 要点
 
-本AI機能は、利用者自身のChatGPT上で既存 `math-editor-textbook-import` Skillを実行し、portable Pluginとしてパッケージする。v2.1では開発者本人のローカルMarketplaceでのインストール・自己テストまでを配布範囲とし、一般公開は行わない。
+本AI機能は、利用者自身のChatGPT上で既存 `sugaku-jitate-textbook-import` Skillを実行し、portable Pluginとしてパッケージする。v2.1では開発者本人のローカルMarketplaceでのインストール・自己テストまでを配布範囲とし、一般公開は行わない。
 
 Skill実行環境は外部コマンドやPythonモジュールの存在を仮定せず、Runtime Capability Probeを行う。既存の図版crop経路が利用できない場合は元PDF由来の同等結果を保証できる代替経路を自動検出し、それも利用できず採用問題に図版が必須であれば完成処理を停止する。
 
-WebMCP対応環境では、Math Editorが提供するSite toolsを使って能力確認、Schema整合確認、候補検証、直接インポートを行う。インポート再試行ではcandidateより先にImport Receiptを確認し、同一タブ/ブラウザセッション内の通常再試行で重複保存を防ぐ。
+WebMCP対応環境では、すうがく仕立てが提供するSite toolsを使って能力確認、Schema整合確認、候補検証、直接インポートを行う。インポート再試行ではcandidateより先にImport Receiptを確認し、同一タブ/ブラウザセッション内の通常再試行で重複保存を防ぐ。
 
 Repository保存成功後はApplication層のAI Import Eventを発行し、Worksheet一覧がRepositoryを再読込して画面を同期する。WebMCP層からReact stateを直接操作しない。
 
-Math Editorの本番公開URLはv2.1では未定とし、PluginやSkillに固定埋め込みしない。自己テストでは実行時に指定されたlocalhost等のURLを使用する。
+すうがく仕立ての正式URLは `https://app.sujita.jp/` とする。自己テストでは実行時に指定されたlocalhost等のURLを優先できる。
 
 OpenAI API、APIキー、外部MCPサーバーは使用しない。WebMCPが利用できない、Schemaが一致しない、データが大きすぎる等の場合は、従来の単一プリントJSONへフォールバックする。

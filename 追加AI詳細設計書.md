@@ -1,25 +1,26 @@
-# 数学プリント作成ソフト 追加AI詳細設計書
+# すうがく仕立て 追加AI詳細設計書
 
 ## 1. 文書情報
 
 | 項目 | 内容 |
 |---|---|
-| 文書名 | 数学プリント作成ソフト 追加AI詳細設計書 |
-| 文書版 | 2.1 |
-| 基準日 | 2026-09-11 |
+| 文書名 | すうがく仕立て 追加AI詳細設計書 |
+| 文書版 | 2.2 |
+| 基準日 | 2026-09-13 |
 | 対象システム | `drthomas246/math_editor` |
 | 基準ブランチ | `master` |
 | 基準コミット | `1ef632ad20d24dbb1e12e0bf022ecc1d6168837d` |
-| AI方式 | ChatGPT上のMath Editor Skill |
+| AI方式 | ChatGPT上のすうがく仕立て Skill |
 | 配布 | portable Plugin |
 | 直接連携 | WebMCP Site tools |
+| 正式URL | `https://app.sujita.jp/` |
 | フォールバック | `math-worksheet` single JSON |
 | OpenAI API | 使用しない |
 | 外部MCPサーバー | 使用しない |
-| Math Editor Schema版 | 1 |
-| Math Editorファイル形式 | `math-worksheet` / `single` / version 1 |
+| すうがく仕立て Schema版 | 1 |
+| すうがく仕立てファイル形式 | `math-worksheet` / `single` / version 1 |
 
-本書は `追加AI要件定義書.md` 2.1を、実装可能な粒度へ具体化する。
+本書は `追加AI要件定義書.md` 2.2を、実装可能な粒度へ具体化する。
 
 ---
 
@@ -29,6 +30,7 @@
 |---|---|---|
 | 2.0 | 2026-09-11 | portable Plugin、WebMCP Site tools、candidate、Consent、基本的なrequestId冪等性を設計 |
 | 2.1 | 2026-09-11 | Runtime Capability Probeと図版fallback chain、AI Import Event、receipt先行冪等性と再検証、未確定deployment URL、個人ローカルMarketplaceでの自己テストを実装仕様化 |
+| 2.2 | 2026-09-13 | 正式URLを `https://app.sujita.jp/`、WebMCPツール名を `sujita_*` に確定 |
 
 ## 2. 正本と優先順位
 
@@ -41,7 +43,7 @@
 5. Repository契約: `src/application/repositories/worksheet-repository.ts`
 6. IndexedDB実装: `src/infrastructure/indexeddb/`
 7. 本書の業務要件: `追加AI要件定義書.md`
-8. Skill実行規則: `AI/skills/math-editor-textbook-import/`
+8. Skill実行規則: `AI/skills/sugaku-jitate-textbook-import/`
 9. Plugin/WebMCP仕様: リリース時点のOpenAI公式ドキュメント
 10. 本詳細設計書
 
@@ -55,7 +57,7 @@ OpenAI製品仕様は変更され得るため、外部仕様と本アプリ固�
 
 ### 3.1 `MathWorksheetFileSchema`
 
-`src/domain/worksheet/worksheet` から公開されている最終ファイルSchemaを、Math Editor側直接取込の最終構造検証に使用する。
+`src/domain/worksheet/worksheet` から公開されている最終ファイルSchemaを、すうがく仕立て側直接取込の最終構造検証に使用する。
 
 ### 3.2 `hydrateBackup()`
 
@@ -91,13 +93,13 @@ WebMCP経路のフォールバックとして維持する。
 |---|---|
 | ADR-AI-101 | OpenAI APIを使用しない。 |
 | ADR-AI-102 | 既存Skillをportable Pluginとして配布可能な形へパッケージする。 |
-| ADR-AI-103 | Skill正本は `AI/skills/math-editor-textbook-import/` の1か所とする。 |
+| ADR-AI-103 | Skill正本は `AI/skills/sugaku-jitate-textbook-import/` の1か所とする。 |
 | ADR-AI-104 | portable Pluginはビルド時に生成し、Plugin内Skillを手編集しない。 |
-| ADR-AI-105 | Math Editor連携は外部MCPサーバーではなくWebMCP Site toolsを第一方式とする。 |
-| ADR-AI-106 | WebMCPは追加機能とし、Math Editor起動の必須条件にしない。 |
+| ADR-AI-105 | すうがく仕立て連携は外部MCPサーバーではなくWebMCP Site toolsを第一方式とする。 |
+| ADR-AI-106 | WebMCPは追加機能とし、すうがく仕立て起動の必須条件にしない。 |
 | ADR-AI-107 | 初期Site toolsは能力確認・候補検証・新規取込の3個に限定する。 |
 | ADR-AI-108 | 既存Worksheetの更新・削除はSite toolsへ公開しない。 |
-| ADR-AI-109 | WebMCP入力は不信頼としてMath Editor側で再検証する。 |
+| ADR-AI-109 | WebMCP入力は不信頼としてすうがく仕立て側で再検証する。 |
 | ADR-AI-110 | Schema hash完全一致を直接取込の初期互換条件とする。 |
 | ADR-AI-111 | WebMCP直接取込上限の初期値を2 MiBとする。これはOpenAI公式上限ではなくアプリ設計値である。 |
 | ADR-AI-112 | WebMCP直接取込に失敗した場合は単一プリントJSONへフォールバックする。 |
@@ -113,7 +115,7 @@ WebMCP経路のフォールバックとして維持する。
 | ADR-AI-122 | import再試行時はcandidateより先にImport Receiptを確認する。 |
 | ADR-AI-123 | completed receiptはcandidateが消失していても成功済み結果の正本として扱う。 |
 | ADR-AI-124 | pending receiptはRepositoryを照合し、保存済みならcompletedへ回復する。 |
-| ADR-AI-125 | 本番Math Editor URLはv2.1では未定とし、Skill/Pluginへ固定埋め込みしない。 |
+| ADR-AI-125 | すうがく仕立ての正式URLを `https://app.sujita.jp/` とし、未指定時の既定接続先にする。 |
 | ADR-AI-126 | v2.1のPlugin導入範囲は開発者本人のローカルMarketplaceでの自己テストまでとする。 |
 | ADR-AI-127 | 公開Plugin Directoryへの提出・第三者配布はv2.1対象外とする。 |
 
@@ -123,8 +125,8 @@ WebMCP経路のフォールバックとして維持する。
 ┌─────────────────────────────────────────────┐
 │ ChatGPT                                     │
 │                                             │
-│  portable Plugin: math-editor-ai            │
-│   └─ Skill: math-editor-textbook-import     │
+│  portable Plugin: sugaku-jitate-ai            │
+│   └─ Skill: sugaku-jitate-textbook-import     │
 │        ├─ PDF解析                           │
 │        ├─ AiWorksheetDraft                  │
 │        ├─ 利用者確認                        │
@@ -135,7 +137,7 @@ WebMCP経路のフォールバックとして維持する。
                     │ WebMCP Site tools
                     ▼
 ┌─────────────────────────────────────────────┐
-│ Math Editor                                 │
+│ すうがく仕立て                                 │
 │                                             │
 │ infrastructure/webmcp                       │
 │   ↓                                         │
@@ -158,7 +160,7 @@ WebMCP経路のフォールバックとして維持する。
 ```text
 AI/
 ├─ skills/
-│  └─ math-editor-textbook-import/
+│  └─ sugaku-jitate-textbook-import/
 │     ├─ SKILL.md
 │     ├─ agents/openai.yaml
 │     ├─ references/
@@ -178,8 +180,8 @@ schemas/
 └─ math-worksheet.schema-manifest.json     # 新規
 
 scripts/
-├─ build-math-editor-plugin.ts             # 新規
-└─ verify-math-editor-plugin.ts            # 新規
+├─ build-sugaku-jitate-plugin.ts             # 新規
+└─ verify-sugaku-jitate-plugin.ts            # 新規
 
 src/application/ai-import/
 ├─ ai-import-service.ts
@@ -193,9 +195,9 @@ src/infrastructure/webmcp/
 ├─ webmcp-session.ts
 ├─ webmcp-candidate-store.ts
 ├─ webmcp-import-receipt.ts                # v2.1で責務を明示
-├─ math-editor-capabilities.ts
-├─ register-math-editor-tools.ts
-└─ register-math-editor-tools.test.ts
+├─ sugaku-jitate-capabilities.ts
+├─ register-sugaku-jitate-tools.ts
+└─ register-sugaku-jitate-tools.test.ts
 
 src/presentation/ai-integration/
 ├─ AiIntegrationStatus.tsx
@@ -240,27 +242,27 @@ WorksheetRepository
 ```json
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "math-editor-ai",
+  "name": "sugaku-jitate-ai",
   "version": "2.1.0",
-  "description": "Convert authorized textbook PDF ranges into reviewed Math Editor worksheets and deliver them through WebMCP or JSON fallback."
+  "description": "Convert authorized textbook PDF ranges into reviewed すうがく仕立て worksheets and deliver them through WebMCP or JSON fallback."
 }
 ```
 
 ### 7.2 生成物
 
 ```text
-dist/math-editor-ai/
+dist/sugaku-jitate-ai/
 ├─ plugin.json
 └─ skills/
-   └─ math-editor-textbook-import/
+   └─ sugaku-jitate-textbook-import/
       └─ ...
 ```
 
 ### 7.3 build script
 
-`build-math-editor-plugin.ts` の責務:
+`build-sugaku-jitate-plugin.ts` の責務:
 
-1. `dist/math-editor-ai` を安全に再生成
+1. `dist/sugaku-jitate-ai` を安全に再生成
 2. `AI/plugin/plugin.json` をコピー
 3. Skill正本を再帰コピー
 4. シンボリックリンクを配布物へ含めない
@@ -270,10 +272,10 @@ dist/math-editor-ai/
 
 ### 7.4 verify script
 
-`verify-math-editor-plugin.ts` の責務:
+`verify-sugaku-jitate-plugin.ts` の責務:
 
 - `plugin.json` が存在
-- `skills/math-editor-textbook-import/SKILL.md` が存在
+- `skills/sugaku-jitate-textbook-import/SKILL.md` が存在
 - 正本Skillと配布Skillの相対パス集合が一致
 - 各ファイルSHA-256一致
 - Schema manifestのhash一致
@@ -290,7 +292,7 @@ npm run plugin:build
   ↓
 npm run plugin:verify
   ↓
-dist/math-editor-ai/
+dist/sugaku-jitate-ai/
   ↓
 ローカルMarketplaceへ追加
   ↓
@@ -342,18 +344,18 @@ webmcp-integration.mdを読む
 推奨内容:
 
 ```text
-# Math Editor WebMCP連携
+# すうがく仕立て WebMCP連携
 
 1. 現revisionが明示確定済みでなければ書込ツールを呼ばない。
-2. math_editor_get_capabilities を呼ぶ。
+2. sujita_get_capabilities を呼ぶ。
 3. worksheetFormat / version / schemaSha256 を確認する。
 4. Schema hash不一致ならJSONへフォールバックする。
 5. maxDirectImportBytesを超えるならJSONへフォールバックする。
-6. math_editor_validate_import に完成JSON文字列を渡す。
+6. sujita_validate_import に完成JSON文字列を渡す。
 7. valid=falseなら直接取込を行わない。
 8. candidateToken / payloadSha256を受け取る。
-9. math_editor_import_worksheet を呼ぶ。
-10. CONSENT_REQUIREDなら利用者にMath Editor側の「AI連携」をONにしてもらう。
+9. sujita_import_worksheet を呼ぶ。
+10. CONSENT_REQUIREDなら利用者にすうがく仕立て側の「AI連携」をONにしてもらう。
 11. 同じrequestIdで再試行する。
 12. success=trueなら完成。
 13. WebMCP固有障害ではJSONフォールバックを提案する。
@@ -368,7 +370,7 @@ Skillは、図版処理または決定論的build/validate前に必要能力を�
 新規:
 
 ```text
-AI/skills/math-editor-textbook-import/scripts/check_runtime_capabilities.mjs
+AI/skills/sugaku-jitate-textbook-import/scripts/check_runtime_capabilities.mjs
 ```
 
 出力例:
@@ -690,7 +692,7 @@ async function sha256Utf8(text: string): Promise<string>
 
 ---
 
-## 17. `math_editor_get_capabilities`
+## 17. `sujita_get_capabilities`
 
 ### 17.1 性質
 
@@ -711,8 +713,8 @@ async function sha256Utf8(text: string): Promise<string>
 ### 17.3 output
 
 ```ts
-type MathEditorCapabilities = {
-  app: "math-editor";
+type SugakuJitateCapabilities = {
+  app: "sujita";
   integrationVersion: 1;
   worksheetFormat: "math-worksheet";
   worksheetFileVersion: 1;
@@ -725,11 +727,11 @@ type MathEditorCapabilities = {
 
 ### 17.4 注意
 
-WebMCP対応そのものは既にツールが見えているため暗黙に分かるが、Math Editor側のSchema・上限・許可状態の確認に必要。
+WebMCP対応そのものは既にツールが見えているため暗黙に分かるが、すうがく仕立て側のSchema・上限・許可状態の確認に必要。
 
 ---
 
-## 18. `math_editor_validate_import`
+## 18. `sujita_validate_import`
 
 ### 18.1 性質
 
@@ -812,7 +814,7 @@ summary返却
 
 ---
 
-## 19. `math_editor_import_worksheet`
+## 19. `sujita_import_worksheet`
 
 ### 19.1 性質
 
@@ -912,7 +914,7 @@ Repository保存成功後・completed receipt確定後にAI Import Eventを発�
 キー例:
 
 ```text
-math-editor:webmcp-import:<requestId>
+sugaku-jitate:webmcp-import:<requestId>
 ```
 
 ### 20.2 値
@@ -1055,12 +1057,12 @@ typeof document.modelContext?.registerTool === "function"
 文言要件:
 
 ```text
-ChatGPTから、このタブのMath Editorへ
+ChatGPTから、このタブのすうがく仕立てへ
 新しいプリントを追加できるようにします。
 
 ・既存プリントは変更しません。
 ・許可はこのページセッションだけです。
-・教科書PDF本体はMath Editorへ保存しません。
+・教科書PDF本体はすうがく仕立てへ保存しません。
 
 [キャンセル] [許可]
 ```
@@ -1107,7 +1109,7 @@ type DeliveryState =
 
 ```text
 利用者
-  │ 「この内容で確定し、Math Editorへ追加」
+  │ 「この内容で確定し、すうがく仕立てへ追加」
   ▼
 Skill
   │ confirmedRevision確認
@@ -1117,7 +1119,7 @@ Skill
   ▼
 完成payloadText
   │
-  ├─ Math Editor target URL / Site tools解決
+  ├─ すうがく仕立て target URL / Site tools解決
   │
   ├─ get_capabilities
   │      ↓
@@ -1130,11 +1132,11 @@ Skill
   ├─ import_worksheet(candidateToken, requestId)
   │      ↓
   │   CONSENT_REQUIRED?
-  │      ├ Yes → 利用者がMath EditorでAI連携ON
+  │      ├ Yes → 利用者がすうがく仕立てでAI連携ON
   │      └ No
   │
   ▼
-Math Editor
+すうがく仕立て
   │ receipt-first判定
   │ Repository.create
   │ completed receipt
@@ -1167,7 +1169,7 @@ fallback-json
        ↓
 利用者がダウンロード
        ↓
-Math Editor既存ImportModal
+すうがく仕立て既存ImportModal
        ↓
 parseBackup
        ↓
@@ -1188,7 +1190,7 @@ Skill同梱manifest:
 skillSchemaSha256
 ```
 
-Math Editor capabilities:
+すうがく仕立て capabilities:
 
 ```text
 schemaSha256
@@ -1203,7 +1205,7 @@ schemaSha256
   "valid": false,
   "error": {
     "code": "SCHEMA_MISMATCH",
-    "message": "SkillとMath EditorのSchemaが一致しません。JSON方式を使用してください。"
+    "message": "Skillとすうがく仕立てのSchemaが一致しません。JSON方式を使用してください。"
   }
 }
 ```
@@ -1257,7 +1259,7 @@ type AiImportErrorResult = {
 ### エラー分類
 
 - `REVALIDATION_REQUIRED`: 同じpayloadでvalidateを再実行して回復可能。
-- `TARGET_URL_REQUIRED`: 利用者がMath Editor URLを指定すれば回復可能。
+- `TARGET_URL_REQUIRED`: 利用者がすうがく仕立て URLを指定すれば回復可能。
 - `FIGURE_PRIMARY_RUNTIME_UNAVAILABLE`: fallback経路探索へ進む内部/警告状態。
 - `FIGURE_RUNTIME_UNAVAILABLE`: 必須図版がある場合はSkillの完成をblocked。
 - `VALIDATOR_RUNTIME_UNAVAILABLE`: 同等の決定論的Validatorがなければ完成をblocked。
@@ -1314,21 +1316,21 @@ ChatGPT内蔵ブラウザ側の安全確認だけへ依存しない。
 
 ### 27.7 CSP等
 
-Math EditorにCSPを導入する場合も、WebMCPを理由に `unsafe-eval` や任意外部スクリプト許可を追加しない。
+すうがく仕立てにCSPを導入する場合も、WebMCPを理由に `unsafe-eval` や任意外部スクリプト許可を追加しない。
 
 ---
 
 ## 28. privacy設計
 
-Math Editorへ永続保存するのは:
+すうがく仕立てへ永続保存するのは:
 
 - Worksheet
 - 採用Asset
-- 既存Math Editorが通常保存する情報
+- 既存すうがく仕立てが通常保存する情報
 
 のみ。
 
-Math Editorへ永続保存しないもの:
+すうがく仕立てへ永続保存しないもの:
 
 - 教科書PDF本体
 - OCR中間テキスト
@@ -1352,9 +1354,9 @@ ChatGPT内蔵ブラウザは普段のブラウザと別プロファイルであ�
 したがって:
 
 ```text
-通常ChromeのMath Editor IndexedDB
+通常Chromeのすうがく仕立て IndexedDB
 ≠
-ChatGPT内蔵BrowserのMath Editor IndexedDB
+ChatGPT内蔵Browserのすうがく仕立て IndexedDB
 ```
 
 となり得る。
@@ -1567,13 +1569,13 @@ export async function importAiCandidate(
 ## 33. WebMCP tool登録擬似コード
 
 ```ts
-export async function registerMathEditorTools(deps: Dependencies) {
+export async function registerSugakuJitateTools(deps: Dependencies) {
   const context = document.modelContext;
   if (!context?.registerTool) return;
 
   await context.registerTool({
-    name: "math_editor_get_capabilities",
-    description: "Read Math Editor direct-import capabilities.",
+    name: "sujita_get_capabilities",
+    description: "Read すうがく仕立て direct-import capabilities.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -1584,18 +1586,18 @@ export async function registerMathEditorTools(deps: Dependencies) {
   });
 
   await context.registerTool({
-    name: "math_editor_validate_import",
+    name: "sujita_validate_import",
     description:
-      "Validate a reviewed Math Editor single-worksheet payload without saving it.",
+      "Validate a reviewed すうがく仕立て single-worksheet payload without saving it.",
     inputSchema: validateInputSchema,
     annotations: { readOnlyHint: true },
     execute: (input) => deps.aiImport.validateCandidate(input),
   });
 
   await context.registerTool({
-    name: "math_editor_import_worksheet",
+    name: "sujita_import_worksheet",
     description:
-      "Save a previously validated candidate as a new Math Editor worksheet. Requires in-page user consent.",
+      "Save a previously validated candidate as a new すうがく仕立て worksheet. Requires in-page user consent.",
     inputSchema: importInputSchema,
     execute: (input) => deps.aiImport.importCandidate(input),
   });
@@ -1675,7 +1677,7 @@ useEffect(() => {
 
 `WorksheetListScreen` は `application/ai-import/ai-import-events` を購読してよい。
 
-`infrastructure/webmcp/register-math-editor-tools.ts` から `WorksheetListScreen` またはReactのsetterをimportしてはならない。
+`infrastructure/webmcp/register-sugaku-jitate-tools.ts` から `WorksheetListScreen` またはReactのsetterをimportしてはならない。
 
 ## 36. StrictMode対策
 
@@ -1688,7 +1690,7 @@ Site tool登録をReact component Effectから行わず、module/composition roo
 ```ts
 let registered = false;
 
-export async function registerMathEditorTools(...) {
+export async function registerSugakuJitateTools(...) {
   if (registered) return;
   ...
   registered = true;
@@ -1699,38 +1701,37 @@ HMR時の挙動は開発環境テストで確認する。
 
 ---
 
-### 36.1 Math Editor target URL設計
+### 36.1 すうがく仕立て target URL設計
 
-v2.1では本番URLは未定。
+正式URLは `https://app.sujita.jp/` とする。
 
 次を禁止する。
 
 ```text
-SKILL.mdへ仮の本番URLを固定
-plugin.jsonへ未確定URLを固定
-WebMCPコードへ特定originを固定
+正式URL以外の本番URLを固定
+localhostのポートを本番契約として固定
+不正な明示URLを正式URLへ黙って置換
 ```
 
 Skillの対象ページ解決順序:
 
 ```text
-A. 現在開いているページからMath Editor Site toolsを発見
+A. 現在開いているページからすうがく仕立て Site toolsを発見
    → 使用
 
-B. 同一会話で利用者がMath Editor URLを明示
+B. 同一会話で利用者がすうがく仕立て URLを明示
    → そのURLを使用
 
 C. 自己テスト手順がlocalhost URLを指定
    → そのURLを使用
 
 D. どれもない
-   → TARGET_URL_REQUIRED
-   → URLを推測しない
+   → 正式URL https://app.sujita.jp/ を使用
 ```
 
 開発サーバーについても`localhost:5173`等を固定契約にしない。Viteが別ポートへフォールバックする可能性を考慮し、実際に起動したURLを使用する。
 
-本番公開URLが確定した時点で、許可origin、HTTPS、デプロイ手順、更新方針を別改版で追加する。
+本番のdeployment originと許可originは `https://app.sujita.jp` とする。
 
 ## 37. Plugin buildのpackage scripts
 
@@ -1739,8 +1740,8 @@ D. どれもない
 ```json
 {
   "scripts": {
-    "plugin:build": "tsx scripts/build-math-editor-plugin.ts",
-    "plugin:verify": "tsx scripts/verify-math-editor-plugin.ts",
+    "plugin:build": "tsx scripts/build-sugaku-jitate-plugin.ts",
+    "plugin:verify": "tsx scripts/verify-sugaku-jitate-plugin.ts",
     "verify": "npm run typecheck && npm run lint && npm run schema:check && npm run skill:schema:check && npm run plugin:verify && npm run schema:test && npm run manual:check && npm run test"
   }
 }
@@ -1776,7 +1777,7 @@ D. どれもない
 18. import成功時のAI Import Event
 19. save failure時にsuccess eventを出さない
 
-### 38.2 `register-math-editor-tools.test.ts`
+### 38.2 `register-sugaku-jitate-tools.test.ts`
 
 - `document.modelContext` undefined
 - registerTool存在
@@ -1872,7 +1873,7 @@ Plugin packageについて次を自動検査する。
 - source/package hash一致
 - 不要秘密情報なし
 - APIキー文字列なし
-- 未確定本番URLのハードコードなし
+- 正式URL以外の本番URLと固定localhostの混入なし
 - 絶対ローカルパスなし
 
 ### 40.1 手動自己テスト
@@ -1891,7 +1892,7 @@ v2.1では開発者本人が次を行う。
 9. WebMCP非対応/未接続時のJSON fallback確認
 10. WebMCP対応時のdirect import確認
 11. same requestId回復確認
-12. Pluginを無効化/削除して通常Math Editorが影響を受けないことを確認
+12. Pluginを無効化/削除して通常すうがく仕立てが影響を受けないことを確認
 ```
 
 ### 40.2 v2.1で行わないテスト
@@ -1963,18 +1964,18 @@ WebMCP実ブラウザ機能はロールアウト依存のため、CIの必須成
 - WORKSHEET_LIMIT_REACHED
 - TARGET_URL_REQUIRED（直接取込を継続する場合）
 
-## 43. Math Editor側の能力情報
+## 43. すうがく仕立て側の能力情報
 
-`math-editor-capabilities.ts`:
+`sugaku-jitate-capabilities.ts`:
 
 ```ts
-export const MATH_EDITOR_AI_INTEGRATION_VERSION = 1;
+export const SUGAKU_JITATE_AI_INTEGRATION_VERSION = 1;
 export const MAX_WEBMCP_DIRECT_IMPORT_BYTES = 2 * 1024 * 1024;
 
-export function getMathEditorCapabilities(): MathEditorCapabilities {
+export function getSugakuJitateCapabilities(): SugakuJitateCapabilities {
   return {
-    app: "math-editor",
-    integrationVersion: MATH_EDITOR_AI_INTEGRATION_VERSION,
+    app: "sujita",
+    integrationVersion: SUGAKU_JITATE_AI_INTEGRATION_VERSION,
     worksheetFormat: "math-worksheet",
     worksheetFileVersion: 1,
     schemaSha256: SCHEMA_MANIFEST.sha256,
@@ -2018,7 +2019,7 @@ run skill validator
 if validator invalid:
     return review-required or blocked
 
-resolve Math Editor target:
+resolve すうがく仕立て target:
     if Site tools already visible:
         continue
     else if user/session/test supplied target URL:
@@ -2061,7 +2062,7 @@ result = import_worksheet(
 )
 
 if result == CONSENT_REQUIRED:
-    ask user to enable AI integration in Math Editor
+    ask user to enable AI integration in すうがく仕立て
     retry SAME requestId
 
 if result == REVALIDATION_REQUIRED:
@@ -2074,7 +2075,7 @@ else:
     classify and either retry safely or fall back
 ```
 
-`requestId` は1回のtool呼び出しではなく、「同じ完成payloadをMath Editorへ1回だけ追加する」という論理操作を識別する。
+`requestId` は1回のtool呼び出しではなく、「同じ完成payloadをすうがく仕立てへ1回だけ追加する」という論理操作を識別する。
 
 ## 45. 図版転送
 
@@ -2086,7 +2087,7 @@ else:
 
 - WebMCP chunk upload
 - Blob streaming
-- PDFをMath Editorへ送るSite tool
+- PDFをすうがく仕立てへ送るSite tool
 - PDFのIndexedDB保存
 
 将来の候補:
@@ -2095,7 +2096,7 @@ else:
 ChatGPT側
   └ crop座標のみ生成
 
-Math Editor側
+すうがく仕立て側
   └ 利用者が同じPDFを選択
       ↓
      browser-side crop
@@ -2192,7 +2193,7 @@ AI連携UI:
 - 図版primary/fallback/blockedの意味
 - WebMCP直接取込
 - AI連携ON
-- Math Editor URLが未確定で固定されていないこと
+- 正式URLが `https://app.sujita.jp/` であること
 - 自己テストでは実際に起動したlocalhost URLを使うこと
 - 保存されるブラウザプロファイル
 - WebMCPが使えない場合のJSON方式
@@ -2211,7 +2212,7 @@ AI連携UI:
 旧利用:
 
 ```text
-Skill → JSON → Math Editor
+Skill → JSON → すうがく仕立て
 ```
 
 は引き続き使用可能。
@@ -2219,7 +2220,7 @@ Skill → JSON → Math Editor
 新利用:
 
 ```text
-Plugin/Skill → WebMCP → Math Editor
+Plugin/Skill → WebMCP → すうがく仕立て
 ```
 
 を追加する。
@@ -2250,7 +2251,7 @@ Skillの既存入力・確認ルールは可能な限り維持する。
 - validate tool
 - application service
 - target URL解決
-- 本番URL非固定の確認
+- 正式URL既定値と開発URL優先順位の確認
 
 ### Phase 3: WebMCP direct import
 
@@ -2278,7 +2279,6 @@ Skillの既存入力・確認ルールは可能な限り維持する。
 
 v2.1完成条件には含めない。
 
-- 本番公開URL決定
 - 第三者配布
 - Plugin Directory提出
 - 組織配布
@@ -2318,7 +2318,7 @@ v2.1では公開Plugin Directoryへの提出仕様は実装ブロッカーでは
 | AI-RUN-003 | crop backendなし・図版不要 | 処理続行 |
 | AI-RUN-004 | crop backendなし・図版必須 | blocked |
 | AI-RUN-005 | validator runtimeなし | 同等validatorがなければblocked |
-| AI-WEB-001 | WebMCPなし | Math Editor通常起動 |
+| AI-WEB-001 | WebMCPなし | すうがく仕立て通常起動 |
 | AI-WEB-002 | capabilities | Schema hash等を返す |
 | AI-WEB-003 | Skill hash不一致 | validate拒否 |
 | AI-WEB-004 | payload > 2 MiB | direct import拒否・fallback可能 |
@@ -2342,7 +2342,7 @@ v2.1では公開Plugin Directoryへの提出仕様は実装ブロッカーでは
 | AI-UI-002 | event受信 | 成功Toast |
 | AI-URL-001 | Site tools既発見 | URL指定不要 |
 | AI-URL-002 | 明示URLあり | そのURLを使用 |
-| AI-URL-003 | URL不明 | 推測せずTARGET_URL_REQUIRED/fallback |
+| AI-URL-003 | URL未指定 | 正式URL `https://app.sujita.jp/` を使用 |
 | AI-WEB-021 | repository error | successを返さない |
 | AI-WEB-022 | success | 編集・保存可能 |
 | AI-WEB-023 | success | PDF出力可能 |
@@ -2359,14 +2359,14 @@ v2.1では公開Plugin Directoryへの提出仕様は実装ブロッカーでは
 - 既存Schema再利用
 - 既存Repository再利用
 - 利用者自身のChatGPT利用環境を利用
-- Math Editorのローカル保存を維持
+- すうがく仕立てのローカル保存を維持
 - JSON手動インポートを省略可能
 - WebMCP非対応でも従来方式が残る
 - runtime依存不足を事前検知できる
 - 元PDF由来の安全な代替crop経路を利用できる
 - reload直後の再試行でもreceiptから二重作成を避けやすい
 - WebMCP保存結果をReact一覧へ自動反映できる
-- 本番URL未確定でもlocalhost自己テストを進められる
+- 正式URLを既定値としつつlocalhost自己テストも進められる
 - 公開審査を待たず個人ローカルMarketplaceでPlugin検証できる
 
 ### 欠点
@@ -2379,7 +2379,7 @@ v2.1では公開Plugin Directoryへの提出仕様は実装ブロッカーでは
 - 大容量画像を含むWorksheetは直接取込しにくい
 - WebMCP仕様変更時に接続層の保守が必要
 - v2.1ではPluginの一般公開・第三者配布を完成条件にしていない
-- 本番URL決定後にdeployment/origin設計の追補が必要
+- deployment時に `https://app.sujita.jp` のDNS・TLS・origin設定が必要
 - sessionStorage冪等性はブラウザセッション終了後までのExactly-once保証ではない
 
 ## 56. 要点
@@ -2404,11 +2404,11 @@ portable Pluginとしてbuild/verify
   ↓
 Skill Builder / Validator
   ↓
-Math Editor targetを解決
+すうがく仕立て targetを解決
   ↓
 WebMCP Site tools
   ↓
-Math Editor再検証
+すうがく仕立て再検証
   ↓
 hydrateBackup()
   ↓
@@ -2430,10 +2430,10 @@ Skill
  ↓
 検証済み単一プリントJSON
  ↓
-既存Math Editor ImportModal
+既存すうがく仕立て ImportModal
 ```
 
-v2.1ではMath Editor本番URLを固定しない。自己テスト時は実際に起動したlocalhost等のURLを利用する。
+すうがく仕立ての正式URLは `https://app.sujita.jp/` とする。自己テスト時は実際に起動したlocalhost等のURLを優先できる。
 
 v2.1のPlugin配布範囲は開発者本人のローカルMarketplaceへの登録・インストール・テストまでとし、一般公開は将来要件とする。
 
@@ -2441,13 +2441,13 @@ OpenAI API、APIキー、外部MCPサーバーは不要とする。
 
 ## 57. 参考資料
 
-- Math Editor Repository  
+- すうがく仕立て Repository
   https://github.com/drthomas246/math_editor
-- Math Editor Worksheet Schema  
+- すうがく仕立て Worksheet Schema
   https://github.com/drthomas246/math_editor/blob/master/src/domain/worksheet/worksheet.schema.ts
-- Math Editor Backup implementation  
+- すうがく仕立て Backup implementation
   https://github.com/drthomas246/math_editor/blob/master/src/application/backup/backup.ts
-- Math Editor WorksheetRepository  
+- すうがく仕立て WorksheetRepository
   https://github.com/drthomas246/math_editor/blob/master/src/application/repositories/worksheet-repository.ts
 - OpenAI: Build plugins / local Marketplace  
   https://learn.chatgpt.com/docs/build-plugins

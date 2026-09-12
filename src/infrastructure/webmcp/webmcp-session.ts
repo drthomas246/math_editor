@@ -31,7 +31,7 @@ function setSupported(supported: boolean): void {
 }
 
 /**
- * Math Editorツール一式の登録状態を更新する。
+ * すうがく仕立てツール一式の登録状態を更新する。
  * @param registered 全ツールの登録が完了していればtrue
  */
 function setRegistered(registered: boolean): void {

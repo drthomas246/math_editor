@@ -1,10 +1,12 @@
-# 数学プリント作成ソフト
+# すうがく仕立て
 
 中学校数学向けのプリントをPCブラウザ上で作成する、ローカル完結型のWebアプリケーションです。問題、小問、数式、画像、表、解答欄などを編集し、ページプレビューを確認しながらPDFへ出力できます。
 
+正式URLは [https://app.sujita.jp/](https://app.sujita.jp/) です。
+
 アプリ本体のデータはサーバーへ送信せず、ブラウザのIndexedDBへ保存します。単一プリントまたは通常一覧全体をJSONでバックアップできます。
 
-任意機能として、教科書PDFの指定範囲をMath Editor用JSONへ変換する`math-editor-textbook-import` Skillを同梱しています。Skillはアプリ内ではなく、対応するAIサービスまたはAIエージェントの処理環境で動作します。詳細は[教科書PDF取込Skill](#教科書pdf取込skill)を参照してください。
+任意機能として、教科書PDFの指定範囲をすうがく仕立て用JSONへ変換する`sugaku-jitate-textbook-import` Skillを同梱しています。Skillはアプリ内ではなく、対応するAIサービスまたはAIエージェントの処理環境で動作します。詳細は[教科書PDF取込Skill](#教科書pdf取込skill)を参照してください。
 
 ## 動作環境
 
@@ -86,37 +88,37 @@ PDF・一覧・構造操作の上限規模を測る場合は、`npm run benchmar
 
 ## 教科書PDF取込Skill
 
-[`math-editor-textbook-import`](AI/skills/math-editor-textbook-import/SKILL.md)は、利用権限のある教科書PDFから指定範囲の例題、問題、小問、数式、表、図版、教科書に掲載された解答・解説を抽出し、再編集可能なMath Editorの単一プリントJSONへ変換するSkillです。
+[`sugaku-jitate-textbook-import`](AI/skills/sugaku-jitate-textbook-import/SKILL.md)は、利用権限のある教科書PDFから指定範囲の例題、問題、小問、数式、表、図版、教科書に掲載された解答・解説を抽出し、再編集可能なすうがく仕立ての単一プリントJSONへ変換するSkillです。
 
-SkillはMath Editorへ直接書き込みません。処理の流れは次のとおりです。
+Skillはすうがく仕立てへ直接書き込みません。処理の流れは次のとおりです。
 
 ```text
-教科書PDF → Skill対応AI環境 → 利用者による内容確認 → 検証済みJSON → Math Editorのインポート
+教科書PDF → Skill対応AI環境 → 利用者による内容確認 → 検証済みJSON → すうがく仕立てのインポート
 ```
 
 ### 利用前の準備
 
-- `math-editor-textbook-import`を導入でき、PDF添付とファイル保存に対応したAIサービスまたはAIエージェント
+- `sugaku-jitate-textbook-import`を導入でき、PDF添付とファイル保存に対応したAIサービスまたはAIエージェント
 - 利用する権限があり、パスワードで保護されていない教科書PDF
 - 開始・終了それぞれの紙面ページと問題／例題ラベル
 - 必要に応じてプリント題名と、例題の説明スタイル（`normal`、`detailed`、`concise`）
 
-Skill本体は[`AI/skills/math-editor-textbook-import/`](AI/skills/math-editor-textbook-import/)にあります。リポジトリをクローンしただけでは、利用するAI環境へ自動登録されません。このディレクトリを、その環境のSkills、拡張機能、Pluginなどの導入方法に従って追加または有効化してください。サービス別の画面操作は、アプリ内マニュアルの「AI Skillsの使い方」に掲載しています。
+Skill本体は[`AI/skills/sugaku-jitate-textbook-import/`](AI/skills/sugaku-jitate-textbook-import/)にあります。リポジトリをクローンしただけでは、利用するAI環境へ自動登録されません。このディレクトリを、その環境のSkills、拡張機能、Pluginなどの導入方法に従って追加または有効化してください。サービス別の画面操作は、アプリ内マニュアルの「AI Skillsの使い方」に掲載しています。
 
 ### 利用手順
 
 1. Skillを有効にした新しいチャットまたはタスクへ教科書PDFを添付します。
 2. 紙面ページと問題／例題ラベルの両方で取込範囲を指定します。PDF上の物理ページと紙面ページがずれている場合は両方を伝えます。
-3. PDFがMath Editorの外部にあるSkill実行環境へ渡されることを理解し、PDFの利用権限と外部処理を確認します。この確認が済むまで解析は始まりません。
+3. PDFがすうがく仕立ての外部にあるSkill実行環境へ渡されることを理解し、PDFの利用権限と外部処理を確認します。この確認が済むまで解析は始まりません。
 4. 問題ごとの採否、種別、本文、LaTeX、小問、図版、教科書解答、解説、Warningを元PDFと照合します。
-5. 修正があれば具体的に伝えて再確認します。内容を確定するときは「この内容で確定し、Math Editor用JSONを作成してください」のように、JSON生成を明示します。
-6. 生成されたJSONを保存し、Math Editorの一覧画面にある「インポート」から読み込みます。既存プリントは上書きされず、新しいプリントとして追加されます。
+5. 修正があれば具体的に伝えて再確認します。内容を確定するときは「この内容で確定し、すうがく仕立て用JSONを作成してください」のように、JSON生成を明示します。
+6. 生成されたJSONを保存し、すうがく仕立ての一覧画面にある「インポート」から読み込みます。既存プリントは上書きされず、新しいプリントとして追加されます。
 
 依頼例：
 
 ```text
-math-editor-textbook-import Skillを使って、添付した教科書PDFの
-42ページの例題1から45ページの問8までをMath Editor用に取り込んでください。
+sugaku-jitate-textbook-import Skillを使って、添付した教科書PDFの
+42ページの例題1から45ページの問8までをすうがく仕立て用に取り込んでください。
 例題の解説は普通にしてください。結果を確認してからJSONを作りたいです。
 ```
 
@@ -131,12 +133,12 @@ math-editor-textbook-import Skillを使って、添付した教科書PDFの
 
 ### Skillパッケージの構成と保守
 
-v2.1のPhase 1として、portable Pluginの生成・検証とRuntime自己テストを追加しています。`npm run plugin:build`で`dist/math-editor-ai/`を生成し、`npm run plugin:verify`で正本との一致を検証できます。個人ローカルMarketplaceへの導入、実行環境の検査、図版の代替描画は[Phase 1自己テスト手順](docs/ai-plugin-phase1.md)を参照してください。
+v2.1のPhase 1として、portable Pluginの生成・検証とRuntime自己テストを追加しています。`npm run plugin:build`で`dist/sugaku-jitate-ai/`を生成し、`npm run plugin:verify`で正本との一致を検証できます。個人ローカルMarketplaceへの導入、実行環境の検査、図版の代替描画は[Phase 1自己テスト手順](docs/ai-plugin-phase1.md)を参照してください。
 
-Phase 4では、完成JSONをMath Editorの3つのWebMCP toolで検証・新規追加する配送フローをSkillへ統合しています。利用者のページ内Consent、同一`requestId`による再試行、candidate再検証、同一URL複数タブの`pageId`選択、WebMCP非対応時のJSONフォールバックを含みます。実装範囲と検証項目は[Phase 4実装記録](docs/ai-skill-delivery-phase4.md)を参照してください。
+Phase 4では、完成JSONをすうがく仕立ての3つのWebMCP toolで検証・新規追加する配送フローをSkillへ統合しています。利用者のページ内Consent、同一`requestId`による再試行、candidate再検証、同一URL複数タブの`pageId`選択、WebMCP非対応時のJSONフォールバックを含みます。実装範囲と検証項目は[Phase 4実装記録](docs/ai-skill-delivery-phase4.md)を参照してください。
 
 ```text
-AI/skills/math-editor-textbook-import/
+AI/skills/sugaku-jitate-textbook-import/
 ├─ SKILL.md               適用範囲、状態遷移、確認ゲート、実行手順
 ├─ agents/openai.yaml     表示名、説明、既定プロンプトなどのメタデータ
 ├─ references/            解析、Draft、数式、図版、変換、検証、エラー規則
@@ -150,16 +152,16 @@ AI/skills/math-editor-textbook-import/
 # 元PDFから図版を切り出す（Python、Pillow、pypdf、Popplerのpdftoppmが必要）
 python scripts/crop_pdf_figure.py --input request.json
 
-# 確定済みDraftをMath Editor単一プリントJSONへ変換する（Node.js）
+# 確定済みDraftをすうがく仕立て単一プリントJSONへ変換する（Node.js）
 node scripts/build_math_worksheet_file.mjs --draft draft.json --output candidate.json --asset-root crop-dir
 
 # 同梱Schemaと相関制約、画像実体、サイズ上限を最終検証する（Node.js）
 node scripts/validate_math_worksheet.mjs candidate.json
 ```
 
-上記コマンドは`AI/skills/math-editor-textbook-import/`をカレントディレクトリとして実行します。Validatorの成功条件は終了コード0だけでなく、標準出力JSONの`valid === true`かつ`errors.length === 0`です。
+上記コマンドは`AI/skills/sugaku-jitate-textbook-import/`をカレントディレクトリとして実行します。Validatorの成功条件は終了コード0だけでなく、標準出力JSONの`valid === true`かつ`errors.length === 0`です。
 
-保存形式を変更した場合は、正本である`src/domain/worksheet/worksheet.schema.ts`からルートのJSON Schemaを再生成し、Skill側のSchema、manifest、Validator、mappingを一式で同期してください。更新手順と検証条件は[`validation-rules.md`](AI/skills/math-editor-textbook-import/references/validation-rules.md)に記載しています。
+保存形式を変更した場合は、正本である`src/domain/worksheet/worksheet.schema.ts`からルートのJSON Schemaを再生成し、Skill側のSchema、manifest、Validator、mappingを一式で同期してください。更新手順と検証条件は[`validation-rules.md`](AI/skills/sugaku-jitate-textbook-import/references/validation-rules.md)に記載しています。
 
 ## 保存とバックアップ
 

@@ -34,7 +34,7 @@ export class ManualErrorBoundary extends Component<Props, State> {
         if (!this.state.failed)
             return this.props.children;
         return (<main className="centered-state manual-error-state">
-        <div className="brand-mark large">Σ</div>
+        <img className="brand-mark large" src="/favicon.png" alt="" aria-hidden="true"/>
         <h1>マニュアルを表示できませんでした</h1>
         <p>ページを再読み込みしてください。改善しない場合は、はじめに戻ってください。</p>
         <div className="manual-error-actions">

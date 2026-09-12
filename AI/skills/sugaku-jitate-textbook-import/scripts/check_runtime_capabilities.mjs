@@ -41,10 +41,10 @@ export async function checkFilesystem(inputPath, outputDir) {
   } catch { readable = false; }
   let temp;
   try {
-    temp = await mkdtemp(path.join(outputDir, ".math-editor-probe-"));
+    temp = await mkdtemp(path.join(outputDir, ".sugaku-jitate-probe-"));
     const file = path.join(temp, "check");
-    await writeFile(file, "math-editor-runtime", { flag: "wx" });
-    writable = await readFile(file, "utf8") === "math-editor-runtime";
+    await writeFile(file, "sugaku-jitate-runtime", { flag: "wx" });
+    writable = await readFile(file, "utf8") === "sugaku-jitate-runtime";
     await unlink(file);
   } catch { writable = false; }
   finally {

@@ -16,11 +16,11 @@ export function AiIntegrationConsentDialog(props: { onClose: () => void; onAllow
       <button className="primary-button" onClick={onAllow}>許可</button>
     </>}
   >
-    <p>ChatGPTから、このタブのMath Editorへ新しいプリントを追加できるようにします。</p>
+    <p>ChatGPTから、このタブのすうがく仕立てへ新しいプリントを追加できるようにします。</p>
     <ul className="ai-consent-list">
       <li>既存プリントは変更しません。</li>
       <li>許可はこのページセッションだけです。</li>
-      <li>教科書PDF本体はMath Editorへ保存しません。</li>
+      <li>教科書PDF本体はすうがく仕立てへ保存しません。</li>
     </ul>
   </Modal>;
 }

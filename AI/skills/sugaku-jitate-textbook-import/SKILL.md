@@ -1,24 +1,24 @@
 ---
-name: math-editor-textbook-import
-description: 教科書PDFの指定範囲から例題・問題・小問・数式・図版・教科書解答・解説を抽出し、確認後にMath Editor用の単一プリントをJSONまたは許可済みWebMCPで配送する。新規作問、一般的なPDF要約、Math Editor以外の教材生成には使わない。
+name: sugaku-jitate-textbook-import
+description: 教科書PDFの指定範囲から例題・問題・小問・数式・図版・教科書解答・解説を抽出し、確認後にすうがく仕立て用の単一プリントをJSONまたは許可済みWebMCPで配送する。新規作問、一般的なPDF要約、すうがく仕立て以外の教材生成には使わない。
 ---
 
-# Math Editor 教科書取込
+# すうがく仕立て 教科書取込
 
-利用権限のある教科書PDFを、再編集可能なMath Editor単一プリントへ変換する。AIは転記・構造化・編集支援だけを行い、教科書の数学的内容や正答を独断で変更しない。
+利用権限のある教科書PDFを、再編集可能なすうがく仕立て単一プリントへ変換する。AIは転記・構造化・編集支援だけを行い、教科書の数学的内容や正答を独断で変更しない。
 
 ## 対象外
 
 - 新規問題、類題、誤答例、ヒント、教科書にない解答の自動生成
-- 一般的なPDF要約、Math Editor以外の教材作成
-- 既存Worksheetの更新・削除、利用者のページ内Consentなしの直接書込み、Math Editor配送以外の外部MCPの利用
+- 一般的なPDF要約、すうがく仕立て以外の教材作成
+- 既存Worksheetの更新・削除、利用者のページ内Consentなしの直接書込み、すうがく仕立て配送以外の外部MCPの利用
 - PDF本体の最終JSON格納、AI画像生成、教科書図版の描き直し
 
 ## 毎回の開始手順
 
 1. 最初に [workflow-and-confirmation.md](references/workflow-and-confirmation.md) を全文読む。
 2. 教科書PDF、開始ページ、開始ラベル、終了ページ、終了ラベルを集める。説明スタイルは`normal`、`detailed`、`concise`から選び、未指定は`normal`とする。題名未指定は`無題のプリント`とする。
-3. PDF解析前に、PDFと必要内容がMath Editor外部のSkill実行環境へ渡されること、Math Editorのローカル保存とは経路が異なること、利用者が利用権限を確認すること、最終JSONにPDF本体を含めないことを説明し、確認を得る。PDF差替え時は再確認する。
+3. PDF解析前に、PDFと必要内容がすうがく仕立て外部のSkill実行環境へ渡されること、すうがく仕立てのローカル保存とは経路が異なること、利用者が利用権限を確認すること、最終JSONにPDF本体を含めないことを説明し、確認を得る。PDF差替え時は再確認する。
 4. 必須入力または確認が不足する間は`collecting-input`に留まり、PDF解析を始めない。
 
 ## 段階別ルーティング
@@ -54,7 +54,7 @@ BuilderまたはValidatorが失敗した候補を完成ファイルとして提�
 
 ## 完成JSONの配送
 
-BuilderとValidatorが成功したら [webmcp-integration.md](references/webmcp-integration.md) を読み、Math EditorのSite toolsが見える場合、利用者が接続先を指定した場合、または直接取込を依頼した場合は、対象ページの能力取得、事前検証、許可済みdirect importを行う。接続先は実行時に解決し、複数タブでは利用者が選んだ`pageId`へ全呼出しを固定する。
+BuilderとValidatorが成功したら [webmcp-integration.md](references/webmcp-integration.md) を読み、すうがく仕立てのSite toolsが見える場合、利用者が接続先を指定した場合、または直接取込を依頼した場合は、対象ページの能力取得、事前検証、許可済みdirect importを行う。接続先は実行時に解決し、複数タブでは利用者が選んだ`pageId`へ全呼出しを固定する。
 
 direct importの`requestId`は同じ完成payloadを1回だけ追加する論理操作に固定する。Consent待ち、candidate再検証、応答不明時の安全な再試行で変更しない。`PAYLOAD_HASH_MISMATCH`では停止し、利用者の代わりにConsentを操作しない。
 

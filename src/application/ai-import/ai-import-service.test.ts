@@ -3,7 +3,7 @@ import { Blob as NodeBlob } from "node:buffer";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createId, createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { createArchiveBackup, createSingleBackup } from "../backup/backup";
-import { APP_SCHEMA_SHA256 } from "../../infrastructure/webmcp/math-editor-capabilities";
+import { APP_SCHEMA_SHA256 } from "../../infrastructure/webmcp/sugaku-jitate-capabilities";
 import { createWebMcpCandidateStore } from "../../infrastructure/webmcp/webmcp-candidate-store";
 import { createWebMcpImportReceiptStore } from "../../infrastructure/webmcp/webmcp-import-receipt";
 import { MAX_WEBMCP_CANDIDATES, MAX_WEBMCP_DIRECT_IMPORT_BYTES, WEBMCP_CANDIDATE_TTL_MS } from "./ai-import-types";

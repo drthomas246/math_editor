@@ -4,14 +4,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const SKILL_NAME = "math-editor-textbook-import";
-export const PLUGIN_NAME = "math-editor-ai";
+export const SKILL_NAME = "sugaku-jitate-textbook-import";
+export const PLUGIN_NAME = "sugaku-jitate-ai";
 const SKIPPED_NAMES = new Set(["node_modules", "__pycache__", "Thumbs.db", "desktop.ini"]);
 const REQUIRED_SKILL_FILES = [
   "SKILL.md", "agents/openai.yaml", "references/runtime-fallback-rules.md",
   "references/figure-cropping-rules.md", "references/validation-rules.md",
   "references/webmcp-integration.md",
-  "scripts/resolve_math_editor_target.mjs",
+  "scripts/resolve_sugaku_jitate_target.mjs",
   "scripts/plan_webmcp_delivery.mjs",
   "scripts/check_runtime_capabilities.mjs", "scripts/crop_pdf_figure.py",
   "scripts/build_math_worksheet_file.mjs", "scripts/validate_math_worksheet.mjs",

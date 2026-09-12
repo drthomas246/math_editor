@@ -1,12 +1,12 @@
 # Phase 4: Skill配送統合
 
-Phase 3で完成したMath Editor側のdirect importを、portable Pluginの`math-editor-textbook-import` Skillから安全に利用する配送フローへ統合した。実装範囲はIssue #37と`追加AI詳細設計書.md`のPhase 4である。
+Phase 3で完成したすうがく仕立て側のdirect importを、portable Pluginの`sugaku-jitate-textbook-import` Skillから安全に利用する配送フローへ統合した。実装範囲はIssue #37と`追加AI詳細設計書.md`のPhase 4である。
 
 ## 接続先の解決
 
-`resolve_math_editor_target.mjs`は、能力取得と検証ツールを持つページを実行時の観測値から選ぶ。複数候補では`selectedPageId`を受け取り、同じURLの別タブを一意に選べる。`selectedPageId`と明示URLの競合、存在しない識別子、不正な識別子は別のページへ置換せず拒否する。
+`resolve_sugaku_jitate_target.mjs`は、能力取得と検証ツールを持つページを実行時の観測値から選ぶ。複数候補では`selectedPageId`を受け取り、同じURLの別タブを一意に選べる。`selectedPageId`と明示URLの競合、存在しない識別子、不正な識別子は別のページへ置換せず拒否する。
 
-選択結果には`directImportToolAvailable`を含める。事前検証だけ可能なページもMath Editor候補として認識するが、import toolがなければJSONフォールバックへ進む。ページ選択後はcapabilities、validate、importを同じページへ固定する。
+選択結果には`directImportToolAvailable`を含める。事前検証だけ可能なページもすうがく仕立て候補として認識するが、import toolがなければJSONフォールバックへ進む。ページ選択後はcapabilities、validate、importを同じページへ固定する。
 
 ## 配送状態と安全な再試行
 
@@ -32,7 +32,7 @@ Consent待ち、candidate期限切れ・消失、`REVALIDATION_REQUIRED`、応�
 
 ## 利用者向けマニュアル
 
-「AIのSkillとは」を更新し、WebMCP対応時の対象タブ選択、Math Editorページ上のAI連携Consent、直接取込後の確認、ページ再読込でConsentがOFFへ戻ること、既存Worksheetを更新・削除しないこと、JSON fallback手順を案内する。
+「AIのSkillとは」を更新し、WebMCP対応時の対象タブ選択、すうがく仕立てページ上のAI連携Consent、直接取込後の確認、ページ再読込でConsentがOFFへ戻ること、既存Worksheetを更新・削除しないこと、JSON fallback手順を案内する。
 
 ## 自動検証
 

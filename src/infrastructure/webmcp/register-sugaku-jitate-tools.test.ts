@@ -2,13 +2,13 @@ import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createWorksheet } from "../../domain/worksheet/worksheet.defaults";
 import { createSingleBackup } from "../../application/backup/backup";
-import { APP_SCHEMA_SHA256, getMathEditorCapabilities } from "./math-editor-capabilities";
+import { APP_SCHEMA_SHA256, getSugakuJitateCapabilities } from "./sugaku-jitate-capabilities";
 import { worksheetRepository } from "../indexeddb/dexie-worksheet-repository";
-import { detectMathEditorModelContext, registerMathEditorTools } from "./register-math-editor-tools";
+import { detectSugakuJitateModelContext, registerSugakuJitateTools } from "./register-sugaku-jitate-tools";
 import { webMcpSession } from "./webmcp-session";
-import type { MathEditorModelContext, MathEditorModelContextTool } from "./webmcp";
+import type { SugakuJitateModelContext, SugakuJitateModelContextTool } from "./webmcp";
 
-let registration: ReturnType<typeof registerMathEditorTools> | undefined;
+let registration: ReturnType<typeof registerSugakuJitateTools> | undefined;
 
 /** Web Cryptoを実装済みの環境を再現する。 */
 function prepare(): void { vi.stubGlobal("crypto", webcrypto); }
@@ -37,14 +37,14 @@ afterEach(cleanup);
  * @returns 登録APIと実行可能なツール一覧
  */
 function contextFixture(modern: boolean) {
-  const tools = new Map<string, MathEditorModelContextTool>();
+  const tools = new Map<string, SugakuJitateModelContextTool>();
   /**
    * 重複登録を拒否してツールを保持する。
    * @param tool 登録するツール
    * @param options 登録解除の通知
    * @returns 現行APIでは完了Promise
    */
-  function registerTool(tool: MathEditorModelContextTool, options?: { signal: AbortSignal }) {
+  function registerTool(tool: SugakuJitateModelContextTool, options?: { signal: AbortSignal }) {
     if (tools.has(tool.name)) throw new Error("duplicate");
     tools.set(tool.name, tool);
     /** 現行APIのシグナルによって登録を解除する。 */
@@ -61,7 +61,7 @@ function contextFixture(modern: boolean) {
   function unregisterTool(name: string): void { tools.delete(name); }
   const registerMock = vi.fn(registerTool);
   const unregisterMock = vi.fn(unregisterTool);
-  const context: MathEditorModelContext = { registerTool: registerMock };
+  const context: SugakuJitateModelContext = { registerTool: registerMock };
   if (!modern) context.unregisterTool = unregisterMock;
   return { context, tools, registerMock, unregisterMock };
 }
@@ -72,14 +72,14 @@ function contextFixture(modern: boolean) {
  */
 async function modernRegistration(): Promise<void> {
   const { context, tools } = contextFixture(true);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   expect(await registration.ready).toBe("registered");
-  expect([...tools.keys()]).toEqual(["math_editor_get_capabilities", "math_editor_validate_import", "math_editor_import_worksheet"]);
-  const read = tools.get("math_editor_get_capabilities")!;
-  const validate = tools.get("math_editor_validate_import")!;
-  const importWorksheet = tools.get("math_editor_import_worksheet")!;
-  expect(await read.execute({}, executionOptions())).toEqual(getMathEditorCapabilities());
-  expect(getMathEditorCapabilities()).toMatchObject({ schemaSha256: APP_SCHEMA_SHA256, schemaVersion: 1, validationAvailable: true, directImportAvailable: true, writeConsentGranted: false });
+  expect([...tools.keys()]).toEqual(["sujita_get_capabilities", "sujita_validate_import", "sujita_import_worksheet"]);
+  const read = tools.get("sujita_get_capabilities")!;
+  const validate = tools.get("sujita_validate_import")!;
+  const importWorksheet = tools.get("sujita_import_worksheet")!;
+  expect(await read.execute({}, executionOptions())).toEqual(getSugakuJitateCapabilities());
+  expect(getSugakuJitateCapabilities()).toMatchObject({ schemaSha256: APP_SCHEMA_SHA256, schemaVersion: 1, validationAvailable: true, directImportAvailable: true, writeConsentGranted: false });
   expect(read.annotations?.readOnlyHint).toBe(true);
   expect(validate.annotations).toEqual({ readOnlyHint: false, untrustedContentHint: true });
   expect(importWorksheet.annotations).toEqual({ readOnlyHint: false, untrustedContentHint: true, consequentialHint: true });
@@ -87,7 +87,7 @@ async function modernRegistration(): Promise<void> {
   expect(await validate.execute({ payloadText, skillSchemaSha256: APP_SCHEMA_SHA256 }, executionOptions())).toMatchObject({ valid: true, assetCount: 0 });
   registration.dispose();
   expect(tools.size).toBe(0);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   expect(await registration.ready).toBe("registered");
   expect(tools.size).toBe(3);
 }
@@ -100,7 +100,7 @@ it("現行APIに3ツールだけを登録し、解除後も再登録できる", 
 async function legacyRegistration(): Promise<void> {
   const { context, tools, unregisterMock } = contextFixture(false);
   Object.defineProperty(navigator, "modelContext", { configurable: true, value: context });
-  registration = registerMathEditorTools();
+  registration = registerSugakuJitateTools();
   expect(await registration.ready).toBe("registered");
   registration.dispose();
   expect(tools.size).toBe(0);
@@ -110,19 +110,19 @@ it("旧navigator APIでも登録でき、自分の3ツールだけを解除す�
 
 /** 現行APIを優先し、非対応やアクセス拒否を検出する。 */
 function detection(): void {
-  expect(detectMathEditorModelContext()).toBeUndefined();
+  expect(detectSugakuJitateModelContext()).toBeUndefined();
   const modern = contextFixture(true).context;
   const legacy = contextFixture(false).context;
   Object.defineProperty(document, "modelContext", { configurable: true, value: modern });
   Object.defineProperty(navigator, "modelContext", { configurable: true, value: legacy });
-  expect(detectMathEditorModelContext()).toBe(modern);
+  expect(detectSugakuJitateModelContext()).toBe(modern);
   /**
    * APIアクセスがブラウザに拒否される状況を再現する。
    * @returns この検査では常に例外となる
    */
   function denied(): never { throw new Error("permission denied"); }
   Object.defineProperty(document, "modelContext", { configurable: true, get: denied });
-  expect(detectMathEditorModelContext()).toBeUndefined();
+  expect(detectSugakuJitateModelContext()).toBeUndefined();
 }
 it("documentを優先し、未対応・拒否されたAPIを安全に扱う", detection);
 
@@ -131,11 +131,11 @@ it("documentを優先し、未対応・拒否されたAPIを安全に扱う", de
  * @returns 非対応時の起動確認完了
  */
 async function unavailable(): Promise<void> {
-  registration = registerMathEditorTools();
+  registration = registerSugakuJitateTools();
   expect(await registration.ready).toBe("unavailable");
   vi.stubGlobal("crypto", {});
   const { context, registerMock } = contextFixture(true);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   expect(await registration.ready).toBe("unavailable");
   expect(registerMock).not.toHaveBeenCalled();
 }
@@ -155,10 +155,10 @@ async function unavailableReceiptStorage(): Promise<void> {
   Object.defineProperty(window, "sessionStorage", { configurable: true, get: deniedStorage });
   try {
     const { context, tools } = contextFixture(true);
-    registration = registerMathEditorTools(context);
+    registration = registerSugakuJitateTools(context);
     expect(await registration.ready).toBe("registered");
-    expect([...tools.keys()]).toEqual(["math_editor_get_capabilities", "math_editor_validate_import"]);
-    expect(await tools.get("math_editor_get_capabilities")!.execute({}, executionOptions())).toMatchObject({
+    expect([...tools.keys()]).toEqual(["sujita_get_capabilities", "sujita_validate_import"]);
+    expect(await tools.get("sujita_get_capabilities")!.execute({}, executionOptions())).toMatchObject({
       directImportAvailable: false,
       writeConsentGranted: false,
     });
@@ -174,10 +174,10 @@ it("sessionStorageが使えなくても読取・検証ツールは利用でき�
  */
 async function abortImportExecution(): Promise<void> {
   const { context, tools } = contextFixture(true);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   await registration.ready;
   const payloadText = JSON.stringify(await createSingleBackup(createWorksheet(), []));
-  const candidate = await tools.get("math_editor_validate_import")!.execute({
+  const candidate = await tools.get("sujita_validate_import")!.execute({
     payloadText,
     skillSchemaSha256: APP_SCHEMA_SHA256,
   }, executionOptions()) as { candidateToken: string; payloadSha256: string };
@@ -185,7 +185,7 @@ async function abortImportExecution(): Promise<void> {
   const create = vi.spyOn(worksheetRepository, "create");
   const controller = new AbortController();
   controller.abort();
-  const result = await tools.get("math_editor_import_worksheet")!.execute({
+  const result = await tools.get("sujita_import_worksheet")!.execute({
     candidateToken: candidate.candidateToken,
     requestId: "request-abort-tool",
     expectedPayloadSha256: candidate.payloadSha256,
@@ -206,12 +206,12 @@ async function partialFailure(): Promise<void> {
    * @returns 他者の結果
    */
   async function externalTool() { return { owner: "other" }; }
-  const external = { name: "math_editor_validate_import", description: "other", inputSchema: {}, execute: externalTool };
+  const external = { name: "sujita_validate_import", description: "other", inputSchema: {}, execute: externalTool };
   tools.set(external.name, external);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   expect(await registration.ready).toBe("unavailable");
   expect([...tools.values()]).toEqual([external]);
-  expect(unregisterMock).toHaveBeenCalledExactlyOnceWith("math_editor_get_capabilities");
+  expect(unregisterMock).toHaveBeenCalledExactlyOnceWith("sujita_get_capabilities");
 }
 it("部分登録の失敗を回収し、登録に失敗した同名ツールを削除しない", partialFailure);
 
@@ -233,12 +233,12 @@ async function disposedDuringRegistration(): Promise<void> {
    * @param tool 登録するツール
    * @returns 遅延された登録結果
    */
-  function registerTool(tool: MathEditorModelContextTool) {
+  function registerTool(tool: SugakuJitateModelContextTool) {
     tools.set(tool.name, tool);
     return deferred;
   }
   context.registerTool = registerTool;
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   registration.dispose();
   finish();
   expect(await registration.ready).toBe("unavailable");
@@ -252,10 +252,10 @@ it("非同期登録の途中で終了した場合も登録を回収する", disp
  */
 async function publicErrors(): Promise<void> {
   const { context, tools } = contextFixture(true);
-  registration = registerMathEditorTools(context);
+  registration = registerSugakuJitateTools(context);
   await registration.ready;
-  const validate = tools.get("math_editor_validate_import")!;
-  expect(await tools.get("math_editor_get_capabilities")!.execute({ extra: true }, executionOptions())).toMatchObject({ success: false, error: { code: "INVALID_INPUT" } });
+  const validate = tools.get("sujita_validate_import")!;
+  expect(await tools.get("sujita_get_capabilities")!.execute({ extra: true }, executionOptions())).toMatchObject({ success: false, error: { code: "INVALID_INPUT" } });
   expect(await validate.execute({ payloadText: "PRIVATE INVALID JSON", skillSchemaSha256: APP_SCHEMA_SHA256 }, executionOptions())).toMatchObject({ valid: false, error: { code: "INVALID_JSON", fallbackRecommended: false } });
   const input = { payloadText: JSON.stringify(await createSingleBackup(createWorksheet(), [])), skillSchemaSha256: APP_SCHEMA_SHA256 };
   /**

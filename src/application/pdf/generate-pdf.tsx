@@ -11,9 +11,9 @@ const PDF_PIXEL_RATIO = 4;
 const PDF_IMAGE_TYPE = "image/jpeg";
 const PDF_IMAGE_QUALITY = 0.98;
 const PDF_PERFORMANCE_MEASURES = {
-    fonts: "math-editor.pdf.fonts",
-    rasterization: "math-editor.pdf.rasterization",
-    assembly: "math-editor.pdf.assembly",
+    fonts: "sugaku-jitate.pdf.fonts",
+    rasterization: "sugaku-jitate.pdf.rasterization",
+    assembly: "sugaku-jitate.pdf.assembly",
 } as const;
 const styles = StyleSheet.create({
     page: { backgroundColor: "#fff" },
@@ -68,7 +68,7 @@ export async function generateWorksheetPdf(worksheet: Worksheet, previewPages: r
         number,
         number
     ] = [mmToPt(pageSize.width), mmToPt(pageSize.height)];
-    const element = <Document title={worksheet.title} author="数学プリント作成">
+    const element = <Document title={worksheet.title} author="すうがく仕立て">
     {pageImages.map((/**
          * 各複製・変換・更新の起点となる値を画面表示用のReact要素へ変換する。
          *
