@@ -84,9 +84,9 @@ export const MANUAL_CHAPTER_MANIFEST = [
     {
         slug: "ai-skills",
         title: "AI Skillsの使い方",
-        summary: "教科書PDFをAIで読み取り、確認後にすうがく仕立て用JSONとして取り込む手順を説明します。",
-        keywords: ["AI", "Skills", "Skill", "AIサービス", "AIエージェント", "ChatGPT", "Claude", "教科書", "PDF", "JSON", "取込", "インポート", "初心者", "sujita-textbook-import"],
-        updatedAt: "2026-08-25",
+        summary: "教科書PDFをAIで読み取り、確認後にWebMCPまたはJSONですうがく仕立てへ取り込む手順を説明します。",
+        keywords: ["AI", "Skills", "Skill", "Plugin", "portable Plugin", "ChatGPT", "Codex", "WebMCP", "Site tools", "Runtime Capability Probe", "Schema", "教科書", "PDF", "JSON", "取込", "インポート", "sujita-ai", "sujita-textbook-import"],
+        updatedAt: "2026-09-13",
     },
     {
         slug: "troubleshooting",
