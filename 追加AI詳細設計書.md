@@ -7,7 +7,7 @@
 | 文書名 | すうがく仕立て 追加AI詳細設計書 |
 | 文書版 | 2.2 |
 | 基準日 | 2026-09-13 |
-| 対象システム | `drthomas246/math_editor` |
+| 対象システム | `drthomas246/sujita` |
 | 基準ブランチ | `master` |
 | 基準コミット | `1ef632ad20d24dbb1e12e0bf022ecc1d6168837d` |
 | AI方式 | ChatGPT上のすうがく仕立て Skill |
@@ -2442,13 +2442,13 @@ OpenAI API、APIキー、外部MCPサーバーは不要とする。
 ## 57. 参考資料
 
 - すうがく仕立て Repository
-  https://github.com/drthomas246/math_editor
+  https://github.com/drthomas246/sujita
 - すうがく仕立て Worksheet Schema
-  https://github.com/drthomas246/math_editor/blob/master/src/domain/worksheet/worksheet.schema.ts
+  https://github.com/drthomas246/sujita/blob/master/src/domain/worksheet/worksheet.schema.ts
 - すうがく仕立て Backup implementation
-  https://github.com/drthomas246/math_editor/blob/master/src/application/backup/backup.ts
+  https://github.com/drthomas246/sujita/blob/master/src/application/backup/backup.ts
 - すうがく仕立て WorksheetRepository
-  https://github.com/drthomas246/math_editor/blob/master/src/application/repositories/worksheet-repository.ts
+  https://github.com/drthomas246/sujita/blob/master/src/application/repositories/worksheet-repository.ts
 - OpenAI: Build plugins / local Marketplace  
   https://learn.chatgpt.com/docs/build-plugins
 - OpenAI: Build skills  

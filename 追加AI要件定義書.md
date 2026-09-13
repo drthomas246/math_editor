@@ -7,10 +7,10 @@
 | 文書名 | すうがく仕立て 追加AI要件定義書 |
 | 文書版 | 2.2 |
 | 基準日 | 2026-09-13 |
-| 対象システム | `drthomas246/math_editor` |
+| 対象システム | `drthomas246/sujita |
 | 基準ブランチ | `master` |
 | 基準コミット | `1ef632ad20d24dbb1e12e0bf022ecc1d6168837d` |
-| 対象 | 中学校数学を中心とする授業プリント作成 |
+| 対象 | 中学校数学を中心とすsる授業プリント作成 |
 | AI実行方式 | 利用者自身のChatGPT上で実行するすうがく仕立て Skill |
 | 配布方式 | portable Plugin |
 | すうがく仕立て連携方式 | WebMCP Site tools |
@@ -1282,11 +1282,11 @@ v2.1完成後、必要になった時点で別要件として次を検討する�
 ## 41. 参考資料
 
 - すうがく仕立て Repository
-  https://github.com/drthomas246/math_editor
+  https://github.com/drthomas246/sujita
 - すうがく仕立て Worksheet Schema
-  https://github.com/drthomas246/math_editor/blob/master/src/domain/worksheet/worksheet.schema.ts
+  https://github.com/drthomas246/sujita/blob/master/src/domain/worksheet/worksheet.schema.ts
 - すうがく仕立て backup implementation
-  https://github.com/drthomas246/math_editor/blob/master/src/application/backup/backup.ts
+  https://github.com/drthomas246/sujita/master/src/application/backup/backup.ts
 - OpenAI: Build plugins / local Marketplace  
   https://learn.chatgpt.com/docs/build-plugins
 - OpenAI: Build skills  
