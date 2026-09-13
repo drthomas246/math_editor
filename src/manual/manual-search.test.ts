@@ -36,7 +36,7 @@ function defineTestSuite1() {
             return result.slug;
         }))).toContain("backup-and-trash");
         expect(searchManual("AI 教科書")[0]?.slug).toBe("ai-skills");
-        expect(searchManual("Claude")[0]?.slug).toBe("ai-skills");
+        expect(searchManual("WebMCP Runtime")[0]?.slug).toBe("ai-skills");
         expect(searchManual("MathLive ゴミ箱")).toEqual([]);
         expect(searchManual("   ")).toEqual([]);
     }));
